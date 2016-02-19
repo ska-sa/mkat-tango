@@ -18,4 +18,8 @@ setup (
     platforms = [ "OS Independent" ],
     install_requires = ["PyTango>=8.1.5"],
     zip_safe = False,
+    entry_points={
+    'console_scripts': [
+        'mkat-tango-weather-DS = mkat_tango.simulators.Weather:weather_main',
+    ]},
 )
