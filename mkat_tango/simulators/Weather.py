@@ -1,17 +1,17 @@
 import time
-import sys
 import weakref
 import logging
-import threading
 import collections
+
+from functools import partial
 
 from PyTango import AttrQuality
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
-from PyTango.server import server_run
-
 
 from mkat_tango.simlib import quantities
+from mkat_tango.simlib import model
+from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -49,15 +49,11 @@ class Weather(Device):
         self.model.update()
 
 
-class WeatherModel(object):
-    def __init__(self, name, start_time=None, min_update_time=9+0.9,
-                 time_func=time.time):
-        self.name = name
-        self.min_update_time = min_update_time
-        self.time_func = time_func
-        start_time = start_time or time_func()
-        self.last_update_time = start_time
-        self.sim_quantities = dict(
+class WeatherModel(model.Model):
+
+    def setup_sim_quantities(self):
+        start_time = self.start_time
+        self.sim_quantities.update(dict(
             temperature=quantities.GaussianSlewLimited(
                 mean=20, std_dev=20, max_slew_rate=1./100,
                 min_bound=-10, max_bound=55,
@@ -70,47 +66,8 @@ class WeatherModel(object):
                 mean=0, std_dev=600, max_slew_rate=180,
                 min_bound=0, max_bound=359.9999,
                 start_time=start_time),
-        )
-
-        self._sim_state = {var: (quant.last_val, quant.last_update_time)
-                          for var, quant in self.sim_quantities.items()}
-
-        # NM: Making a public reference to _sim_state. Allows us to hook read-only views
-        # or updates or whatever the future requires of this humble public attribute.
-        self.quantity_state = self._sim_state
-
-    def update(self):
-        sim_time = self.time_func()
-        dt = sim_time - self.last_update_time
-        if dt < self.min_update_time:
-            MODULE_LOGGER.debug(
-                "Sim {} skipping update at {}, dt {} < {}"
-                .format(self.name, sim_time, dt, self.min_update_time))
-            return
-
-        MODULE_LOGGER.info("Stepping at {}, dt: {}".format(sim_time, dt))
-        self.last_update_time = sim_time
-        try:
-            for var, quant in self.sim_quantities.items():
-                self._sim_state[var] = (quant.next_val(sim_time), sim_time)
-        except Exception:
-            MODULE_LOGGER.exception('Exception in update loop')
+        ))
+        super(WeatherModel, self).setup_sim_quantities()
 
 
-def weather_main():
-    run_ipython = '--ipython' in sys.argv
-    if run_ipython:
-        import IPython
-        sys.argv.remove('--ipython')
-        def run_ipython():
-            IPython.embed()
-        t = threading.Thread(target=run_ipython)
-        t.setDaemon(True)
-        t.start()
-
-    logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
-        '%(pathname)s : %(lineno)d - %(message)s',
-        level=logging.INFO)
-
-    server_run([Weather])
+weather_main = partial(main.simulator_main, Weather)
