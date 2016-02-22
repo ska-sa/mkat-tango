@@ -45,23 +45,8 @@ class Weather(Device):
         value, update_time = self.model.quantity_state['wind_direction']
         return value, update_time, AttrQuality.ATTR_VALID
 
-
-class QuantityStateMapping(collections.Mapping):
-    def __init__(self, model):
-        self._model = model
-
-    def __iter__(self):
-        return iter(self._model.sim_state)
-
-    def __len__(self):
-        return len(self._model.sim_state)
-
-    def __contains__(self, key):
-        return key in self._model.sim_state
-
-    def __getitem__(self, key):
-        self._model.update()
-        return self._model.sim_state[key]
+    def always_executed_hook(self):
+        self.model.update()
 
 
 class WeatherModel(object):
@@ -87,10 +72,12 @@ class WeatherModel(object):
                 start_time=start_time),
         )
 
-        self.sim_state = {var: (quant.last_val, quant.last_update_time)
+        self._sim_state = {var: (quant.last_val, quant.last_update_time)
                           for var, quant in self.sim_quantities.items()}
 
-        self.quantity_state = QuantityStateMapping(self)
+        # NM: Making a public reference to _sim_state. Allows us to hook read-only views
+        # or updates or whatever the future requires of this humble public attribute.
+        self.quantity_state = self._sim_state
 
     def update(self):
         sim_time = self.time_func()
@@ -105,9 +92,9 @@ class WeatherModel(object):
         self.last_update_time = sim_time
         try:
             for var, quant in self.sim_quantities.items():
-                self.sim_state[var] = (quant.next_val(sim_time), sim_time)
+                self._sim_state[var] = (quant.next_val(sim_time), sim_time)
         except Exception:
-            MODULE_LOGGER.exception('oops')
+            MODULE_LOGGER.exception('Exception in update loop')
 
 
 def weather_main():
