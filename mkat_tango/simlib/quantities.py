@@ -1,7 +1,10 @@
+import logging
 import time
 import abc
 
 from random import gauss
+
+MODULE_LOGGER = logging.getLogger(__name__)
 
 inf = float('inf')
 ninf = float('-inf')
@@ -80,6 +83,7 @@ class GaussianSlewLimited(Quantity):
         val = min(val, self.max_bound)
         val = max(val, self.min_bound)
         self.last_val = val
+        self.last_update_time = t
         return val
 
 class ConstantQuantity(Quantity):
