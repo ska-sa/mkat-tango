@@ -5,7 +5,7 @@ import collections
 
 from functools import partial
 
-from PyTango import AttrQuality
+from PyTango import AttrQuality, DevState
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
@@ -26,6 +26,7 @@ class Weather(Device):
         name = self.get_name()
         self.instances[name] = self
         self.model = WeatherModel(name)
+        self.set_state(DevState.ON)
 
     @attribute(label="Current outside temperature", dtype=float,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
