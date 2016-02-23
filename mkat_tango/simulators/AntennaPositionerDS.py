@@ -43,7 +43,7 @@ class AntennaPositioner(Device):
 	def requested_azimuth(self, azimuth, timestamp=time.time()):
 		self._requested_azimuth = (azimuth, timestamp, AttrQuality.ATTR_VALID)
 
-	@attribute(label="Actual Azimuth of AP", dtype=float, abs_change=1)
+	@attribute(label="Actual Azimuth of AP", dtype=float, abs_change=0.05)
 	def actual_azimuth(self):
 		return self._actual_azimuth
 
@@ -55,7 +55,7 @@ class AntennaPositioner(Device):
 	def requested_elevation(self, elevation, timestamp=time.time()):
 		self._requested_elevation = (elevation, timestamp, AttrQuality.ATTR_VALID)
 
-	@attribute(label="Actual Elevation of AP", dtype=float, abs_change=1)
+	@attribute(label="Actual Elevation of AP", dtype=float, abs_change=0.05)
 	def actual_elevation(self):
 		return self._actual_elevation
 
