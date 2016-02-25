@@ -14,9 +14,9 @@ def simulator_main(sim_class):
     if run_ipython:
         import IPython
         sys.argv.remove('--ipython')
-        def run_ipython(sim_class):
+        def start_ipython(sim_class):
             IPython.embed()
-        t = threading.Thread(target=run_ipython, args=(sim_class,) )
+        t = threading.Thread(target=start_ipython, args=(sim_class,) )
         t.setDaemon(True)
         t.start()
 
