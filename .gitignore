@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL python droppings
 __pycache__/
 *.py[cod]
 *$py.class
@@ -60,6 +60,9 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Developer tools
+.ropeproject
 
 # backup files
 *~
