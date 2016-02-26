@@ -1,8 +1,12 @@
+import time
 import unittest
+
+import mock
 
 from mkat_tango.simlib import quantities
 
 class test_Quantity(unittest.TestCase):
+
     def test_init(self):
         """Test initialisation of Quantity instance"""
         desired_start_value = 'polony'
@@ -25,6 +29,15 @@ class test_Quantity(unittest.TestCase):
         self.assertEqual(DUT.last_val,
                          desired_start_value)
 
-        # Check default value constructor
-        DUT = TestQuantity()
-        # Default time = current time
+        ## Check default value constructor
+        # First mock out time.time
+        with mock.patch(quantities.__name__ + '.time') as mtime:
+            desired_time = 556
+            mtime.time.return_value = desired_time
+            # Instantiate DUT
+            DUT = TestQuantity()
+
+        # Default last_update_time should be current time
+        self.assertEqual(DUT.last_update_time,
+                         desired_time)
+
