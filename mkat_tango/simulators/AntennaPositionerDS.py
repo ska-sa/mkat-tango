@@ -57,7 +57,7 @@ class AntennaPositioner(Device):
         return self._mode
 
     @attribute(label="Requested Azimuth position of AP", min_value=-185.0,
-                max_value=275.0, dtype=float)
+                max_value=275.0, dtype=float, unit='deg')
     def requested_azimuth(self):
         return self.azimuth_quantities['requested']
 
@@ -67,12 +67,14 @@ class AntennaPositioner(Device):
         self.azimuth_quantities['requested'] = (azimuth, timestamp(), attr)
 
     @attribute(label="Actual Azimuth position of AP", dtype=float,
-                min_value=-185.0, max_value=275.0, abs_change=0.05)
+                min_value=-185.0, max_value=275.0, abs_change=0.05,
+                min_warning=-180.0, max_warning=270.0,
+                min_alarm=-184.0, max_alarm=274.0, unit='deg')
     def actual_azimuth(self):
         return self.azimuth_quantities['actual']
 
     @attribute(label="Requested Elevation position of AP", min_value=15.0,
-                max_value=92.0, dtype=float)
+                max_value=92.0, dtype=float, unit='deg')
     def requested_elevation(self):
         return self.elevation_quantities['requested']
 
@@ -82,11 +84,13 @@ class AntennaPositioner(Device):
         self.elevation_quantities['requested'] = (elevation, timestamp(), attr)
 
     @attribute(label="Actual Elevation position of AP", dtype=float,
-                min_value=15.0, max_value=92.0, abs_change=0.05)
+                min_value=15.0, max_value=92.0, abs_change=0.05,
+                min_warning=20.0, max_warning=87.0,
+                min_alarm=14.0, max_alarm=91.0, unit='deg')
     def actual_elevation(self):
         return self.elevation_quantities['actual']
 
-    @attribute(label="Requested azimuth velocity", dtype=float,
+    @attribute(label="Requested azimuth velocity", dtype=float, unit='deg/s',
                 min_value=-AZIM_DRIVE_MAX_RATE, max_value=AZIM_DRIVE_MAX_RATE)
     def requested_azimuth_rate(self):
         return self.azimuth_quantities['drive_rate']
@@ -102,7 +106,7 @@ class AntennaPositioner(Device):
             pass
         self.azimuth_quantities['drive_rate'] = rate
 
-    @attribute(label="Requested elevation velocity", dtype=float,
+    @attribute(label="Requested elevation velocity", dtype=float, unit='deg/s',
                 min_value=-ELEV_DRIVE_MAX_RATE, max_value=ELEV_DRIVE_MAX_RATE)
     def requested_elevation_rate(self):
         return self.elevation_quantities['drive_rate']
