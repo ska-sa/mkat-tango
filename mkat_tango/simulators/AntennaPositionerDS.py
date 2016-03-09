@@ -37,6 +37,7 @@ class AntennaPositioner(Device):
         self.set_change_event('actual_azimuth', True)
         self.set_change_event('actual_elevation', True)
         self._mode = 'stop'
+        self._slewing = dict(actual_azimuth=False, actual_elevation=False)
         self._last_update_time = 0
         self.azimuth_quantities = dict(actual=(0.0, 0, AttrQuality.ATTR_VALID),
                                     requested=(0.0, 0, AttrQuality.ATTR_VALID),
@@ -142,24 +143,17 @@ class AntennaPositioner(Device):
         '''Updates the position of the el-az coordinates using a simulation loop'''
         actual_position = sim_quantities['actual']
         requested_position = sim_quantities['requested']
-
+        self._slewing[attr_name] = True
         self._last_update_time = time.time()
-        while not  self.almost_equal(sim_quantities['requested'][0], sim_quantities['actual'][0]):
+        while True:
+            if not self._slewing[attr_name]:
+                time.sleep(self.UPDATE_PERIOD)
+                continue
 
             time.sleep(self.UPDATE_PERIOD)
             sim_time = time.time()
             dt = sim_time - self._last_update_time
-
-            if self.almost_equal(sim_quantities['requested'][0], sim_quantities['actual'][0]):
-                self._mode = 'stop'
-            else:
-                self._mode = 'slew'
-
-            if dt < self.UPDATE_PERIOD:
-                self.LOGGER.debug(
-                    "Sim {} skipping update at {}, dt {} < {}"
-                    .format(attr_name, sim_time, dt, self.UPDATE_PERIOD))
-                return
+            self._mode = 'slew'
 
             try:
                 slew_rate = sim_quantities['drive_rate']
@@ -181,6 +175,11 @@ class AntennaPositioner(Device):
                     " max_slew: {max_slew}".format(**locals()))
             except Exception:
                 self.LOGGER.exception('Exception in update loop')
+            if self.almost_equal(sim_quantities['requested'][0],
+                   sim_quantities['actual'][0]):
+                self._slewing[attr_name] = False
+                self._mode = 'stop'
+            time.sleep(self.UPDATE_PERIOD)
 
     @command
     def Slew(self):
