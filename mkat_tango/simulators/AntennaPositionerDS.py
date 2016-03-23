@@ -35,7 +35,7 @@ class AntennaPositioner(Device):
         '''Initialize attribute values and change events for update'''
         self._mode = 'stop'
         self._slewing = dict(actual_azimuth=False, actual_elevation=False)
-        self._last_update_time = 0
+        #self._last_update_time = 0
         self.azimuth_quantities = dict(actual=(0.0, 0, AttrQuality.ATTR_VALID),
                                     requested=(0.0, 0, AttrQuality.ATTR_VALID),
                                     drive_rate=0.0)
@@ -140,18 +140,16 @@ class AntennaPositioner(Device):
         '''Updates the position of the el-az coordinates using a simulation loop'''
         actual_position = sim_quantities['actual']
         requested_position = sim_quantities['requested']
-        self._last_update_time = time.time()
-
+        time_func = time.time
+        last_update_time = time_func()
         while True:
             if not self._slewing[attr_name]:
+                last_update_time = time_func()
                 time.sleep(self.UPDATE_PERIOD)
                 continue
-
-            time.sleep(self.UPDATE_PERIOD)
-            sim_time = time.time()
-            dt = sim_time - self._last_update_time
+            sim_time = time_func()
+            dt = sim_time - last_update_time
             self._mode = 'slew'
-
             try:
                 slew_rate = sim_quantities['drive_rate']
                 max_slew = slew_rate*dt
@@ -160,10 +158,9 @@ class AntennaPositioner(Device):
                 curr_delta = abs(actual - requested)
                 move_delta = min(max_slew, curr_delta)
                 new_position = actual + cmp(requested, actual)*move_delta
-
                 quality = AttrQuality.ATTR_VALID
                 sim_quantities['actual'] = (new_position, sim_time, quality)
-                self._last_update_time = sim_time
+                last_update_time = sim_time
                 self.push_change_event(attr_name,  new_position, sim_time, quality)
                 #Instant printing of the new values. (important for debugging)
                 print("Stepping at {}, dt: {}    sim {} requested: {}  actual: {} deg"
@@ -176,7 +173,7 @@ class AntennaPositioner(Device):
                    sim_quantities['actual'][0]):
                 self._slewing[attr_name] = False
                 self._mode = 'stop'
-            #time.sleep(self.UPDATE_PERIOD)
+            time.sleep(self.UPDATE_PERIOD)
 
     @command
     def Slew(self):
