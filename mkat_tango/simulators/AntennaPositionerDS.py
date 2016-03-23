@@ -33,9 +33,6 @@ class AntennaPositioner(Device):
 
     def __init__(self, *args, **kwargs):
         '''Initialize attribute values and change events for update'''
-        super(AntennaPositioner, self).__init__(*args, **kwargs)
-        self.set_change_event('actual_azimuth', True)
-        self.set_change_event('actual_elevation', True)
         self._mode = 'stop'
         self._slewing = dict(actual_azimuth=False, actual_elevation=False)
         self._last_update_time = 0
@@ -45,11 +42,25 @@ class AntennaPositioner(Device):
         self.elevation_quantities = dict(actual=(90.0, 0, AttrQuality.ATTR_VALID),
                                     requested=(90.0, 0, AttrQuality.ATTR_VALID),
                                     drive_rate=0.0)
+        super(AntennaPositioner, self).__init__(*args, **kwargs)
+        self.set_change_event('actual_azimuth', True)
+        self.set_change_event('actual_elevation', True)
 
     def init_device(self):
         '''Initialize device and set the state to standby'''
         super(AntennaPositioner, self).init_device()
         self.set_state(DevState.STANDBY)
+        self.azimuth_update = partial(
+            self.update_position, 'actual_azimuth', self.azimuth_quantities)
+        self.elevation_update = partial(
+            self.update_position, 'actual_elevation', self.elevation_quantities)
+
+        self.az_thread = threading.Thread(target=self.azimuth_update)
+        self.el_thread = threading.Thread(target=self.elevation_update)
+        self.az_thread.setDaemon(True)
+        self.el_thread.setDaemon(True)
+        self.az_thread.start()
+        self.el_thread.start()
 
     #ATTRIBUTES
 
@@ -98,13 +109,6 @@ class AntennaPositioner(Device):
 
     @requested_azimuth_rate.write
     def requested_azimuth_rate(self, rate):
-        '''Limit the rate to the maximum allowed'''
-        if rate > self.AZIM_DRIVE_MAX_RATE:
-            rate = self.AZIM_DRIVE_MAX_RATE
-        elif rate < -self.AZIM_DRIVE_MAX_RATE:
-            rate = -self.AZIM_DRIVE_MAX_RATE
-        else:
-            pass
         self.azimuth_quantities['drive_rate'] = rate
 
     @attribute(label="Requested elevation velocity", dtype=float, unit='deg/s',
@@ -114,13 +118,6 @@ class AntennaPositioner(Device):
 
     @requested_elevation_rate.write
     def requested_elevation_rate(self, rate):
-        '''Limit the rate to the maximum allowed'''
-        if rate > self.ELEV_DRIVE_MAX_RATE:
-            rate = self.ELEV_DRIVE_MAX_RATE
-        elif rate < -self.ELEV_DRIVE_MAX_RATE:
-            rate = -self.ELEV_DRIVE_MAX_RATE
-        else:
-            pass
         self.elevation_quantities['drive_rate'] = rate
 
     #COMMANDS
@@ -135,7 +132,7 @@ class AntennaPositioner(Device):
         '''turn off the actual power supply here'''
         self.set_state(DevState.OFF)
 
-    def almost_equal(self, x, y, abs_threshold=1e-1):
+    def almost_equal(self, x, y, abs_threshold=1e-2):
         '''Takes two values return true if they are almost equal'''
         return abs(x - y) <= abs_threshold
 
@@ -143,8 +140,8 @@ class AntennaPositioner(Device):
         '''Updates the position of the el-az coordinates using a simulation loop'''
         actual_position = sim_quantities['actual']
         requested_position = sim_quantities['requested']
-        self._slewing[attr_name] = True
         self._last_update_time = time.time()
+
         while True:
             if not self._slewing[attr_name]:
                 time.sleep(self.UPDATE_PERIOD)
@@ -179,22 +176,13 @@ class AntennaPositioner(Device):
                    sim_quantities['actual'][0]):
                 self._slewing[attr_name] = False
                 self._mode = 'stop'
-            time.sleep(self.UPDATE_PERIOD)
+            #time.sleep(self.UPDATE_PERIOD)
 
     @command
     def Slew(self):
         '''Set the simulator operation mode to slew to desired coordinates.'''
-        self.azimuth_update = partial(
-            self.update_position, 'actual_azimuth', self.azimuth_quantities)
-        self.elevation_update = partial(
-            self.update_position, 'actual_elevation', self.elevation_quantities)
-
-        self.az_thread = threading.Thread(target=self.azimuth_update)
-        self.az_thread.setDaemon(True)
-        self.az_thread.start()
-        self.el_thread = threading.Thread(target=self.elevation_update)
-        self.el_thread.setDaemon(True)
-        self.el_thread.start()
+        self._slewing['actual_azimuth'] = True
+        self._slewing['actual_elevation'] = True
 
 if __name__ == "__main__":
     server_run([AntennaPositioner])
