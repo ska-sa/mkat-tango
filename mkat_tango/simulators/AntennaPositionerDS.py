@@ -22,6 +22,9 @@ from PyTango.server import Device, DeviceMeta, attribute, command, server_run
 
 from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 
+#Module logger reporting events that occur during normal operation of device
+LOGGER = logging.getLogger(__name__)
+
 class AntennaPositioner(Device):
     '''Antenna Positioner device server with simulated attributes'''
     __metaclass__ = DeviceMeta
@@ -29,18 +32,17 @@ class AntennaPositioner(Device):
     UPDATE_PERIOD = 1
     AZIM_DRIVE_MAX_RATE = 2.0
     ELEV_DRIVE_MAX_RATE = 1.0
-    LOGGER = logging.getLogger()
 
     def __init__(self, *args, **kwargs):
         '''Initialize attribute values and change events for update'''
         self._mode = 'stop'
         self._slewing = dict(actual_azimuth=False, actual_elevation=False)
-        #self._last_update_time = 0
-        self.azimuth_quantities = dict(actual=(0.0, 0, AttrQuality.ATTR_VALID),
-                                    requested=(0.0, 0, AttrQuality.ATTR_VALID),
+        attr = AttrQuality.ATTR_VALID
+        self.azimuth_quantities = dict(actual=(0.0, 0, attr),
+                                    requested=(0.0, 0, attr),
                                     drive_rate=0.0)
-        self.elevation_quantities = dict(actual=(90.0, 0, AttrQuality.ATTR_VALID),
-                                    requested=(90.0, 0, AttrQuality.ATTR_VALID),
+        self.elevation_quantities = dict(actual=(90.0, 0, attr),
+                                    requested=(90.0, 0, attr),
                                     drive_rate=0.0)
         super(AntennaPositioner, self).__init__(*args, **kwargs)
         self.set_change_event('actual_azimuth', True)
@@ -137,7 +139,8 @@ class AntennaPositioner(Device):
         return abs(x - y) <= abs_threshold
 
     def update_position(self, attr_name, sim_quantities):
-        '''Updates the position of the el-az coordinates using a simulation loop'''
+        '''Updates the position of the el-az coordinates
+              using a simulation loop'''
         actual_position = sim_quantities['actual']
         requested_position = sim_quantities['requested']
         time_func = time.time
@@ -162,13 +165,10 @@ class AntennaPositioner(Device):
                 sim_quantities['actual'] = (new_position, sim_time, quality)
                 last_update_time = sim_time
                 self.push_change_event(attr_name,  new_position, sim_time, quality)
-                #Instant printing of the new values. (important for debugging)
-                print("Stepping at {}, dt: {}    sim {} requested: {}  actual: {} deg"
-                    .format(sim_time, dt, attr_name, requested, new_position))
-                print("curr_delta: {curr_delta}, move_delta: {move_delta}".format(**locals()),
-                    " max_slew: {max_slew}".format(**locals()))
+                LOGGER.info("Stepping at {} for {}, requested: {} & actual: {}"
+                           .format(sim_time, attr_name, requested, new_position))
             except Exception:
-                self.LOGGER.exception('Exception in update loop')
+                LOGGER.debug('Exception in update loop')
             if self.almost_equal(sim_quantities['requested'][0],
                    sim_quantities['actual'][0]):
                 self._slewing[attr_name] = False
@@ -182,4 +182,6 @@ class AntennaPositioner(Device):
         self._slewing['actual_elevation'] = True
 
 if __name__ == "__main__":
+    FORMAT = '%(asctime)s - %(name)s - %(levelname)s-%(pathname)s - %(message)s'
+    logging.basicConfig(format=FORMAT, level=logging.DEBUG)
     server_run([AntennaPositioner])
