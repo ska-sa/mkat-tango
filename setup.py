@@ -20,6 +20,6 @@ setup (
     zip_safe = False,
     entry_points={
     'console_scripts': [
-        'mkat-tango-weather-DS = mkat_tango.simulators.Weather:weather_main',
+        'mkat-tango-weather-DS = mkat_tango.simulators.weather:weather_main',
     ]},
 )
