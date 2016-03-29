@@ -190,6 +190,13 @@ class AntennaPositioner(Device):
         self._moving['actual_azimuth'] = True
         self._moving['actual_elevation'] = True
         self.Mode = 'slew', time.time(), AttrQuality.ATTR_VALID
+        
+    @command
+    def Stop(self):
+        '''Stop the Antenna PositioneR instantly'''
+        self._moving['actual_azimuth'] = False
+        self._moving['actual_elevation'] = False
+        self.Mode = 'stop', time.time(), AttrQuality.ATTR_VALID
 
 if __name__ == "__main__":
     FORMAT = '%(asctime)s - %(name)s - %(levelname)s-%(pathname)s - %(message)s'
