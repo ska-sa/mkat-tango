@@ -153,11 +153,11 @@ class AntennaPositioner(Device):
         while True:
             if not self._moving[attr_name]:
                 last_update_time = time_func()
-                current_mode = 'stop'
+                self.Mode = 'stop', time_func(), AttrQuality.ATTR_VALID
                 time.sleep(self.UPDATE_PERIOD)
                 continue
             sim_time = time_func()
-            current_mode = 'point'
+            self.Mode = 'point', time_func(), AttrQuality.ATTR_VALID
             dt = sim_time - last_update_time
             try:
                 slew_rate = sim_quantities['drive_rate']
@@ -177,7 +177,7 @@ class AntennaPositioner(Device):
                 LOGGER.debug('Exception in update loop')
             if self.almost_equal(sim_quantities['requested'][0],
                    sim_quantities['actual'][0]):
-                if current_mode == 'point':
+                if self.Mode[0] == 'point':
                     self._moving[attr_name] = False
                     if (self._moving['actual_azimuth'] == False and
                         self._moving['actual_elevation'] == False):
@@ -190,13 +190,26 @@ class AntennaPositioner(Device):
         self._moving['actual_azimuth'] = True
         self._moving['actual_elevation'] = True
         self.Mode = 'slew', time.time(), AttrQuality.ATTR_VALID
-        
+
     @command
     def Stop(self):
         '''Stop the Antenna PositioneR instantly'''
         self._moving['actual_azimuth'] = False
         self._moving['actual_elevation'] = False
         self.Mode = 'stop', time.time(), AttrQuality.ATTR_VALID
+
+    @command
+    def Stow(self):
+        '''Stow/Park the AP to its intitial state of operation'''
+        time_func = time.time
+        attr = AttrQuality.ATTR_VALID
+        self.azimuth_quantities['drive_rate'] = self.AZIM_DRIVE_MAX_RATE
+        self.elevation_quantities['drive_rate'] = self.ELEV_DRIVE_MAX_RATE
+        self.azimuth_quantities['requested'] = (0.0, time_func(), attr)
+        self.elevation_quantities['requested'] = (90.0, time_func(), attr)
+        self._slewing['actual_azimuth'] = True
+        self._slewing['actual_elevation'] = True
+        self.mode = 'stow', time_func(), attr
 
 if __name__ == "__main__":
     FORMAT = '%(asctime)s - %(name)s - %(levelname)s-%(pathname)s - %(message)s'
