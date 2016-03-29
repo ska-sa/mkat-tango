@@ -35,8 +35,7 @@ class AntennaPositioner(Device):
 
     def __init__(self, *args, **kwargs):
         '''Initialize attribute values and change events for update'''
-        self._mode = 'stop'
-        self._slewing = dict(actual_azimuth=False, actual_elevation=False)
+        self._moving = dict(actual_azimuth=False, actual_elevation=False)
         attr = AttrQuality.ATTR_VALID
         self.azimuth_quantities = dict(actual=(0.0, 0, attr),
                                     requested=(0.0, 0, attr),
@@ -47,11 +46,11 @@ class AntennaPositioner(Device):
         super(AntennaPositioner, self).__init__(*args, **kwargs)
         self.set_change_event('actual_azimuth', True)
         self.set_change_event('actual_elevation', True)
-
     def init_device(self):
         '''Initialize device and set the state to standby'''
         super(AntennaPositioner, self).init_device()
         self.set_state(DevState.STANDBY)
+        self.Mode = 'stop', 0, AttrQuality.ATTR_VALID
         self.azimuth_update = partial(
             self.update_position, 'actual_azimuth', self.azimuth_quantities)
         self.elevation_update = partial(
@@ -68,7 +67,13 @@ class AntennaPositioner(Device):
 
     @attribute(label="Current operational mode of the AP", dtype=str)
     def mode(self):
-        return self._mode
+        return self.Mode
+
+    @mode.write
+    def mode(self, new_mode, attr = AttrQuality.ATTR_VALID):
+        current_mode = self.Mode
+        if current_mode != new_mode:
+            self.Mode = new_mode, attr
 
     @attribute(label="Requested Azimuth position of AP", min_value=-185.0,
                 max_value=275.0, dtype=float, unit='deg')
@@ -146,13 +151,14 @@ class AntennaPositioner(Device):
         time_func = time.time
         last_update_time = time_func()
         while True:
-            if not self._slewing[attr_name]:
+            if not self._moving[attr_name]:
                 last_update_time = time_func()
+                current_mode = 'stop'
                 time.sleep(self.UPDATE_PERIOD)
                 continue
             sim_time = time_func()
+            current_mode = 'point'
             dt = sim_time - last_update_time
-            self._mode = 'slew'
             try:
                 slew_rate = sim_quantities['drive_rate']
                 max_slew = slew_rate*dt
@@ -171,15 +177,19 @@ class AntennaPositioner(Device):
                 LOGGER.debug('Exception in update loop')
             if self.almost_equal(sim_quantities['requested'][0],
                    sim_quantities['actual'][0]):
-                self._slewing[attr_name] = False
-                self._mode = 'stop'
+                if current_mode == 'point':
+                    self._moving[attr_name] = False
+                    if (self._moving['actual_azimuth'] == False and
+                        self._moving['actual_elevation'] == False):
+                        self.Mode = 'stop', time_func(), AttrQuality.ATTR_VALID
             time.sleep(self.UPDATE_PERIOD)
 
     @command
     def Slew(self):
         '''Set the simulator operation mode to slew to desired coordinates.'''
-        self._slewing['actual_azimuth'] = True
-        self._slewing['actual_elevation'] = True
+        self._moving['actual_azimuth'] = True
+        self._moving['actual_elevation'] = True
+        self.Mode = 'slew', time.time(), AttrQuality.ATTR_VALID
 
 if __name__ == "__main__":
     FORMAT = '%(asctime)s - %(name)s - %(levelname)s-%(pathname)s - %(message)s'
