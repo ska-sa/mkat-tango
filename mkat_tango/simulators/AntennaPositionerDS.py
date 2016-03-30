@@ -11,13 +11,11 @@
 Tango Device AP simulator.
 """
 import time
-import numpy
 import threading
 import logging
 
 from functools import partial
 
-from PyTango.server import device_property
 from PyTango.server import Device, DeviceMeta, attribute, command, server_run
 
 from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
@@ -70,7 +68,7 @@ class AntennaPositioner(Device):
         return self.Mode
 
     @mode.write
-    def mode(self, new_mode, attr = AttrQuality.ATTR_VALID):
+    def mode(self, new_mode, attr=AttrQuality.ATTR_VALID):
         current_mode = self.Mode
         if current_mode != new_mode:
             self.Mode = new_mode, attr
@@ -146,8 +144,6 @@ class AntennaPositioner(Device):
     def update_position(self, attr_name, sim_quantities):
         '''Updates the position of the el-az coordinates
               using a simulation loop'''
-        actual_position = sim_quantities['actual']
-        requested_position = sim_quantities['requested']
         time_func = time.time
         last_update_time = time_func()
         while True:
@@ -170,9 +166,10 @@ class AntennaPositioner(Device):
                 quality = AttrQuality.ATTR_VALID
                 sim_quantities['actual'] = (new_position, sim_time, quality)
                 last_update_time = sim_time
-                self.push_change_event(attr_name,  new_position, sim_time, quality)
+                self.push_change_event(attr_name, new_position, sim_time,
+                                       quality)
                 LOGGER.info("Stepping at {} for {}, requested: {} & actual: {}"
-                           .format(sim_time, attr_name, requested, new_position))
+                          .format(sim_time, attr_name, requested, new_position))
             except Exception:
                 LOGGER.debug('Exception in update loop')
             if self.almost_equal(sim_quantities['requested'][0],
@@ -207,8 +204,8 @@ class AntennaPositioner(Device):
         self.elevation_quantities['drive_rate'] = self.ELEV_DRIVE_MAX_RATE
         self.azimuth_quantities['requested'] = (0.0, time_func(), attr)
         self.elevation_quantities['requested'] = (90.0, time_func(), attr)
-        self._slewing['actual_azimuth'] = True
-        self._slewing['actual_elevation'] = True
+        self._moving['actual_azimuth'] = True
+        self._moving['actual_elevation'] = True
         self.mode = 'stow', time_func(), attr
 
 if __name__ == "__main__":
