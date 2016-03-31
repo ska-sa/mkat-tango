@@ -10,6 +10,7 @@
 """
 Tango Device AP simulator.
 """
+import sys
 import time
 import threading
 import logging
@@ -172,7 +173,7 @@ class AntennaPositioner(Device):
                 LOGGER.info("Stepping at {} for {}, requested: {} & actual: {}"
                           .format(sim_time, attr_name, requested, new_position))
             except Exception:
-                LOGGER.debug('Exception in update loop')
+                LOGGER.debug('Exception in update loop', exc_info=True)
             if self.almost_equal(sim_quantities['requested'][0],
                    sim_quantities['actual'][0]):
                 if self.mode[0] == 'point':
