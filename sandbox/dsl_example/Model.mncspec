@@ -1,0 +1,84 @@
+/*
+ * This is an example model
+ */
+Model MNC
+InterfaceDescription SIMPLE_ID
+{
+   alarms {
+   	   A1[]
+   }
+   
+   dataPoints {
+   	   float temp[], float wind_speed[]
+   }
+   
+   commands {
+   	   CONNECT[]
+   }
+   
+   responses {
+		RES_CONNECT[int deviceNo, int msg]
+	}
+   
+   operatingStates {
+   	   Connected[], Unknown[], Off[]
+   }
+}
+
+ControlNode SIMPLE_CN
+{
+	Associated Interface Description : SIMPLE_ID
+	
+	DataPointBlock {
+		DataPoint MNC.SIMPLE_ID.temp {
+			DataPointHandling {
+				Action[
+					fireAlarms : SKA.LMC_ID.A1
+				]
+			}
+		}
+		
+		DataPoint MNC.SIMPLE_ID.wind_speed {
+			DataPointHandling {
+				Action[
+					fireAlarms : SKA.LMC_ID.A1
+				]
+			}
+		}
+		
+	}
+	
+	CommandResponseBlock {
+		Command MNC.SIMPLE_ID.CONNECT {
+			Transitions {
+				currentState MNC.SIMPLE_ID.Unknown (exitAction Action [
+					fireEvents : SKA.LMC_ID.CONNECTED
+				]) => nextState MNC.SIMPLE_ID.Connected (
+					entryAction Action [
+						fireEvents : SKA.LMC_ID.CONNECTED
+					]
+				)
+			}
+			
+			ResponseBlock {
+			 	expectedResponse  MNC.SIMPLE_ID.RES_CONNECT {
+			 		
+			 	ResponseValidation
+			 	 { 
+			 		parameter SKA.LMC_ID.RES_CONNECT.msg [
+			 			Max Value = 100
+			 			Min Value = -12
+			 		]
+			 	}
+			 	
+			 }
+	  }
+	  
+	  
+	  
+	  }
+	  }
+	  }
+	
+	
+
