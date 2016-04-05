@@ -29,5 +29,4 @@ if __name__ == "__main__":
 #    ap_model.stopped()
 #    ap_model.set_mode('safe1')
 #    ap_model.set_mode('stowing')
-#    ap_model.run()
 #    ap_model.WARN_HORN_SOUND_TIME
