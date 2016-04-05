@@ -1836,8 +1836,3 @@ class MkatApTestDevice(SimTestDevice):
         """
         self._model.ridx_drive.set_position(new_pos_deg)
         return ["ok"]
-
-
-if __name__ == "__main__":
-    ap_model = MkatApModel()
-    ap_model.start()
