@@ -14,6 +14,7 @@ import sys
 import time
 import threading
 import logging
+import weakref
 
 from functools import partial
 
@@ -27,6 +28,9 @@ LOGGER = logging.getLogger(__name__)
 class AntennaPositioner(Device):
     '''Antenna Positioner device server with simulated attributes'''
     __metaclass__ = DeviceMeta
+
+    #Access instances for debugging
+    instance = weakref.Weakref.WeakValueDictionary()
 
     UPDATE_PERIOD = 1
     AZIM_DRIVE_MAX_RATE = 2.0
@@ -50,6 +54,8 @@ class AntennaPositioner(Device):
     def init_device(self):
         '''Initialize device and set the state to standby'''
         super(AntennaPositioner, self).init_device()
+		name = self.get_name()
+		self.instance[name] = self
         self.set_state(DevState.STANDBY)
         self._mode = 'stop', 0, AttrQuality.ATTR_VALID
         self.azimuth_update = partial(
