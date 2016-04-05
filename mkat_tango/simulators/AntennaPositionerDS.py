@@ -37,10 +37,12 @@ class AntennaPositioner(Device):
         valid = AttrQuality.ATTR_VALID
         self.azimuth_quantities = dict(actual=(0.0, 0, valid),
                                     requested=(0.0, 0, valid),
-                                    drive_rate=0.0, moving=False)
+                                    drive_rate=0.0, moving=False,
+									running=threading.Event())
         self.elevation_quantities = dict(actual=(90.0, 0, valid),
                                     requested=(90.0, 0, valid),
-                                    drive_rate=0.0, moving=False)
+                                    drive_rate=0.0, moving=False,
+									running=threading.Event())
         super(AntennaPositioner, self).__init__(*args, **kwargs)
         self.set_change_event('actual_azimuth', True)
         self.set_change_event('actual_elevation', True)
@@ -144,9 +146,12 @@ class AntennaPositioner(Device):
     def update_position(self, attr_name, sim_quantities):
         '''Updates the position of the el-az coordinates
               using a simulation loop'''
+        running = sim_quantities['running']
+        running.set()
         time_func = time.time
         last_update_time = time_func()
-        while True:
+
+        while running.is_set():
             if self._mode[0] == 'stop' and sim_quantities['moving'] == False:
                 time.sleep(self.UPDATE_PERIOD)
                 continue
