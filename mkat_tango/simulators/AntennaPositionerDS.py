@@ -56,7 +56,7 @@ class AntennaPositioner(Device):
         super(AntennaPositioner, self).init_device()
 		name = self.get_name()
 		self.instance[name] = self
-        self.set_state(DevState.STANDBY)
+        self.set_state(DevState.On)
         self._mode = 'stop', 0, AttrQuality.ATTR_VALID
         self.azimuth_update = partial(
             self.update_position, 'actual_azimuth', self.azimuth_quantities)
