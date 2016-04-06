@@ -17,8 +17,6 @@ import threading
 
 from devicetest import DeviceTestCase
 
-from tl.testing.thread import ThreadAwareTestCase, ThreadJoiner
-
 from mkat_tango.simulators import AntennaPositionerDS
 
 class AntennaPositionerTestCase(DeviceTestCase):
