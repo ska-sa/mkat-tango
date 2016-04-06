@@ -6,3 +6,4 @@ tango-starter
 tango-test
 libtango8-dev
 libboost-python-dev
+numpy
