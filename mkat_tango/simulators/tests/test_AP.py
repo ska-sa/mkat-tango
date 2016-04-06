@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ###############################################################################
 # SKA South Africa (http://ska.ac.za/)                                        #
 # Author: cam@ska.ac.za                                                       #
@@ -7,7 +7,9 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-
+"""
+Tango Device AP simulator test cases.
+"""
 import time
 import mock
 import unittest
@@ -25,6 +27,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
     device = AntennaPositionerDS.AntennaPositioner
 
     def setUp(self):
+        '''Setting up server instance and update period patcher'''
         update_period_patcher = mock.patch(
         AntennaPositionerDS.__name__ + '.AntennaPositioner.UPDATE_PERIOD')
         self.addCleanup(update_period_patcher.stop)
@@ -35,6 +38,10 @@ class AntennaPositionerTestCase(DeviceTestCase):
                                        .instance[self.device.name()])
         self.az_state = self.device_server_instance.azimuth_quantities
         self.el_state = self.device_server_instance.elevation_quantities
+
+    def tearDown(self):
+       '''Destroying the AP device server instance'''
+       self.device_server_instance = None
 
     def test_attribute_values(self):
         '''Simple test cases for initial device attributes values'''
@@ -101,13 +108,32 @@ class AntennaPositionerTestCase(DeviceTestCase):
         actual_el = self.device.actual_elevation
         desired_az = actual_az - 1
         desired_el = actual_el - 1
-
         self._write_velocity_attributes(1.0, 1.0)
         self._write_coordinate_attributes(desired_az, desired_el)
-
         self.device.slew()
         self.assertEqual(self.device.mode, 'slew')
-
         self.assertEqual(self._wait_finish(), True)
         self._read_coordinate_attributes(desired_az, desired_el)
+        self.assertEqual(self.device.mode, 'stop')
+
+    def test_stop_simulation(self):
+        '''Testing if the stop command halt the AP movement'''
+        actual_az = self.device.actual_azimuth
+        actual_el = self.device.actual_elevation
+        desired_az = actual_az - 5
+        desired_el = actual_el - 5
+        self._write_velocity_attributes(0.1, 0.1)
+        self._write_coordinate_attributes(desired_az, desired_el)
+        self.device.slew()
+        self.assertEqual(self.device.mode, 'slew')
+        self.device.Stop()
+        self.assertEqual(self.device.mode, 'stop')
+
+    def test_stow_simulation(self):
+        '''Testing if the stow command puts the AP to it's initial state'''
+        self.test_slew_simulation()
+        self.device.stow()
+        self.assertEqual(self.device.mode, 'stow')
+        self.assertEqual(self._wait_finish(), True)
+        self._read_coordinate_attributes(0.0, 90.0)
         self.assertEqual(self.device.mode, 'stop')
