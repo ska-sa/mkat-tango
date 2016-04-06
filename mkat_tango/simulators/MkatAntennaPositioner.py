@@ -36,6 +36,7 @@ class MkatAntennaPositioner(Device):
         
         attr_props = UserDefaultAttrProp()
         
+        
         for sensor in sensors:
             print sensor.name
             
@@ -43,6 +44,8 @@ class MkatAntennaPositioner(Device):
                 attr = Attr(sensor.name, DevBoolean)
             elif sensor.stype == "float":
                 attr = Attr(sensor.name, DevFloat)
+                attr_props.set_min_value(str(sensor.params[0]))
+                attr_props.set_max_value(str(sensor.params[1]))
             elif sensor.stype == "discrete":
                 attr = Attr(sensor.name, DevString)
             
