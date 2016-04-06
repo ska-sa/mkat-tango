@@ -74,16 +74,16 @@ class AntennaPositioner(Device):
     #ATTRIBUTES
 
     @attribute(label="Requested operational mode of the AP", dtype=str)
-    def mode(self):
+    def requested_mode(self):
         return self.requested_mode
 
     @mode.write
-    def mode(self, new_mode, valid=AttrQuality.ATTR_VALID):
+    def requested_mode(self, new_mode, valid=AttrQuality.ATTR_VALID):
         if self.requested_mode[0] != new_mode:
             self.requested_mode = new_mode, time.time(), valid
 
     @attribute(label="Actual operational mode of the AP", dtype=str)
-    def mode(self):
+    def actual_mode(self):
         return self.actual_mode
 
     @attribute(label="Requested Azimuth position of AP", min_value=-185.0,
@@ -205,6 +205,7 @@ class AntennaPositioner(Device):
         if (self.azimuth_quantities['moving'] == False and
              self.elevation_quantities['moving'] == False):
             self.requested_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
+            self.actual_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
 
     @command
     def Slew(self):
