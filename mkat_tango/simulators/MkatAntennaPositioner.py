@@ -29,21 +29,28 @@ class MkatAntennaPositioner(Device):
     
     def init_device(self):
         Device.init_device(self)
-        self.set_state(DevState.STANDBY)
+        self.set_state(DevState.OFF)
         
         ap_model = MkatApModel()
-        sensors = ap_model.get_sensors()
+        ap_model.start()
+        # Get three sensors, one for each data type {boolean, discrete, float}
+        sens_mode = ap_model.get_sensor('mode')                   # discrete           
+        sens_actual_azim = ap_model.get_sensor('actual-azim')     # float
+        sens_fail_prsnt = ap_model.get_sensor('failure-present')  # boolean
+    
+        sensors = [sens_mode, sens_actual_azim, sens_fail_prsnt]
         
-        attr_props = UserDefaultAttrProp()
+        #attr_props = UserDefaultAttrProp()
         
         
         for sensor in sensors:
             print sensor.name
+            attr_props = UserDefaultAttrProp()
             
             if sensor.stype == "boolean":
                 attr = Attr(sensor.name, DevBoolean)
             elif sensor.stype == "float":
-                attr = Attr(sensor.name, DevFloat)
+                attr = Attr(sensor.name, DevDouble, AttrWriteType.READ_WRITE)
                 attr_props.set_min_value(str(sensor.params[0]))
                 attr_props.set_max_value(str(sensor.params[1]))
             elif sensor.stype == "discrete":
@@ -54,9 +61,25 @@ class MkatAntennaPositioner(Device):
             attr_props.set_unit(sensor.units)
             attr.set_default_properties(attr_props)
             
-            self.add_attribute(attr)
+            if sensor.stype == "float":
+                self.add_attribute(attr, self.read_FloatingPoints)
+            elif sensor.stype == "boolean":
+                self.add_attribute(attr, self.read_Booleans)
+            elif sensor.stype == "discrete":
+                self.add_attribute(attr, self.read_Discretes)
+           
     
-    
+    def read_FloatingPoints(self, attr):
+        self.info_stream("Reading attribute %s", attr.get_name())
+        attr.set_value(0.0)
+        
+    def read_Booleans(self, attr):
+        self.info_stream("Reading attribute %s", attr.get_name())
+        attr.set_value(False)
+        
+    def read_Discretes(self, attr):
+        self.info_stream("Reading attribute %s", attr.get_name())
+        attr.set_value("Unknown")    
 
 if __name__ == "__main__":
          server_run([MkatAntennaPositioner])
