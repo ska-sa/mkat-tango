@@ -205,7 +205,6 @@ class AntennaPositioner(Device):
                and then sets the AP mode to stop'''
         if (self.azimuth_quantities['moving'] == False and
              self.elevation_quantities['moving'] == False):
-            self.req_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
             self.act_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
 
     @command
