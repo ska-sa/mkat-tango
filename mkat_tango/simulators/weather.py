@@ -66,6 +66,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     def always_executed_hook(self):
+        MODULE_LOGGER.debug('always_executed_hook called')
         self.model.update()
 
 
