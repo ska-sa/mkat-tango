@@ -43,9 +43,10 @@ class AntennaPositionerTestCase(DeviceTestCase):
 
     def test_attribute_values(self):
         '''Simple test cases for initial device attributes values'''
-        self.assertEqual(self.device.mode, 'stop')
+        self.assertEqual(self.device.requested_mode, 'stop')
         self.assertEqual(self.device.requested_azimuth , 0.0)
         self.assertEqual(self.device.requested_elevation , 90.0)
+        self.assertEqual(self.device.actual_mode, 'stop')
         self.assertEqual(self.device.actual_azimuth , 0.0)
         self.assertEqual(self.device.actual_elevation , 90.0)
         self.assertEqual(self.device.requested_azimuth_rate , 0.0)
@@ -109,29 +110,32 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self._write_velocity_attributes(1.0, 1.0)
         self._write_coordinate_attributes(desired_az, desired_el)
         self.device.slew()
-        self.assertEqual(self.device.mode, 'slew')
+        self.assertEqual(self.device.requested_mode, 'slew')
         self.assertEqual(self._wait_finish(), True)
         self._read_coordinate_attributes(desired_az, desired_el)
-        self.assertEqual(self.device.mode, 'stop')
+        self.assertEqual(self.device.requested_mode, 'stop')
+        self.assertEqual(self.device.actual_mode, 'stop')
 
     def test_stop_simulation(self):
         '''Testing if the stop command halt the AP movement'''
         actual_az = self.device.actual_azimuth
         actual_el = self.device.actual_elevation
-        desired_az = actual_az - 5
-        desired_el = actual_el - 5
-        self._write_velocity_attributes(0.1, 0.1)
+        desired_az = actual_az - 10.0
+        desired_el = actual_el - 10.0
+        self._write_velocity_attributes(0.5, 0.5)
         self._write_coordinate_attributes(desired_az, desired_el)
         self.device.slew()
-        self.assertEqual(self.device.mode, 'slew')
+        self.assertEqual(self.device.requested_mode, 'slew')
         self.device.Stop()
-        self.assertEqual(self.device.mode, 'stop')
+        self.assertEqual(self.device.requested_mode, 'stop')
+        self.assertEqual(self.device.actual_mode, 'stop')
 
     def test_stow_simulation(self):
         '''Testing if the stow command puts the AP to it's initial state'''
         self.test_slew_simulation()
         self.device.stow()
-        self.assertEqual(self.device.mode, 'stow')
+        self.assertEqual(self.device.requested_mode, 'stow')
         self.assertEqual(self._wait_finish(), True)
         self._read_coordinate_attributes(0.0, 90.0)
-        self.assertEqual(self.device.mode, 'stop')
+        self.assertEqual(self.device.requested_mode, 'stop')
+        self.assertEqual(self.device.actual_mode, 'stop')
