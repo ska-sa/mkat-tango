@@ -98,7 +98,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
         '''Returns true when finished updating'''
         while (self.az_state['actual'][0] != self.az_state['requested'][0] or
                self.el_state['actual'][0] != self.el_state['requested'][0]):
-            time.sleep(0.01)
+            time.sleep(0.1)
         return True
 
     def test_slew_simulation(self):
@@ -113,7 +113,6 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self.assertEqual(self.device.requested_mode, 'slew')
         self.assertEqual(self._wait_finish(), True)
         self._read_coordinate_attributes(desired_az, desired_el)
-        self.assertEqual(self.device.requested_mode, 'stop')
         self.assertEqual(self.device.actual_mode, 'stop')
 
     def test_stop_simulation(self):
@@ -127,7 +126,6 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self.device.slew()
         self.assertEqual(self.device.requested_mode, 'slew')
         self.device.Stop()
-        self.assertEqual(self.device.requested_mode, 'stop')
         self.assertEqual(self.device.actual_mode, 'stop')
 
     def test_stow_simulation(self):
@@ -137,5 +135,4 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self.assertEqual(self.device.requested_mode, 'stow')
         self.assertEqual(self._wait_finish(), True)
         self._read_coordinate_attributes(0.0, 90.0)
-        self.assertEqual(self.device.requested_mode, 'stop')
         self.assertEqual(self.device.actual_mode, 'stop')
