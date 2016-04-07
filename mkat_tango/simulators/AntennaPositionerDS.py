@@ -57,8 +57,8 @@ class AntennaPositioner(Device):
         name = self.get_name()
         self.instance[name] = self
         self.set_state(DevState.ON)
-        self.requested_mode = 'stop', 0, AttrQuality.ATTR_VALID
-        self.actual_mode = 'shutdown', 0, AttrQuality.ATTR_VALID
+        self.req_mode = 'stop', 0, AttrQuality.ATTR_VALID
+        self.act_mode = 'stop', 0, AttrQuality.ATTR_VALID
         self.azimuth_update = partial(
             self.update_position, 'actual_azimuth', self.azimuth_quantities)
         self.elevation_update = partial(
@@ -75,16 +75,16 @@ class AntennaPositioner(Device):
 
     @attribute(label="Requested operational mode of the AP", dtype=str)
     def requested_mode(self):
-        return self.requested_mode
+        return self.req_mode
 
-    @mode.write
+    @requested_mode.write
     def requested_mode(self, new_mode, valid=AttrQuality.ATTR_VALID):
-        if self.requested_mode[0] != new_mode:
-            self.requested_mode = new_mode, time.time(), valid
+        if self.req_mode[0] != new_mode:
+            self.req_mode = new_mode, time.time(), valid
 
     @attribute(label="Actual operational mode of the AP", dtype=str)
     def actual_mode(self):
-        return self.actual_mode
+        return self.act_mode
 
     @attribute(label="Requested Azimuth position of AP", min_value=-185.0,
                 max_value=275.0, dtype=float, unit='deg')
@@ -163,8 +163,9 @@ class AntennaPositioner(Device):
         last_update_time = time_func()
 
         while running.is_set():
-            if (self.requested_mode[0] == 'stop'
+            if (self.req_mode[0] == 'stop'
                  and sim_quantities['moving'] == False):
+                self.act_mode = 'stop', time_func(), AttrQuality.ATTR_VALID
                 time.sleep(self.UPDATE_PERIOD)
                 continue
             else:
@@ -173,7 +174,7 @@ class AntennaPositioner(Device):
                 pass
 
             sim_time = time_func()
-            self.actual_mode = 'point', time_func(), AttrQuality.ATTR_VALID
+            self.act_mode = 'point', time_func(), AttrQuality.ATTR_VALID
             sim_quantities['moving'] = True
             dt = sim_time - last_update_time
             try:
@@ -195,7 +196,7 @@ class AntennaPositioner(Device):
                 LOGGER.exception('Exception in update loop', exc_info=True)
             if self.almost_equal(sim_quantities['requested'][0],
                               sim_quantities['actual'][0]):
-                if self.actual_mode[0] == 'point':
+                if self.act_mode[0] == 'point':
                     sim_quantities['moving'] = False
                     self._update_moving()
 
@@ -204,18 +205,19 @@ class AntennaPositioner(Device):
                and then sets the AP mode to stop'''
         if (self.azimuth_quantities['moving'] == False and
              self.elevation_quantities['moving'] == False):
-            self.requested_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
-            self.actual_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
+            self.req_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
+            self.act_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
 
     @command
     def Slew(self):
         '''Set the simulator operation mode to slew to desired coordinates.'''
-        self.requested_mode = 'slew', time.time(), AttrQuality.ATTR_VALID
+        self.req_mode = 'slew', time.time(), AttrQuality.ATTR_VALID
 
     @command
     def Stop(self):
         '''Stop the Antenna Positioner instantly'''
-        self.requested_mode = 'stop', time.time(), AttrQuality.ATTR_VALID
+        self.act_mode = self.req_mode = ('stop', time.time(),
+                        AttrQuality.ATTR_VALID)
 
     @command
     def Stow(self):
@@ -226,7 +228,7 @@ class AntennaPositioner(Device):
         self.elevation_quantities['drive_rate'] = self.ELEV_DRIVE_MAX_RATE
         self.azimuth_quantities['requested'] = (0.0, time_func(), valid)
         self.elevation_quantities['requested'] = (90.0, time_func(), valid)
-        self.requested_mode = 'stow', time_func(), valid
+        self.req_mode = 'stow', time_func(), valid
 
 if __name__ == "__main__":
     FORMAT = '%(asctime)s - %(name)s - %(levelname)s-%(pathname)s - %(message)s'
