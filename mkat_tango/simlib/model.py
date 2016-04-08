@@ -4,10 +4,10 @@ import time
 MODULE_LOGGER = logging.getLogger(__name__)
 
 class Model(object):
-    def __init__(self, name, start_time=None, min_update_time=0.99,
+    def __init__(self, name, start_time=None, min_update_period=0.99,
                  time_func=time.time):
         self.name = name
-        self.min_update_time = min_update_time
+        self.min_update_period = min_update_period
         self.time_func = time_func
         self.start_time = start_time or time_func()
         self.last_update_time = self.start_time
@@ -40,10 +40,10 @@ class Model(object):
     def update(self):
         sim_time = self.time_func()
         dt = sim_time - self.last_update_time
-        if dt < self.min_update_time:
+        if dt < self.min_update_period:
             MODULE_LOGGER.debug(
                 "Sim {} skipping update at {}, dt {} < {}"
-                .format(self.name, sim_time, dt, self.min_update_time))
+                .format(self.name, sim_time, dt, self.min_update_period))
             return
 
         MODULE_LOGGER.info("Stepping at {}, dt: {}".format(sim_time, dt))
