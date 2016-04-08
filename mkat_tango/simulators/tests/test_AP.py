@@ -33,7 +33,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
         AntennaPositionerDS.AntennaPositioner.UPDATE_PERDIOD = 0.1
         super(AntennaPositionerTestCase, self).setUp()
         self.device_server_instance = (AntennaPositionerDS.AntennaPositioner
-                                       .instance[self.device.name()])
+                                       .instances[self.device.name()])
         self.az_state = self.device_server_instance.azimuth_quantities
         self.el_state = self.device_server_instance.elevation_quantities
 
@@ -52,7 +52,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self.assertEqual(self.device.requested_azimuth_rate , 0.0)
         self.assertEqual(self.device.requested_elevation_rate , 0.0)
 
-#        import IPython ; IPython.embed()
+#       import IPython ; IPython.embed()
 
     def test_active_threads(self):
         '''Testing of active threads running the device'''
@@ -96,8 +96,12 @@ class AntennaPositionerTestCase(DeviceTestCase):
 
     def _wait_finish(self):
         '''Returns true when finished updating'''
+        start = time.time()
+        stop = start + 10    #timeout after 10 seconds
         while (self.az_state['actual'][0] != self.az_state['requested'][0] or
                self.el_state['actual'][0] != self.el_state['requested'][0]):
+            if time.time() > stop:
+                return False
             time.sleep(0.1)
         return True
 
