@@ -11,11 +11,9 @@
 MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+import logging
 
 from mkat_ap import MkatApModel, ApOperMode
-
-
-
 
 from PyTango.server import device_property
 from PyTango.server import Device, DeviceMeta, attribute, command, server_run
@@ -23,6 +21,8 @@ from PyTango.server import Device, DeviceMeta, attribute, command, server_run
 from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 from PyTango import  Attr, DevFloat, DevString, DevBoolean, DevDouble
 from PyTango import UserDefaultAttrProp
+
+MODULE_LOGGER = logging.getLogger(__name__)
 
 class MkatAntennaPositioner(Device):
     __metaclass__ = DeviceMeta
@@ -32,7 +32,7 @@ class MkatAntennaPositioner(Device):
         self.set_state(DevState.OFF)
         
         self.ap_model = MkatApModel()
-        #self.ap_model.start()
+        self.ap_model.start()
         # Get three sensors, one for each data type {boolean, discrete, float}
         sens_mode = self.ap_model.get_sensor('mode')                         # discrete           
         sens_requested_azim = self.ap_model.get_sensor('requested-azim')     # float
@@ -53,16 +53,16 @@ class MkatAntennaPositioner(Device):
                    sens_requested_elev_rate, sens_actual_azim_rate, sens_actual_elev_rate]
         
         for sensor in sensors:
-            print sensor.name
+            MODULE_LOGGER.info(sensor.name)
             attr_props = UserDefaultAttrProp()
             sensor_name = self.formatter(sensor.name)
             if sensor.stype == "boolean":
                 attr = Attr(sensor_name, DevBoolean)
             elif sensor.stype == "float":
-#                if sensor.name == 'actual-azim' or sensor.name == 'actual-elev':
-#                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
-#                else:
-                attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
+                if sensor.name.startswith('actual-'): #== 'actual-azim' or sensor.name == 'actual-elev':
+                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
+                else:
+                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
                 attr_props.set_min_value(str(sensor.params[0]))
                 attr_props.set_max_value(str(sensor.params[1]))
             elif sensor.stype == "discrete":
@@ -136,19 +136,22 @@ class MkatAntennaPositioner(Device):
         '''Set the simulator operation mode to slew to desired coordinates.'''
         if self.ap_model.in_remote_control():
             self.ap_model.set_mode(ApOperMode.stop)
+            MODULE_LOGGER.info("Ok")
+        else:
+            MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
             
             
     @command
     def Maintenance(self):
         if self.ap_model.in_remote_control():
             if self.ap_model.mode() in [ApOperMode.gtm, ApOperMode.maint]:
-                print "Fail, Antenna is in '%s' mode." % self.ap_model.mode()
+                MODULE_LOGGER.info("Fail, Antenna is in '%s' mode." % self.ap_model.mode())
             elif self.ap_model.mode() not in [ApOperMode.stop]:
-                print "Fail, Antenna mode '%s' != 'stop'." % self.ap_model.mode()
+                MODULE_LOGGER.info("Fail, Antenna mode {} != 'stop'.".format(self.ap_model.mode()))
             else:
                 self.ap_model.set_mode(ApOperMode.gtm)
         else:
-            print "Fail, Antenna is not in remote control."
+            MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
             
             
     @command
@@ -156,39 +159,37 @@ class MkatAntennaPositioner(Device):
         if self.ap_model.in_remote_control():
             if (self.ap_model.mode() in [ApOperMode.shutdown, ApOperMode.stowing,
                 ApOperMode.stowed, ApOperMode.estop]):
-                    print "Fail, Antenna is in '%s' mode." % self.ap_model.mode()
+                    MODULE_LOGGER.info("Fail, Antenna is in '%s' mode." % self.ap_model.mode())
             else:
                 self.ap_model.set_mode(ApOperMode.stowing)
-                print "Ok"
+                MODULE_LOGGER.info("Ok")
         else:
-            print "Fail, Antenna is not in remote control."
+            MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
     
     @command
     def Rate(self):
         if self.ap_model.in_remote_control():
             if self.ap_model.mode() not in [ApOperMode.stop]:
-                print "Fail, Antenna mode '%s' != 'stop'." % self.ap_model.mode()
+                MODULE_LOGGER.info("Fail, Antenna mode '%s' != 'stop'." % self.ap_model.mode())
             else:
                 requested_azim_rate = self.get_device_attr().get_attr_by_name('requested_azim_rate')
                 requested_elev_rate = self.get_device_attr().get_attr_by_name('requested_elev_rate')
                 self.ap_model.rate(requested_azim_rate.get_write_value(), requested_elev_rate.get_write_value())
-                print "Ok"
+                MODULE_LOGGER.info("Ok")
         else:
-            print "Fail, Antenna is not in remote control."
+            MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
             
     @command
     def Slew(self):
-        requested_azim = self.get_device_attr().get_attr_by_name('requested_azim')
-        requested_elev = self.get_device_attr().get_attr_by_name('requested_elev')
-        print requested_azim.get_write_value()
-        print requested_elev.get_write_value()
-        
         if self.ap_model.in_remote_control():
             if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.slew, ApOperMode.track]:
-                print "Fail, Unable to switch Antenna mode to 'slew' while in mode '%s'" % self.ap_model.mode()
+                MODULE_LOGGER.info("Fail, Unable to switch Antenna mode to 'slew' while in mode '%s'" % self.ap_model.mode())
             else:
+                requested_azim = self.get_device_attr().get_attr_by_name('requested_azim')
+                requested_elev = self.get_device_attr().get_attr_by_name('requested_elev')
                 self.ap_model.slew(requested_azim.get_write_value(), requested_elev.get_write_value())
-                
+                MODULE_LOGGER.info("Ok")
                 
 if __name__ == "__main__":
+         logging.basicConfig(level=logging.DEBUG)
          server_run([MkatAntennaPositioner])
