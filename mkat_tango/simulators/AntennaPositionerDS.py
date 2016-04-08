@@ -10,17 +10,19 @@
 """
 Tango Device AP simulator.
 """
+import sys
 import time
-import numpy
 import threading
 import logging
 
 from functools import partial
 
-from PyTango.server import device_property
 from PyTango.server import Device, DeviceMeta, attribute, command, server_run
 
 from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
+
+#Module logger reporting events that occur during normal operation of device
+LOGGER = logging.getLogger(__name__)
 
 class AntennaPositioner(Device):
     '''Antenna Positioner device server with simulated attributes'''
@@ -29,19 +31,16 @@ class AntennaPositioner(Device):
     UPDATE_PERIOD = 1
     AZIM_DRIVE_MAX_RATE = 2.0
     ELEV_DRIVE_MAX_RATE = 1.0
-    LOGGER = logging.getLogger()
 
     def __init__(self, *args, **kwargs):
         '''Initialize attribute values and change events for update'''
-        self._mode = 'stop'
-        self._slewing = dict(actual_azimuth=False, actual_elevation=False)
-        #self._last_update_time = 0
-        self.azimuth_quantities = dict(actual=(0.0, 0, AttrQuality.ATTR_VALID),
-                                    requested=(0.0, 0, AttrQuality.ATTR_VALID),
-                                    drive_rate=0.0)
-        self.elevation_quantities = dict(actual=(90.0, 0, AttrQuality.ATTR_VALID),
-                                    requested=(90.0, 0, AttrQuality.ATTR_VALID),
-                                    drive_rate=0.0)
+        valid = AttrQuality.ATTR_VALID
+        self.azimuth_quantities = dict(actual=(0.0, 0, valid),
+                                    requested=(0.0, 0, valid),
+                                    drive_rate=0.0, moving=False)
+        self.elevation_quantities = dict(actual=(90.0, 0, valid),
+                                    requested=(90.0, 0, valid),
+                                    drive_rate=0.0, moving=False)
         super(AntennaPositioner, self).__init__(*args, **kwargs)
         self.set_change_event('actual_azimuth', True)
         self.set_change_event('actual_elevation', True)
@@ -50,6 +49,7 @@ class AntennaPositioner(Device):
         '''Initialize device and set the state to standby'''
         super(AntennaPositioner, self).init_device()
         self.set_state(DevState.STANDBY)
+        self._mode = 'stop', 0, AttrQuality.ATTR_VALID
         self.azimuth_update = partial(
             self.update_position, 'actual_azimuth', self.azimuth_quantities)
         self.elevation_update = partial(
@@ -68,6 +68,11 @@ class AntennaPositioner(Device):
     def mode(self):
         return self._mode
 
+    @mode.write
+    def mode(self, new_mode, valid=AttrQuality.ATTR_VALID):
+        if self._mode[0] != new_mode:
+            self._mode = new_mode, time.time(), valid
+
     @attribute(label="Requested Azimuth position of AP", min_value=-185.0,
                 max_value=275.0, dtype=float, unit='deg')
     def requested_azimuth(self):
@@ -75,8 +80,8 @@ class AntennaPositioner(Device):
 
     @requested_azimuth.write
     def requested_azimuth(self, azimuth, timestamp=time.time):
-        attr = AttrQuality.ATTR_VALID
-        self.azimuth_quantities['requested'] = (azimuth, timestamp(), attr)
+        valid = AttrQuality.ATTR_VALID
+        self.azimuth_quantities['requested'] = (azimuth, timestamp(), valid)
 
     @attribute(label="Actual Azimuth position of AP", dtype=float,
                 min_value=-185.0, max_value=275.0, abs_change=0.05,
@@ -92,8 +97,8 @@ class AntennaPositioner(Device):
 
     @requested_elevation.write
     def requested_elevation(self, elevation, timestamp=time.time):
-        attr = AttrQuality.ATTR_VALID
-        self.elevation_quantities['requested'] = (elevation, timestamp(), attr)
+        valid = AttrQuality.ATTR_VALID
+        self.elevation_quantities['requested'] = (elevation, timestamp(), valid)
 
     @attribute(label="Actual Elevation position of AP", dtype=float,
                 min_value=15.0, max_value=92.0, abs_change=0.05,
@@ -137,19 +142,23 @@ class AntennaPositioner(Device):
         return abs(x - y) <= abs_threshold
 
     def update_position(self, attr_name, sim_quantities):
-        '''Updates the position of the el-az coordinates using a simulation loop'''
-        actual_position = sim_quantities['actual']
-        requested_position = sim_quantities['requested']
+        '''Updates the position of the el-az coordinates
+              using a simulation loop'''
         time_func = time.time
         last_update_time = time_func()
         while True:
-            if not self._slewing[attr_name]:
-                last_update_time = time_func()
+            if self._mode[0] == 'stop' and sim_quantities['moving'] == False:
                 time.sleep(self.UPDATE_PERIOD)
                 continue
+            else:
+                last_update_time = time_func()
+                time.sleep(self.UPDATE_PERIOD)
+                pass
+
             sim_time = time_func()
+            self._mode = 'point', time_func(), AttrQuality.ATTR_VALID
+            sim_quantities['moving'] = True
             dt = sim_time - last_update_time
-            self._mode = 'slew'
             try:
                 slew_rate = sim_quantities['drive_rate']
                 max_slew = slew_rate*dt
@@ -161,25 +170,47 @@ class AntennaPositioner(Device):
                 quality = AttrQuality.ATTR_VALID
                 sim_quantities['actual'] = (new_position, sim_time, quality)
                 last_update_time = sim_time
-                self.push_change_event(attr_name,  new_position, sim_time, quality)
-                #Instant printing of the new values. (important for debugging)
-                print("Stepping at {}, dt: {}    sim {} requested: {}  actual: {} deg"
-                    .format(sim_time, dt, attr_name, requested, new_position))
-                print("curr_delta: {curr_delta}, move_delta: {move_delta}".format(**locals()),
-                    " max_slew: {max_slew}".format(**locals()))
+                self.push_change_event(attr_name, new_position, sim_time,
+                                       quality)
+                LOGGER.info("Stepping at {} for {}, requested: {} & actual: {}"
+                          .format(sim_time, attr_name, requested, new_position))
             except Exception:
-                self.LOGGER.exception('Exception in update loop')
+                LOGGER.exception('Exception in update loop', exc_info=True)
             if self.almost_equal(sim_quantities['requested'][0],
-                   sim_quantities['actual'][0]):
-                self._slewing[attr_name] = False
-                self._mode = 'stop'
-            time.sleep(self.UPDATE_PERIOD)
+                              sim_quantities['actual'][0]):
+                if self._mode[0] == 'point':
+                    sim_quantities['moving'] = False
+                    self._update_moving()
+
+    def _update_moving(self):
+        '''Checkes the motion flag of both el-az coordinates if false
+               and then sets the AP mode to stop'''
+        if (self.azimuth_quantities['moving'] == False and
+             self.elevation_quantities['moving'] == False):
+            self._mode = 'stop', time.time(), AttrQuality.ATTR_VALID
 
     @command
     def Slew(self):
         '''Set the simulator operation mode to slew to desired coordinates.'''
-        self._slewing['actual_azimuth'] = True
-        self._slewing['actual_elevation'] = True
+        self._mode = 'slew', time.time(), AttrQuality.ATTR_VALID
+
+    @command
+    def Stop(self):
+        '''Stop the Antenna Positioner instantly'''
+        self._mode = 'stop', time.time(), AttrQuality.ATTR_VALID
+
+    @command
+    def Stow(self):
+        '''Stow/Park the AP to its intitial state of operation'''
+        time_func = time.time
+        valid = AttrQuality.ATTR_VALID
+        self.azimuth_quantities['drive_rate'] = self.AZIM_DRIVE_MAX_RATE
+        self.elevation_quantities['drive_rate'] = self.ELEV_DRIVE_MAX_RATE
+        self.azimuth_quantities['requested'] = (0.0, time_func(), valid)
+        self.elevation_quantities['requested'] = (90.0, time_func(), valid)
+        self._mode = 'stow', time_func(), valid
 
 if __name__ == "__main__":
+    FORMAT = '%(asctime)s - %(name)s - %(levelname)s-%(pathname)s - %(message)s'
+    logging.basicConfig(format=FORMAT, level=logging.DEBUG)
     server_run([AntennaPositioner])
