@@ -15,6 +15,9 @@ from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
+
+MODULE_LOGGER.debug('Importing')
+
 class Weather(Device):
     __metaclass__ = DeviceMeta
 
