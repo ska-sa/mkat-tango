@@ -12,14 +12,14 @@ MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import logging
+import weakref
 
 from mkat_ap import MkatApModel, ApOperMode
 
-from PyTango.server import device_property
-from PyTango.server import Device, DeviceMeta, attribute, command, server_run
+from PyTango.server import Device, DeviceMeta, command, server_run
 
-from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
-from PyTango import  Attr, DevFloat, DevString, DevBoolean, DevDouble
+from PyTango import AttrWriteType, DevState
+from PyTango import  Attr, DevString, DevBoolean, DevDouble
 from PyTango import UserDefaultAttrProp
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -27,8 +27,14 @@ MODULE_LOGGER = logging.getLogger(__name__)
 class MkatAntennaPositioner(Device):
     __metaclass__ = DeviceMeta
     
+    instances = weakref.WeakValueDictionary()
+    
     def init_device(self):
         Device.init_device(self)
+        
+        name = self.get_name()
+        self.instances[name] = self
+        
         self.set_state(DevState.OFF)
         
         self.ap_model = MkatApModel()

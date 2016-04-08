@@ -1,10 +1,3 @@
-KA South Africa (http://ska.ac.za/)                                        #
-# Author: cam@ska.ac.za                                                       #
-# Copyright @ 2013 SKA SA. All rights reserved.                               #
-#                                                                             #
-# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
-# WRITTEN PERMISSION OF SKA SA.                                               #
-###############################################################################
 """
 MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
@@ -13,13 +6,26 @@ MeerKAT AP simulator.
 from devicetest import DeviceTestCase
 import logging
 
-class MkatAntennaPositionerTest(DeviceTestCase):
+# DUT
+import MkatAntennaPositioner
 
+class test_MkatAntennaPositioner(DeviceTestCase):
+    
+    device = MkatAntennaPositioner.MkatAntennaPositioner
+
+    expected_attributes = frozenset(['mode', 'requested_azim', 'requested_elev',
+                                     'failure_present', 'actual_azim', 'actual_elev',
+                                     'requested_azim_rate', 'requested_elev_rate',
+                                     'actual_azim_rate', 'actual_elev_rate',
+                                     'State', 'Status'])
+    
+    
     def setUp(self):
-        pass
+        super(test_MkatAntennaPositioner, self).setUp()
+        self.instance = MkatAntennaPositioner.MkatAntennaPositioner.instances[self.device.name()]
 
     def tearDown(self):
-        pass
+        self.instance = None
 
 
     def test_model_instantiation(self):
@@ -45,6 +51,10 @@ class MkatAntennaPositionerTest(DeviceTestCase):
 
     def test_attribute_values(self):
         pass
+
+    def test_attribute_list(self):
+        attributes = set(self.device.get_attribute_list())
+        self.assertEqual(attributes, self.expected_attributes)
 
     def test_write_attributes(self):
         pass
