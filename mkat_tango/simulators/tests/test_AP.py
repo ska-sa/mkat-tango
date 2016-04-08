@@ -94,10 +94,10 @@ class AntennaPositionerTestCase(DeviceTestCase):
            assigned their values correctly'''
         self._write_velocity_attributes(0.5, 0.5)
 
-    def _wait_finish(self):
+    def _wait_finish(self, timeout):
         '''Returns true when finished updating'''
         start = time.time()
-        stop = start + 10    #timeout after 10 seconds
+        stop = start + timeout    #timeout after 10 seconds
         while (self.az_state['actual'][0] != self.az_state['requested'][0] or
                self.el_state['actual'][0] != self.el_state['requested'][0]):
             if time.time() > stop:
@@ -115,7 +115,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self._write_coordinate_attributes(desired_az, desired_el)
         self.device.slew()
         self.assertEqual(self.device.requested_mode, 'slew')
-        self.assertEqual(self._wait_finish(), True)
+        self.assertEqual(self._wait_finish(3), True)
         self._read_coordinate_attributes(desired_az, desired_el)
         self.assertEqual(self.device.actual_mode, 'stop')
 
@@ -137,6 +137,6 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self.test_slew_simulation()
         self.device.stow()
         self.assertEqual(self.device.requested_mode, 'stow')
-        self.assertEqual(self._wait_finish(), True)
+        self.assertEqual(self._wait_finish(3), True)
         self._read_coordinate_attributes(0.0, 90.0)
         self.assertEqual(self.device.actual_mode, 'stop')
