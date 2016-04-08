@@ -1,0 +1,8 @@
+mysql-server
+mysql-client
+tango-common
+tango-db
+tango-starter
+tango-test
+libtango8-dev
+libboost-python-dev
