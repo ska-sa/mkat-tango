@@ -1,0 +1,99 @@
+/*
+ * This is an example model
+ */
+Model MaxLabPowerSupply
+
+InterfaceDescription ID_MaxLabPowerSupply
+{
+    commands {
+    	ON[], OFF[], RESET[], SENDCMD[string input]
+    }
+    
+    operatingStates {
+    	ON[], OFF[], FAULT[boolean c=false], ALARM[]
+    }
+    
+    dataPoints {
+    	float current=10[], float voltage=50[], float current_set_point[]
+    }
+    
+    responses {
+    	RES_ON[int msg], RES_OFF[], RES_RESET[], RES_SENDCMD[]
+    }
+    
+    
+}
+
+
+ControlNode MaxLabPowerSupply_CN
+{
+	Associated Interface Description : ID_MaxLabPowerSupply
+	
+	CommandResponseBlock {
+		Command MaxLabPowerSupply.ID_MaxLabPowerSupply.ON {
+		    Transitions { currentState MaxLabPowerSupply.ID_MaxLabPowerSupply.OFF => nextState MaxLabPowerSupply.ID_MaxLabPowerSupply.ON }
+
+            ResponseBlock {
+            	expectedResponse MaxLabPowerSupply.ID_MaxLabPowerSupply.RES_ON {
+            		ResponseValidation {
+            			parameter MaxLabPowerSupply.ID_MaxLabPowerSupply.RES_ON.msg [ Max Value=90]
+            		}
+            		
+            	}
+            }
+		}
+		
+		Command MaxLabPowerSupply.ID_MaxLabPowerSupply.OFF {
+			Transitions { currentState MaxLabPowerSupply.ID_MaxLabPowerSupply.ON => nextState MaxLabPowerSupply.ID_MaxLabPowerSupply.OFF 
+				          currentState MaxLabPowerSupply.ID_MaxLabPowerSupply.ALARM => nextState MaxLabPowerSupply.ID_MaxLabPowerSupply.OFF
+			}
+			
+			ResponseBlock {
+				expectedResponse MaxLabPowerSupply.ID_MaxLabPowerSupply.RES_OFF {
+					
+				}
+			}
+			
+		}
+		
+		Command MaxLabPowerSupply.ID_MaxLabPowerSupply.RESET {
+			
+		}
+		
+		Command MaxLabPowerSupply.ID_MaxLabPowerSupply.SENDCMD {
+			CommandValidation {
+				parameter MaxLabPowerSupply.ID_MaxLabPowerSupply.SENDCMD.input []
+			}
+		}
+
+	}
+	
+	DataPointBlock {
+		DataPoint MaxLabPowerSupply.ID_MaxLabPowerSupply.current {
+			DataPointTriggerCondition {
+				Commands : MaxLabPowerSupply.ID_MaxLabPowerSupply.ON
+			}
+			DataPointHandling {
+				DataPointValidation [Max Value=360 Min Value=0] 
+			}
+		}
+		DataPoint MaxLabPowerSupply.ID_MaxLabPowerSupply.voltage {
+			DataPointTriggerCondition {
+				Commands : MaxLabPowerSupply.ID_MaxLabPowerSupply.ON
+			}
+			DataPointHandling {
+				DataPointValidation [Max Value=100 Min Value=0] 
+			}
+		}
+		DataPoint MaxLabPowerSupply.ID_MaxLabPowerSupply.current_set_point {
+			DataPointTriggerCondition {
+				Commands : MaxLabPowerSupply.ID_MaxLabPowerSupply.ON
+			}
+			DataPointHandling {
+				DataPointValidation [Max Value=69 Min Value=0] 
+			}
+		}
+	}
+	
+	
+}
