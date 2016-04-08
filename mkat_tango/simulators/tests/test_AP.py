@@ -94,7 +94,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
            assigned their values correctly'''
         self._write_velocity_attributes(0.5, 0.5)
 
-    def _wait_finish(self, timeout):
+    def _wait_finish(self, timeout=5):
         '''Returns true when finished updating'''
         start = time.time()
         stop = start + timeout    #timeout after 10 seconds
