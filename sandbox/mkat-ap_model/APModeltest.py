@@ -12,8 +12,8 @@ MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 
-from mkat_ap import MkatApModel
+import mkat_tango.simulators.mkat_ap
 
-if __name__ == "__main__":
-    ap_model = MkatApModel()
-    ap_model.start()
+
+    
+    

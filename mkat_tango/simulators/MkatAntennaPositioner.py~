@@ -12,8 +12,16 @@ MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import logging
+<<<<<<< HEAD
 import weakref
 
+from mkat_ap import MkatApModel, ApOperMode
+
+from PyTango.server import Device, DeviceMeta, command, server_run
+
+from PyTango import AttrWriteType, DevState
+from PyTango import  Attr, DevString, DevBoolean, DevDouble
+=======
 
 from mkat_ap import MkatApModel, ApOperMode
 
@@ -22,12 +30,15 @@ from PyTango.server import Device, DeviceMeta, attribute, command, server_run
 
 from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 from PyTango import  Attr, DevFloat, DevString, DevBoolean, DevDouble
+>>>>>>> f298910cdfd677c6ec0a9c05b52494e87d116ee6
 from PyTango import UserDefaultAttrProp
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
 class MkatAntennaPositioner(Device):
     __metaclass__ = DeviceMeta
+    
+<<<<<<< HEAD
     instances = weakref.WeakValueDictionary()
     
     def init_device(self):
@@ -36,8 +47,10 @@ class MkatAntennaPositioner(Device):
         name = self.get_name()
         self.instances[name] = self
         
+=======
     def init_device(self):
         Device.init_device(self)
+>>>>>>> f298910cdfd677c6ec0a9c05b52494e87d116ee6
         self.set_state(DevState.OFF)
         
         self.ap_model = MkatApModel()
@@ -95,7 +108,11 @@ class MkatAntennaPositioner(Device):
         sens_name = self.unformatter(attr.get_name())
         actual_azim_sens = self.ap_model.get_sensor(sens_name)
         attr.set_value(actual_azim_sens.value())
-
+<<<<<<< HEAD
+=======
+        #attr.set_value(self.ap_model.get_sensor(self.unformatter(attr.get_name())).value())
+>>>>>>> f298910cdfd677c6ec0a9c05b52494e87d116ee6
+    
     def write_FloatingPoints(self, attr):
         name = attr.get_name()
         data = attr.get_write_value()

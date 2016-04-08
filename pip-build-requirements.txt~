@@ -1,0 +1,6 @@
+<<<<<<< HEAD
+enum
+=======
+>>>>>>> f298910cdfd677c6ec0a9c05b52494e87d116ee6
+numpy
+git+https://github.com/vxgmichel/pytango-devicetest.git#egg=python_devicetest
