@@ -39,14 +39,16 @@ class AntennaPositioner(Device):
     def __init__(self, *args, **kwargs):
         '''Initialize attribute values and change events for update'''
         valid = AttrQuality.ATTR_VALID
-        self.azimuth_quantities = dict(actual=(0.0, 0, valid),
-                                    requested=(0.0, 0, valid),
-                                    drive_rate=0.0, moving=False,
-									running=threading.Event())
-        self.elevation_quantities = dict(actual=(90.0, 0, valid),
-                                    requested=(90.0, 0, valid),
-                                    drive_rate=0.0, moving=False,
-									running=threading.Event())
+        self.azimuth_quantities = dict(
+            actual=(0.0, 0, valid),
+            requested=(0.0, 0, valid),
+            drive_rate=0.0, moving=False,
+            running=threading.Event())
+        self.elevation_quantities = dict(
+            actual=(90.0, 0, valid),
+            requested=(90.0, 0, valid),
+            drive_rate=0.0, moving=False,
+            running=threading.Event())
         super(AntennaPositioner, self).__init__(*args, **kwargs)
         self.set_change_event('actual_azimuth', True)
         self.set_change_event('actual_elevation', True)
