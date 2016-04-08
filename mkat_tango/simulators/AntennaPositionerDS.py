@@ -30,7 +30,7 @@ class AntennaPositioner(Device):
     __metaclass__ = DeviceMeta
 
     #Access instances for debugging
-    instance = weakref.WeakValueDictionary()
+    instances = weakref.WeakValueDictionary()
 
     UPDATE_PERIOD = 1
     AZIM_DRIVE_MAX_RATE = 2.0
@@ -57,7 +57,7 @@ class AntennaPositioner(Device):
         '''Initialize device and set the state to standby'''
         super(AntennaPositioner, self).init_device()
         name = self.get_name()
-        self.instance[name] = self
+        self.instances[name] = self
         self.set_state(DevState.ON)
         self.req_mode = 'stop', 0, AttrQuality.ATTR_VALID
         self.act_mode = 'stop', 0, AttrQuality.ATTR_VALID
