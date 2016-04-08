@@ -35,7 +35,9 @@ class test_MkatAntennaPositioner(DeviceTestCase):
         pass
 
     def test_stop(self):
-        pass
+        self.assertEqual(self.device.mode, 'shutdown')
+        self.device.slew()
+        self.assertNotEqual(self.device.mode, 'stop')
   
     def test_slew(self):
         pass
@@ -50,13 +52,30 @@ class test_MkatAntennaPositioner(DeviceTestCase):
         pass
 
     def test_attribute_values(self):
-        pass
+        #attributes = set(self.device.get_attribute_list())
+        #attr = self.device.get_device_attr()
+        
+        self.assertEqual(self.device.mode, 'shutdown')
+        self.assertEqual(self.device.requested_azim, 0.0)
+        self.assertEqual(self.device.requested_elev, 90.0)
+        self.assertEqual(self.device.failure_present, False)
+        self.assertEqual(self.device.actual_azim, 0.0)
+        self.assertEqual(self.device.actual_elev, 90.0)
+        self.assertEqual(self.device.requested_azim_rate, 0.0)
+        self.assertEqual(self.device.requested_elev_rate, 0.0)
+        self.assertEqual(self.device.actual_azim_rate, 0.0)
+        self.assertEqual(self.device.actual_elev_rate, 0.0)
+        self.assertEqual(self.device.State, 'OFF')
+        self.assertEqual(self.device.Status, 'The device is in OFF state')
 
     def test_attribute_list(self):
         attributes = set(self.device.get_attribute_list())
         self.assertEqual(attributes, self.expected_attributes)
 
     def test_write_attributes(self):
+        pass
+
+    def test_command_list(self):
         pass
 
     
