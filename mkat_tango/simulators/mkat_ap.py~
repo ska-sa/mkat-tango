@@ -1835,4 +1835,8 @@ class MkatApTestDevice(SimTestDevice):
             Whether the request succeeded
         """
         self._model.ridx_drive.set_position(new_pos_deg)
+<<<<<<< HEAD
         return ["ok"]
+=======
+        return ["ok"]
+>>>>>>> f298910cdfd677c6ec0a9c05b52494e87d116ee6

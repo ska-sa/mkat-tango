@@ -1,5 +1,9 @@
 git+https://katpull:katpull4git@github.com/ska-sa/katversion#egg=katversion
 git+https://katpull:katpull4git@github.com/ska-sa/katcp-python#egg=katcp
 git+https://katpull:katpull4git@github.com/ska-sa/katcore#egg=katcore
+<<<<<<< HEAD
 git+https://katpull:katpull4git@github.com/ska-sa/katproxy#egg=katproxy
 git+https://github.com/vxgmichel/pytango-devicetest.git#egg=python_devicetest
+=======
+
+>>>>>>> f298910cdfd677c6ec0a9c05b52494e87d116ee6
