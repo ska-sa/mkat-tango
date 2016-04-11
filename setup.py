@@ -16,10 +16,10 @@ setup (
         "Topic :: Scientific/Engineering :: Astronomy",
     ],
     platforms = [ "OS Independent" ],
-    install_requires = ["PyTango>=8.1.5"],
+    install_requires = ["PyTango>=8.1.5", "numpy"],
     zip_safe = False,
     entry_points={
     'console_scripts': [
-        'mkat-tango-weather-DS = mkat_tango.simulators.Weather:weather_main',
+        'mkat-tango-weather-DS = mkat_tango.simulators.weather:weather_main',
     ]},
 )
