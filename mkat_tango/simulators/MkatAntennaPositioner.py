@@ -102,25 +102,11 @@ class MkatAntennaPositioner(Device):
         attr.set_value(actual_azim_sens.value())    
     
     def formatter(self, sensor_name):
-        attr_name = list(sensor_name)
-        temp = attr_name[:]
-        for letter in temp:
-            if letter == '-':
-                index = attr_name.index('-')
-                attr_name.pop(index)
-                attr_name.insert(index, '_')
-        attr_name = ''.join(attr_name)
+        attr_name = sensor_name.replace('-', '_')
         return attr_name
 
     def unformatter(self, attr_name):
-        sensor_name = list(attr_name)
-        temp = sensor_name[:]
-        for letter in temp:
-            if letter == '_':
-                index = sensor_name.index('_')
-                sensor_name.pop(index)
-                sensor_name.insert(index, '-')
-        sensor_name = ''.join(sensor_name)
+        sensor_name = attr_name.replace('_', '-')
         return sensor_name
     
     
