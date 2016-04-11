@@ -29,12 +29,6 @@ MODULE_LOGGER = logging.getLogger(__name__)
 class MkatAntennaPositioner(Device):
     __metaclass__ = DeviceMeta
     instances = weakref.WeakValueDictionary()
-    
-    def init_device(self):
-        Device.init_device(self)
-        
-        name = self.get_name()
-        self.instances[name] = self
         
     def init_device(self):
         Device.init_device(self)
@@ -42,53 +36,44 @@ class MkatAntennaPositioner(Device):
         
         self.ap_model = MkatApModel()
         self.ap_model.start()
+        
+        name = self.get_name()
+        self.instances[name] = self
+        
         # Get three sensors, one for each data type {boolean, discrete, float}
-        sens_mode = self.ap_model.get_sensor('mode')                         # discrete           
-        sens_requested_azim = self.ap_model.get_sensor('requested-azim')     # float
-        sens_requested_elev = self.ap_model.get_sensor('requested-elev')     # float
-        sens_fail_prsnt = self.ap_model.get_sensor('failure-present')        # boolean
-        
-        sens_actual_azim = self.ap_model.get_sensor('actual-azim')
-        sens_actual_elev = self.ap_model.get_sensor('actual-elev')
-        
-        sens_requested_azim_rate = self.ap_model.get_sensor('requested-azim-rate')
-        sens_requested_elev_rate = self.ap_model.get_sensor('requested-elev-rate')
-        
-        sens_actual_azim_rate = self.ap_model.get_sensor('actual-azim-rate')
-        sens_actual_elev_rate = self.ap_model.get_sensor('actual-elev-rate')
-    
-        sensors = [sens_mode, sens_requested_azim, sens_requested_elev, sens_fail_prsnt,
-                   sens_actual_azim, sens_actual_elev, sens_requested_azim_rate,
-                   sens_requested_elev_rate, sens_actual_azim_rate, sens_actual_elev_rate]
+        sensors = self.ap_model.get_sensors()
         
         for sensor in sensors:
+            
             MODULE_LOGGER.info(sensor.name)
             attr_props = UserDefaultAttrProp()
             sensor_name = self.formatter(sensor.name)
+            method_call_read = None
+            method_call_write = None
+            
             if sensor.stype == "boolean":
                 attr = Attr(sensor_name, DevBoolean)
+                method_call_read = self.read_Booleans
             elif sensor.stype == "float":
                 if sensor.name.startswith('actual-'): #== 'actual-azim' or sensor.name == 'actual-elev':
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
                 else:
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
+                    method_call_write = self.write_FloatingPoints
+                method_call_read = self.read_FloatingPoints
                 attr_props.set_min_value(str(sensor.params[0]))
                 attr_props.set_max_value(str(sensor.params[1]))
             elif sensor.stype == "discrete":
                 attr = Attr(sensor_name, DevString)
+                method_call_read = self.read_Discretes
             
             attr_props.set_label(sensor.name)
             attr_props.set_description(sensor.description)
             attr_props.set_unit(sensor.units)
             attr.set_default_properties(attr_props)
             
-            if sensor.stype == "float":
-                self.add_attribute(attr, self.read_FloatingPoints, self.write_FloatingPoints)
-            elif sensor.stype == "boolean":
-                self.add_attribute(attr, self.read_Booleans)
-            elif sensor.stype == "discrete":
-                self.add_attribute(attr, self.read_Discretes)
-           
+            self.add_attribute(attr, method_call_read, method_call_write)           
+            
     
     def read_FloatingPoints(self, attr):
         self.info_stream("Reading attribute %s", attr.get_name())
