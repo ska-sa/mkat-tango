@@ -1,3 +1,4 @@
 enum
 numpy
 git+https://github.com/vxgmichel/pytango-devicetest.git#egg=python_devicetest
+git+https://katpull:katpull4git@github.com/ska-sa/katversion#egg=katversion
