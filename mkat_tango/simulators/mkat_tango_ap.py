@@ -43,7 +43,7 @@ class MkatAntennaPositioner(Device):
         for sensor in sensors:
             
             MODULE_LOGGER.info(sensor.name)
-            attr_props = UserDefaultAttrProp()
+            attr_props = UserDefaultAttrProp()         # Used to set the attribute default properties
             sensor_name = self.formatter(sensor.name)
             method_call_read = None
             method_call_write = None
@@ -99,10 +99,46 @@ class MkatAntennaPositioner(Device):
         attr.set_value(actual_azim_sens.value())    
     
     def formatter(self, sensor_name):
+        """
+        Removes the dash(es) in the sensor name and replaces them with underscore(s)
+        to guard against illegal attribute identifiers in TANGO
+        
+        Parameters
+        ----------
+        sensor_name : str
+            The name of the sensor. For example:
+            
+            'actual-azim'
+        
+        Returns
+        -------
+        attr_name : str
+            The legal identifier for an attribute. For example:
+            
+            'actual_azim'
+        """
         attr_name = sensor_name.replace('-', '_')
         return attr_name
 
     def unformatter(self, attr_name):
+        """
+        Removes the underscore(s) in the attribute name and replaces them with 
+        dashe(s), so that we can access the the KATCP Sensors using their identifiers
+        
+        Parameters
+        ----------
+        attr_name : str
+            The name of the sensor. For example:
+            
+            'actual_azim'
+        
+        Returns
+        -------
+        sensor_name : str
+            The legal identifier for an attribute. For example:
+            
+            'actual-azim'
+        """
         sensor_name = attr_name.replace('_', '-')
         return sensor_name
     
