@@ -13,9 +13,8 @@ MeerKAT AP simulator.
 """
 import logging
 import weakref
-
-
-from mkat_ap import MkatApModel, ApOperMode
+ 
+from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
 from PyTango.server import device_property
 from PyTango.server import Device, DeviceMeta, attribute, command, server_run
@@ -53,19 +52,19 @@ class MkatAntennaPositioner(Device):
             
             if sensor.stype == "boolean":
                 attr = Attr(sensor_name, DevBoolean)
-                method_call_read = self.read_Booleans
+                method_call_read = self.read_booleans
             elif sensor.stype == "float":
                 if sensor.name.startswith('actual-'): #== 'actual-azim' or sensor.name == 'actual-elev':
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
                 else:
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
-                    method_call_write = self.write_FloatingPoints
-                method_call_read = self.read_FloatingPoints
+                    method_call_write = self.write_floating_points
+                method_call_read = self.read_floating_points
                 attr_props.set_min_value(str(sensor.params[0]))
                 attr_props.set_max_value(str(sensor.params[1]))
             elif sensor.stype == "discrete":
                 attr = Attr(sensor_name, DevString)
-                method_call_read = self.read_Discretes
+                method_call_read = self.read_discretes
             
             attr_props.set_label(sensor.name)
             attr_props.set_description(sensor.description)
@@ -75,13 +74,13 @@ class MkatAntennaPositioner(Device):
             self.add_attribute(attr, method_call_read, method_call_write)           
             
     
-    def read_FloatingPoints(self, attr):
+    def read_floating_points(self, attr):
         self.info_stream("Reading attribute %s", attr.get_name())
         sens_name = self.unformatter(attr.get_name())
         actual_azim_sens = self.ap_model.get_sensor(sens_name)
         attr.set_value(actual_azim_sens.value())
 
-    def write_FloatingPoints(self, attr):
+    def write_floating_points(self, attr):
         name = attr.get_name()
         data = attr.get_write_value()
         self.info_stream("Writting into attribute %s the value %s", name, data)
@@ -89,13 +88,13 @@ class MkatAntennaPositioner(Device):
         sens = self.ap_model.get_sensor(sens_name)
         sens.set_value(data)
         
-    def read_Booleans(self, attr):
+    def read_booleans(self, attr):
         self.info_stream("Reading attribute %s", attr.get_name())
         sens_name = self.unformatter(attr.get_name())
         actual_azim_sens = self.ap_model.get_sensor(sens_name)
         attr.set_value(actual_azim_sens.value())
         
-    def read_Discretes(self, attr):
+    def read_discretes(self, attr):
         self.info_stream("Reading attribute %s", attr.get_name())
         sens_name = self.unformatter(attr.get_name())
         actual_azim_sens = self.ap_model.get_sensor(sens_name)
