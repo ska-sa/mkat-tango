@@ -73,12 +73,9 @@ def disable_attributes_polling(test_case, device_proxy, device_server, attribute
 
     def restore_polling():
         retry_time = 0.5
-
-
         for attr, period in initial_polling.items():
             if period == 0:
                 continue            # zero period implies no polling, nothing to do
-            retry = False
             try:
                 device_proxy.poll_attribute(attr, period)
                 # TODO (NM 2016-04-11) For some reason Tango doesn't seem to handle
@@ -90,6 +87,8 @@ def disable_attributes_polling(test_case, device_proxy, device_server, attribute
                 LOGGER.warning('retrying restore of attribute {} in {} due to unhandled'
                                'exception in poll_attribute command'
                                .format(attr, retry_time), exc_info=True)
+            else:
+                retry = False
 
             if retry:
                 time.sleep(retry_time)
@@ -111,18 +110,10 @@ class test_Weather(DeviceTestCase):
 
 
     def setUp(self):
-        LOGGER.debug('setUp starting')
-        # gauss_patcher = mock.patch('mkat_tango.simlib.quantities.gauss')
-        # mock_gauss = gauss_patcher.start()
-        # self.addCleanup(gauss_patcher.stop)
-        # mock_gauss.side_effect = AlwaysDifferentGauss()
-
         super(test_Weather, self).setUp()
-        LOGGER.debug('setUp super done')
         self.instance = weather.Weather.instances[self.device.name()]
         def cleanup_refs(): del self.instance
         self.addCleanup(cleanup_refs)
-        LOGGER.debug('setUp done')
 
     def test_attribute_list(self):
         attributes = set(self.device.get_attribute_list())
