@@ -7,7 +7,7 @@ from devicetest import DeviceTestCase
 import logging
 
 # DUT
-from mkat_tango.simulators.mkat_tango_ap import MkatAntennaPositioner
+from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner
 
 class test_MkatAntennaPositioner(DeviceTestCase):
     
