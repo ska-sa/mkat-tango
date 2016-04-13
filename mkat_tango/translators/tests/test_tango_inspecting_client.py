@@ -54,8 +54,7 @@ class TangoTestDevice(TS.Device):
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
             )
-        self.static_attributes = sorted(
-            self.attr_return_vals.keys() + ['State', 'Status'])
+        self.static_attributes = sorted(self.attr_return_vals.keys())
 
 
     @TS.attribute(dtype='DevBoolean',
@@ -105,14 +104,22 @@ class test_TangoInspectingClient(unittest.TestCase):
 
     def test_inspect_attributes(self):
         attributes_data = self.DUT.inspect_attributes()
-        import IPython ; IPython.embed()
+        # Check that the standard Tango sensors are there
+        self.assertIn('State', attributes_data)
+        self.assertIn('Status', attributes_data)
+        # Now remove them from the data since we don't have test data for them
+        del attributes_data['State']
+        del attributes_data['Status']
 
+        # Test that all our test device attributes are present
         self.assertEqual(sorted(attributes_data.keys()),
                          self.test_device.static_attributes)
+        # And check some of their data
         for attr_name, attr_data in attributes_data.items():
             td_props = getattr(
-                self.test_device, attr_name).get_attribute_config()
+                self.test_device, attr_name).get_properties()
             self.assertEqual(attr_data.description, td_props.description)
+
 
 
     # TODO Test for when dynamic attributes are added/removed
