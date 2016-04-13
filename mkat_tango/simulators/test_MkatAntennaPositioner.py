@@ -7,11 +7,11 @@ from devicetest import DeviceTestCase
 import logging
 
 # DUT
-import MkatAntennaPositioner
+from mkat_tango.simulators.mkat_tango_ap import MkatAntennaPositioner
 
 class test_MkatAntennaPositioner(DeviceTestCase):
     
-    device = MkatAntennaPositioner.MkatAntennaPositioner
+    device = MkatAntennaPositioner
 
     expected_attributes = frozenset(['mode', 'requested_azim', 'requested_elev',
                                      'failure_present', 'actual_azim', 'actual_elev',
@@ -22,34 +22,34 @@ class test_MkatAntennaPositioner(DeviceTestCase):
     
     def setUp(self):
         super(test_MkatAntennaPositioner, self).setUp()
-        self.instance = MkatAntennaPositioner.MkatAntennaPositioner.instances[self.device.name()]
+        self.instance = MkatAntennaPositioner.instances[self.device.name()]
 
     def tearDown(self):
         self.instance = None
 
 
-    def test_model_instantiation(self):
-        pass
-
-    def test_model_thread_started(self):
-        pass
+#    def test_model_instantiation(self):
+#        TODO
+#
+#    def test_model_thread_started(self):
+#        TODO
 
     def test_stop(self):
         self.assertEqual(self.device.mode, 'shutdown')
         self.device.slew()
         self.assertNotEqual(self.device.mode, 'stop')
   
-    def test_slew(self):
-        pass
-
-    def test_maintenance(self):
-        pass
-
-    def test_rate(self):
-        pass
-
-    def test_stow(self):
-        pass
+#    def test_slew(self):
+#        TODO
+#
+#    def test_maintenance(self):
+#        TODO
+#
+#    def test_rate(self):
+#        TODO
+#
+#    def test_stow(self):
+#        TODO
 
     def test_attribute_values(self):
         #attributes = set(self.device.get_attribute_list())
@@ -72,11 +72,11 @@ class test_MkatAntennaPositioner(DeviceTestCase):
         attributes = set(self.device.get_attribute_list())
         self.assertEqual(attributes, self.expected_attributes)
 
-    def test_write_attributes(self):
-        pass
-
-    def test_command_list(self):
-        pass
+#    def test_write_attributes(self):
+#        TODO
+#
+#    def test_command_list(self):
+#        TODO
 
     
     
