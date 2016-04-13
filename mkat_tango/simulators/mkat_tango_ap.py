@@ -44,9 +44,7 @@ class MkatAntennaPositioner(Device):
         
     def initialize_dynamic_attributes(self):
         sensors = self.ap_model.get_sensors()
-        
         for sensor in sensors:
-            
             MODULE_LOGGER.info(sensor.name)
             attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
             sensor_name = self.formatter(sensor.name)
@@ -57,11 +55,11 @@ class MkatAntennaPositioner(Device):
                 attr = Attr(sensor_name, DevBoolean, AttrWriteType.READ)
                 method_call_read = self.read_booleans
             elif sensor.stype == "float":
-                if sensor.name.startswith('actual-'):
-                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
-                else:
+                if sensor.name.startswith('requested-'):
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
                     method_call_write = self.write_floats
+                else:
+                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
                 method_call_read = self.read_floats
                 attr_props.set_min_value(str(sensor.params[0]))
                 attr_props.set_max_value(str(sensor.params[1]))
@@ -74,8 +72,8 @@ class MkatAntennaPositioner(Device):
             attr_props.set_unit(sensor.units)
             attr.set_default_properties(attr_props)
             
-            self.add_attribute(attr, method_call_read, method_call_write)           
-    
+            self.add_attribute(attr, method_call_read, method_call_write)
+            
     def read_floats(self, attr):
         self.info_stream("Reading attribute %s", attr.get_name())
         sens_name = self.unformatter(attr.get_name())
@@ -218,8 +216,7 @@ class MkatAntennaPositioner(Device):
                                        "while in mode '%s'" % self.ap_model.mode())
                     Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is in"
                                            " '%s' mode." % self.ap_model.mode(), "Slew()",
-                                           ErrSeverity.WARN)
-                    
+                                           ErrSeverity.WARN)   
                 else:
                     attributes = self.get_device_attr()
                     requested_azim = attributes.get_attr_by_name('requested_azim')
@@ -231,7 +228,6 @@ class MkatAntennaPositioner(Device):
             Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
                                    "Slew()", ErrSeverity.WARN)
         
-                
 if __name__ == "__main__":
          logging.basicConfig(level=logging.DEBUG)
          server_run([MkatAntennaPositioner])
