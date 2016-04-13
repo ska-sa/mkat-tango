@@ -7,11 +7,11 @@ from devicetest import DeviceTestCase
 import logging
 
 # DUT
-import MkatAntennaPositioner
+from mkat_tango.simulators.mkat_tango_ap import MkatAntennaPositioner
 
 class test_MkatAntennaPositioner(DeviceTestCase):
     
-    device = MkatAntennaPositioner.MkatAntennaPositioner
+    device = MkatAntennaPositioner
 
     expected_attributes = frozenset(['mode', 'requested_azim', 'requested_elev',
                                      'failure_present', 'actual_azim', 'actual_elev',
@@ -22,7 +22,7 @@ class test_MkatAntennaPositioner(DeviceTestCase):
     
     def setUp(self):
         super(test_MkatAntennaPositioner, self).setUp()
-        self.instance = MkatAntennaPositioner.MkatAntennaPositioner.instances[self.device.name()]
+        self.instance = MkatAntennaPositioner.instances[self.device.name()]
 
     def tearDown(self):
         self.instance = None
