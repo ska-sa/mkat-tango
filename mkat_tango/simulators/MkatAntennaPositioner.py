@@ -17,9 +17,8 @@ import weakref
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
 from PyTango.server import Device, DeviceMeta, command, server_run
-
 from PyTango import AttrWriteType,  DevState
-from PyTango import  Attr, DevString, DevBoolean, DevDouble
+from PyTango import Attr, DevString, DevBoolean, DevDouble
 from PyTango import UserDefaultAttrProp, Except, ErrSeverity
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -45,7 +44,7 @@ class MkatAntennaPositioner(Device):
     def initialize_dynamic_attributes(self):
         sensors = self.ap_model.get_sensors()
         for sensor in sensors:
-            MODULE_LOGGER.info(sensor.name)
+            MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
             attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
             sensor_name = self.formatter(sensor.name)
             method_call_read = None
@@ -154,68 +153,73 @@ class MkatAntennaPositioner(Device):
     @command
     def Stop(self):
         '''Request mode stop.'''
+        command_name = "Stop()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
                 self.ap_model.set_mode(ApOperMode.stop)
                 MODULE_LOGGER.info("Ok")
             else:
-                MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
                 Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                       "Antenna is not in remote control", "Stop()",
+                                       "Antenna is not in remote control", command_name,
                                        ErrSeverity.WARN)
         else:
             Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
-                                   "Stop", ErrSeverity.WARN)
+                                   command_name, ErrSeverity.WARN)
                
     @command
     def Maintenance(self):
+        command_name = "Maintenance()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
                 if self.ap_model.mode() in [ApOperMode.gtm, ApOperMode.maint]:
-                    MODULE_LOGGER.info("Fail, Antenna is in '%s' mode."
-                                       % self.ap_model.mode())
+                    Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is"
+                                           "in '%s' mode." % self.ap_model.mode(),
+                                           command_name, ErrSeverity.WARN)
                 elif self.ap_model.mode() not in [ApOperMode.stop]:
-                    MODULE_LOGGER.info("Fail, Antenna mode {} != 'stop'.".format(self.ap_model.mode()))
+                    Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna mode"
+                                           "{} != 'stop'.".format(self.ap_model.mode()),
+                                           command_name, ErrSeverity.WARN)
                 else:
                     self.ap_model.set_mode(ApOperMode.gtm)
+                    MODULE_LOGGER.debug("OK")
         else:
-            MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
             Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                   self.COMMAND_ERROR_DESC_OFF, "Maintenance()",
+                                   self.COMMAND_ERROR_DESC_OFF, command_name,
                                    ErrSeverity.WARN)
         
     @command
     def Stow(self):
-       if self.get_state() != DevState.OFF:
-           if self.ap_model.in_remote_control():
-               if (self.ap_model.mode() in [ApOperMode.shutdown, ApOperMode.stowing,
-                   ApOperMode.stowed, ApOperMode.estop]):
-                   MODULE_LOGGER.info("Fail, Antenna is in '%s' mode." 
-                                       % self.ap_model.mode())
-                   Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                          "Fail, Antenna is in '%s' mode."
-                                          % self.ap_model.mode(), "Stow()",
-                                          ErrSeverity.WARN)
-               else:
-                   self.ap_model.set_mode(ApOperMode.stowing)
-                   MODULE_LOGGER.info("Ok")
-           else:
-               MODULE_LOGGER.info("Fail, Antenna is not in remote control.")
-       else:
-           MODULE_LOGGER.info("Fail, Antenna is in OFF state.")
-           Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                  self.COMMAND_ERROR_DESC_OFF, "stow()", ErrSeverity.WARN)
+        command_name = "Stow()"
+        if self.get_state() != DevState.OFF:
+            if self.ap_model.in_remote_control():
+                if self.ap_model.mode() in [ApOperMode.shutdown, ApOperMode.stowing,
+                                            ApOperMode.stowed, ApOperMode.estop]:
+                    Except.throw_exception(self.COMMAND_ERROR_REASON,
+                                           "Fail, Antenna is in '%s' mode."
+                                           % self.ap_model.mode(), command_name,
+                                           ErrSeverity.WARN)
+                else:
+                    self.ap_model.set_mode(ApOperMode.stowing)
+                    MODULE_LOGGER.info("OK")
+            else:
+                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
+                                       "in remote control.", command_name, 
+                                       ErrSeverity.WARN)
+        else:
+            Except.throw_exception(self.COMMAND_ERROR_REASON,
+                                   self.COMMAND_ERROR_DESC_OFF, command_name,
+                                   ErrSeverity.WARN)
         
     @command
     def Slew(self):
+        command_name = "Slew()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
                 if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.slew,
-                    ApOperMode.track]:
-                    MODULE_LOGGER.info("Fail, Unable to switch Antenna mode to 'slew' "
-                                       "while in mode '%s'" % self.ap_model.mode())
-                    Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is in"
-                                           " '%s' mode." % self.ap_model.mode(), "Slew()",
+                                                ApOperMode.track]:
+                    Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
+                                           "switch Antenna mode to 'slew' while in mode"
+                                           "'%s'" % self.ap_model.mode(), command_name,
                                            ErrSeverity.WARN)   
                 else:
                     attributes = self.get_device_attr()
@@ -223,10 +227,10 @@ class MkatAntennaPositioner(Device):
                     requested_elev = attributes.get_attr_by_name('requested_elev')
                     self.ap_model.slew(requested_azim.get_write_value(),
                                        requested_elev.get_write_value())
-                    MODULE_LOGGER.info("Ok")
+                    MODULE_LOGGER.info("OK")
         else:
             Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
-                                   "Slew()", ErrSeverity.WARN)
+                                   command_name, ErrSeverity.WARN)
         
 if __name__ == "__main__":
          logging.basicConfig(level=logging.DEBUG)

@@ -28,28 +28,28 @@ class test_MkatAntennaPositioner(DeviceTestCase):
         self.instance = None
 
 
-    def test_model_instantiation(self):
-        pass
-
-    def test_model_thread_started(self):
-        pass
+#    def test_model_instantiation(self):
+#        TODO
+#
+#    def test_model_thread_started(self):
+#        TODO
 
     def test_stop(self):
         self.assertEqual(self.device.mode, 'shutdown')
         self.device.slew()
         self.assertNotEqual(self.device.mode, 'stop')
   
-    def test_slew(self):
-        pass
-
-    def test_maintenance(self):
-        pass
-
-    def test_rate(self):
-        pass
-
-    def test_stow(self):
-        pass
+#    def test_slew(self):
+#        TODO
+#
+#    def test_maintenance(self):
+#        TODO
+#
+#    def test_rate(self):
+#        TODO
+#
+#    def test_stow(self):
+#        TODO
 
     def test_attribute_values(self):
         #attributes = set(self.device.get_attribute_list())
@@ -72,11 +72,11 @@ class test_MkatAntennaPositioner(DeviceTestCase):
         attributes = set(self.device.get_attribute_list())
         self.assertEqual(attributes, self.expected_attributes)
 
-    def test_write_attributes(self):
-        pass
-
-    def test_command_list(self):
-        pass
+#    def test_write_attributes(self):
+#        TODO
+#
+#    def test_command_list(self):
+#        TODO
 
     
     
