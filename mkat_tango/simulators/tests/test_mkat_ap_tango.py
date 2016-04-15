@@ -34,11 +34,11 @@ class test_MkatAntennaPositioner(DeviceTestCase):
 #    def test_model_thread_started(self):
 #        TODO
 
-    def test_stop(self):
-        self.assertEqual(self.device.mode, 'shutdown')
-        self.device.TurnOn()
-        self.device.Slew()
-        self.assertNotEqual(self.device.mode, 'stop')
+    #def test_stop(self):
+     #   self.assertEqual(self.device.mode, 'shutdown')
+      #  self.device.TurnOn()
+       # self.device.Slew()
+        #self.assertNotEqual(self.device.mode, 'stop')
   
 #    def test_slew(self):
 #        TODO
