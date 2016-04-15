@@ -52,7 +52,7 @@ class test_MkatAntennaPositioner(DeviceTestCase):
 #    def test_stow(self):
 #        TODO
 
-    def test_attribute_values(self):
+    #def test_attribute_values(self):
         #attributes = set(self.device.get_attribute_list())
         #attr = self.device.get_device_attr()
         
