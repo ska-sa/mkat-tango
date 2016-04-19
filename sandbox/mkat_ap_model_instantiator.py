@@ -12,10 +12,8 @@ MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 
-from mkat_ap import MkatApModel
+from katproxy.sim.mkat_ap import MkatApModel
 
 if __name__ == "__main__":
     ap_model = MkatApModel()
     ap_model.start()
-    
-    print ap_model.mode()
