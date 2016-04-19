@@ -2,6 +2,9 @@ import unittest
 import logging
 import weakref
 import time
+import operator
+import sys
+import mock
 
 from functools import wraps
 
@@ -54,7 +57,7 @@ class TangoTestDevice(TS.Device):
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
             )
-        self.static_attributes = sorted(self.attr_return_vals.keys())
+        self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
 
     @TS.attribute(dtype='DevBoolean',
@@ -82,6 +85,18 @@ class TangoTestDevice(TS.Device):
     @_test_attr
     def ScalarDevEncoded(self): pass
 
+    static_commands = ('Mirror', 'MultiplyInts')
+    # Commands that come from the Tango library
+    standard_commands = ('Init', 'State', 'Status')
+
+    @TS.command(dtype_in=str, dtype_out=str)
+    def Mirror(self, in_str):
+        return in_str[::-1]
+
+    @TS.command(dtype_in=(int,), dtype_out=int)
+    def MultiplyInts(self, in_ints):
+        return reduce(operator.mul, in_ints)
+
 
 # DevVoid, DevBoolean, DevUChar, DevShort, DevUShort, DevLong, DevULong, DevLong64,
 # DevULong64, DevDouble, DevString, DevEncoded, DevVarBooleanArray,
@@ -91,19 +106,57 @@ class TangoTestDevice(TS.Device):
 
 
 class test_TangoInspectingClient(unittest.TestCase):
-    def setUp(self):
-        self.tango_db = cleanup_tempfile(self, prefix='tango', suffix='.db')
-        self.tango_context = TangoTestContext(
-            TangoTestDevice, db=self.tango_db)
-        start_thread_with_cleanup(self, self.tango_context)
-        self.tango_dp = self.tango_context.device
-        self.tango_ds = self.tango_context.server
-        self.test_device = TangoTestDevice.instances[self.tango_dp.name()]
-        self.test_device.log_attribute_reads = True
-        self.DUT = tango_inspecting_client.TangoInspectingClient(self.tango_dp)
 
-    def test_inspect_attributes(self):
-        attributes_data = self.DUT.inspect_attributes()
+    _class_cleanups = []
+
+    @classmethod
+    def setUpClassWithCleanup(cls):
+        cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
+        cls.tango_context = TangoTestContext(
+            TangoTestDevice, db=cls.tango_db)
+        start_thread_with_cleanup(cls, cls.tango_context)
+        cls.tango_dp = cls.tango_context.device
+        cls.tango_ds = cls.tango_context.server
+        cls.test_device = TangoTestDevice.instances[cls.tango_dp.name()]
+        cls.test_device.log_attribute_reads = True
+        cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
+
+    @classmethod
+    def addCleanupClass(cls, function, *args, **kwargs):
+        cls._class_cleanups.append((function, args, kwargs))
+
+    @classmethod
+    def doCleanupsClass(cls):
+        results = []
+        while cls._class_cleanups:
+            function, args, kwargs = cls._class_cleanups.pop()
+            try:
+                function(*args, **kwargs)
+            except Exceptions:
+                LOGGER.exception('Exception calling class cleanup function')
+                results.append(sys.exc_info())
+
+        if results:
+            LOGGER.error('Exception(s) raised during class cleanup, re-raising '
+                         'first exception.')
+            raise results[0]
+
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
+                cls_addCleanup.side_effect = cls.addCleanupClass
+                cls.setUpClassWithCleanup()
+        except Exception:
+            cls.doCleanupsClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.doCleanupsClass()
+
+    def _test_attributes(self, attributes_data):
         # Check that the standard Tango sensors are there
         self.assertIn('State', attributes_data)
         self.assertIn('Status', attributes_data)
@@ -112,7 +165,7 @@ class test_TangoInspectingClient(unittest.TestCase):
         del attributes_data['Status']
 
         # Test that all our test device attributes are present
-        self.assertEqual(sorted(attributes_data.keys()),
+        self.assertEqual(tuple(sorted(attributes_data.keys())),
                          self.test_device.static_attributes)
         # And check some of their data
         for attr_name, attr_data in attributes_data.items():
@@ -121,5 +174,32 @@ class test_TangoInspectingClient(unittest.TestCase):
             self.assertEqual(attr_data.description, td_props.description)
 
 
+    def test_inspect_attributes(self):
+        attributes_data = self.DUT.inspect_attributes()
+        self._test_attributes(attributes_data)
 
-    # TODO Test for when dynamic attributes are added/removed
+    def _test_commands(self, commands_data):
+        # Check that the standard Tango commands are there
+        for cmd in self.test_device.standard_commands:
+            self.assertIn(cmd, commands_data)
+        # Check that our static test commands are there
+        for cmd in self.test_device.static_commands:
+            self.assertIn(cmd, commands_data)
+        # Check that there are no extra commands
+        self.assertEqual(len(commands_data),
+                         len(self.test_device.standard_commands) +
+                         len(self.test_device.static_commands))
+
+    def test_inspect_commands(self):
+        commands_data = self.DUT.inspect_commands()
+        self._test_commands(commands_data)
+
+    def test_inspect(self):
+        self.DUT.inspect()
+        self._test_attributes(self.DUT.device_attributes)
+        self._test_commands(self.DUT.device_commands)
+
+
+    # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
+    # is only implemented in tango 9, so we can't really do this properly till we
+    # upgrade. https://sourceforge.net/p/tango-cs/feature-requests/90/?limit=25
