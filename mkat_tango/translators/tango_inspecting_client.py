@@ -29,11 +29,15 @@ class TangoInspectingClient(object):
 
     def tango_event_handler(self, tango_event_data):
         attr_value = tango_event_data.attr_value
+        name = attr_value.name
         value = attr_value.value
+        quality = attr_value.quality
         timestamp = attr_value.time.totime()
         received_timestamp = tango_event_data.reception_date.totime()
 
-        pass
+        self.sample_event_callback(name, received_timestamp, timestamp,
+                                   value, quality)
+
 
     def sample_event_callback(
             self, name, received_timestamp, timestamp, value, quality,
