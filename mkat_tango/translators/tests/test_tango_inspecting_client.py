@@ -15,6 +15,8 @@ from devicetest import TangoTestContext
 from katcp.testutils import start_thread_with_cleanup
 from katcore.testutils import cleanup_tempfile
 
+from mkat_tango.testutils import set_attributes_polling
+
 from mkat_tango.translators import tango_inspecting_client
 
 LOGGER = logging.getLogger(__name__)
@@ -199,6 +201,27 @@ class test_TangoInspectingClient(unittest.TestCase):
         self._test_attributes(self.DUT.device_attributes)
         self._test_commands(self.DUT.device_commands)
 
+
+    @unittest.skip('Seems to cause a segfault as soon as setup_attribute_sampling() '
+                   'is called as of 2016-04-20, might be resolved by Tango upgrade')
+    def test_setup_attribute_sampling(self):
+        poll_period = 1000        # in milliseconds
+        test_attributes = self.test_device.static_attributes
+        set_attributes_polling(self, self.tango_dp, self.test_device,
+                               {attr: poll_period
+                                for attr in test_attributes})
+        recorded_samples = {attr:[] for attr in test_attributes}
+        self.DUT.inspect()
+        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
+            sec.side_effect = lambda attr, *x : recorded_samples[attr].append(x)
+            self.addCleanup(self.DUT.clear_attribute_sampling)
+            LOGGER.debug('Setting attribute sampling')
+            self.DUT.setup_attribute_sampling()
+            t0 = time.time()
+            LOGGER.debug('sleeping 5')
+            # Wait 5 polling periods plus a little
+            time.sleep(poll_period*5.25)
+            t1 = time.time()
 
     # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
     # is only implemented in tango 9, so we can't really do this properly till we

@@ -32,6 +32,7 @@ def set_attributes_polling(test_case, device_proxy, device_server, poll_periods)
     attributes = poll_periods.keys()
     initial_polling = {attr: device_proxy.get_attribute_poll_period(attr)
                        for attr in attributes}
+    retry_time = 0.5
 
     for attr in attributes:
         initial_period = initial_polling[attr]
@@ -39,13 +40,28 @@ def set_attributes_polling(test_case, device_proxy, device_server, poll_periods)
         # Disable polling for attributes with poll_period of zero / falsy
         # zero initial_period implies no polling currently configed
         if not new_period and initial_period != 0:
+            LOGGER.debug('not setting polling for {}'.format(attr))
             device_server.stop_poll_attribute(attr)
         else:
             # Set the polling
-            device_proxy.poll_attribute(attr, new_period)
+            LOGGER.debug('setting polling for {}'.format(attr))
+            try:
+                device_proxy.poll_attribute(attr, new_period)
+                # TODO See (NM 2016-04-11) comment below about back-to-back calls
+                time.sleep(0.05)
+            except Exception:
+                retry = True
+                LOGGER.warning('Setting polling of attribute {} in {} due to unhandled'
+                               'exception in poll_attribute command'
+                               .format(attr, retry_time), exc_info=True)
+            else:
+                retry = False
+
+            if retry:
+                time.sleep(retry_time)
+                device_proxy.poll_attribute(attr, new_period)
 
     def restore_polling():
-        retry_time = 0.5
         for attr, period in initial_polling.items():
             if period == 0:
                 continue            # zero period implies no polling, nothing to do
