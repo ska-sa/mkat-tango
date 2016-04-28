@@ -71,6 +71,15 @@ class Weather(Device):
     def always_executed_hook(self):
         self.model.update()
 
+class WeatherSimControl(device):
+    __metaclass__ = DeviceMeta
+
+    instances = weakref.WeakValueDictionary()
+    name = self.name()
+    device_name = 'mkat_' + name.split('/', 1)[1] + '_simulator'
+    device_instance = Weather.instances[device_name]
+    self.model = device_instance.model
+
 
 class WeatherModel(model.Model):
 
@@ -99,4 +108,7 @@ class WeatherModel(model.Model):
         super(WeatherModel, self).setup_sim_quantities()
 
 
-weather_main = partial(main.simulator_main, Weather)
+weather_main = partial(main.simulator_main, Weather, WeatherSimControl)
+
+if __name__ == "__main__":
+    weather_main()
