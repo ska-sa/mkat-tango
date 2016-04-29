@@ -1,17 +1,35 @@
+#!/usr/bin/env python
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+"""
+MeerKAT weather simulator and weather simulator control.
+    @author MeerKAT CAM team <cam@ska.ac.za>
+    """
+
 import time
 import weakref
 import logging
 import collections
+import PyTango
 
 from functools import partial
 
+from PyTango import UserDefaultAttrProp
 from PyTango import AttrQuality, DevState
+from PyTango import Attr, AttrWriteType
+from PyTango import DevString, DevDouble
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-from mkat_tango.simlib import quantities
-from mkat_tango.simlib import model
-from mkat_tango.simlib import main
+import quantities
+import model
+import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -71,15 +89,44 @@ class Weather(Device):
     def always_executed_hook(self):
         self.model.update()
 
-class WeatherSimControl(device):
+class WeatherSimControl(Device):
     __metaclass__ = DeviceMeta
 
     instances = weakref.WeakValueDictionary()
-    name = self.name()
-    device_name = 'mkat_' + name.split('/', 1)[1] + '_simulator'
-    device_instance = Weather.instances[device_name]
-    self.model = device_instance.model
 
+    def init_device(self):
+        super(WeatherSimControl, self).init_device()
+        name = self.get_name()
+        self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
+        self.device_instance = Weather.instances[self.device_name]
+        self.model = self.device_instance.model
+        self.set_state(DevState.ON)
+
+    def initialize_dynamic_attributes(self):
+        dp = PyTango.DeviceProxy(self.device_name)
+        weather_sensors = dp.get_attribute_list()
+        control_attributes = vars(quantities.GaussianSlewLimited(0,0)).keys()
+        control_attributes = [attr for attr in control_attributes
+                              if not attr.startswith('last')]
+
+        for attribute_name in control_attributes:
+            MODULE_LOGGER.info(
+            "Added weather {} attribute control".format(attribute_name))
+            attr_props = UserDefaultAttrProp()
+            attr = Attr(attribute_name, DevDouble, AttrWriteType.READ_WRITE)
+           # attr_props.set_min_value(str(-numpy.inf))
+           # attr_props.set_max_value(str(numpy.inf))
+            attr.set_default_properties(attr_props)
+            method_call_read = self.write_floats
+            method_call_write = self.read_floats
+            self.add_attribute(attr,
+                 method_call_read, method_call_write)
+
+    def read_floats(self, attribute_con, sensor_name):
+        self.info_stream("Reading attribute %s", attribute_con.get_name())
+
+    def write_floats(self, attribute_con, sensor_name):
+        self.info_stream("Writting attribute %s", attribute_con.get_name())
 
 class WeatherModel(model.Model):
 
