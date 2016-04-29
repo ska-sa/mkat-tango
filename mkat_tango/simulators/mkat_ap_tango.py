@@ -53,7 +53,7 @@ class MkatAntennaPositioner(Device):
             if sensor.stype == "boolean":
                 attr = Attr(sensor_name, DevBoolean, AttrWriteType.READ)
                 method_call_read = self.read_attr
-            elif sensor.stype == "float":
+            elif sensor.stype == "float" or sensor.stype == "integer":
                 if sensor.name.startswith('requested-'):
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
                     method_call_write = self.write_attr
@@ -219,7 +219,135 @@ class MkatAntennaPositioner(Device):
         else:
             Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
                                    command_name, ErrSeverity.WARN)
-        
+                                   
+    
+    @command
+    def Clear_Track_Stack(self):
+        pass
+    
+    @command
+    def Enable_Motion_Profiler(self):
+        pass
+    
+    @command
+    def Enable_Point_Error_Refraction(self):
+        pass
+    
+    @command
+    def Enable_Point_Error_Systematic(self):
+        pass
+    
+    @command
+    def Enable_Point_Error_Tiltmeter(self):
+        pass
+    
+    @command
+    def Enable_Warning_Horn(self):
+        pass
+    
+    @command
+    def Halt(self):
+        pass
+    
+    @command
+    def Help(self):
+        pass
+    
+    @command
+    def Log_Level(self):
+        pass
+    
+    @command
+    def Rate(self):
+        """Request the AP to move the antenna at the rate specified.
+
+        Parameters
+        ----------
+        azim_rate : float
+            Azimuth velocity (degrees/sec)
+        elev_rate : float
+            Elevation velocity (degrees/sec)
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
+        if self.ap_model.in_remote_control():
+            if self._model.mode() not in [ApOperMode.stop]:
+                reply = ["fail", "Antenna mode '%s' != 'stop'." % self.ap_model.mode()]
+            else:
+                self.ap_model.rate(azim_rate, elev_rate)
+                reply = ['ok']
+        else:
+            reply = ["fail", "Antenna is not in remote control."]
+        return reply
+    
+    @command
+    def Reset_Failures(self):
+        pass
+    
+    @command
+    def Restart(self):
+        pass
+    
+    @command
+    def Set_Average_Tilt_An0(self):
+        pass
+    
+    @command
+    def Set_Average_Tilt_Aw0(self):
+        pass
+    
+    @command
+    def Sensor_List(self):
+        pass
+    
+    @command
+    def Sensor_Sampling(self):
+        pass
+    
+    @command
+    def Sensor_Value(self):
+        pass
+    
+    @command
+    def Set_Indexer_Position(self):
+        pass
+    
+    @command
+    def Set_On_Source_Threshold(self):
+        pass
+    
+    @command
+    def Set_Stow_Time_Period(self):
+        pass
+    
+    @command
+    def Set_Weather_Data(self):
+        pass
+    
+    @command
+    def Star_Track(self):
+        pass
+    
+    @command
+    def Track(self):
+        pass
+    
+    @command
+    def Track_Az_El(self):
+        pass
+    
+    @command
+    def Version_List(self):
+        pass
+    
+    @command
+    def Watchdog(self):
+        pass
+    
+    
 if __name__ == "__main__":
          logging.basicConfig(level=logging.DEBUG)
          server_run([MkatAntennaPositioner])
