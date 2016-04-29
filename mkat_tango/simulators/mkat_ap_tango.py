@@ -52,19 +52,19 @@ class MkatAntennaPositioner(Device):
             
             if sensor.stype == "boolean":
                 attr = Attr(sensor_name, DevBoolean, AttrWriteType.READ)
-                method_call_read = self.read_booleans
+                method_call_read = self.read_attr
             elif sensor.stype == "float":
                 if sensor.name.startswith('requested-'):
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
-                    method_call_write = self.write_floats
+                    method_call_write = self.write_attr
                 else:
                     attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
-                method_call_read = self.read_floats
+                method_call_read = self.read_attr
                 attr_props.set_min_value(str(sensor.params[0]))
                 attr_props.set_max_value(str(sensor.params[1]))
             elif sensor.stype == "discrete":
                 attr = Attr(sensor_name, DevString)
-                method_call_read = self.read_discretes
+                method_call_read = self.read_attr
             
             attr_props.set_label(sensor.name)
             attr_props.set_description(sensor.description)
@@ -73,25 +73,13 @@ class MkatAntennaPositioner(Device):
             
             self.add_attribute(attr, method_call_read, method_call_write)
             
-    def read_floats(self, attr):
+    def read_attr(self, attr):
         self.info_stream("Reading attribute %s", attr.get_name())
-        sens_name = self.unformatter(attr.get_name())
-        actual_azim_sens = self.ap_model.get_sensor(sens_name)
-        attr.set_value(actual_azim_sens.value())
+        sensor_name = self.unformatter(attr.get_name())
+        sensor = self.ap_model.get_sensor(sensor_name)
+        attr.set_value(sensor.value())    
         
-    def read_booleans(self, attr):
-        self.info_stream("Reading attribute %s", attr.get_name())
-        sens_name = self.unformatter(attr.get_name())
-        actual_azim_sens = self.ap_model.get_sensor(sens_name)
-        attr.set_value(actual_azim_sens.value())
-        
-    def read_discretes(self, attr):
-        self.info_stream("Reading attribute %s", attr.get_name())
-        sens_name = self.unformatter(attr.get_name())
-        actual_azim_sens = self.ap_model.get_sensor(sens_name)
-        attr.set_value(actual_azim_sens.value())    
-        
-    def write_floats(self, attr):
+    def write_attr(self, attr):
         pass
     
     def formatter(self, sensor_name):
