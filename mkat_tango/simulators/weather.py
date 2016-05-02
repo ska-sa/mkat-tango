@@ -23,13 +23,13 @@ from functools import partial
 from PyTango import UserDefaultAttrProp
 from PyTango import AttrQuality, DevState
 from PyTango import Attr, AttrWriteType
-from PyTango import DevString, DevDouble
+from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-import quantities
-import model
-import main
+from mkat_tango.simlib import quantities
+from mkat_tango.simlib import model
+from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -101,32 +101,68 @@ class WeatherSimControl(Device):
         self.device_instance = Weather.instances[self.device_name]
         self.model = self.device_instance.model
         self.set_state(DevState.ON)
+        self.dp = PyTango.DeviceProxy(self.device_name)
+        self.model_quantities = ''
 
     def initialize_dynamic_attributes(self):
-        dp = PyTango.DeviceProxy(self.device_name)
-        weather_sensors = dp.get_attribute_list()
+        weather_sensors = self.dp.get_attribute_list()
         control_attributes = vars(quantities.GaussianSlewLimited(0,0)).keys()
         control_attributes = [attr for attr in control_attributes
                               if not attr.startswith('last')]
+
+        attr_props = UserDefaultAttrProp()
+        attr = Attr('sensor_name', DevString, AttrWriteType.READ_WRITE)
+	attr.set_default_properties(attr_props)
+	self.add_attribute(attr, self.write_attribute)
 
         for attribute_name in control_attributes:
             MODULE_LOGGER.info(
             "Added weather {} attribute control".format(attribute_name))
             attr_props = UserDefaultAttrProp()
             attr = Attr(attribute_name, DevDouble, AttrWriteType.READ_WRITE)
-           # attr_props.set_min_value(str(-numpy.inf))
-           # attr_props.set_max_value(str(numpy.inf))
             attr.set_default_properties(attr_props)
-            method_call_read = self.write_floats
-            method_call_write = self.read_floats
-            self.add_attribute(attr,
-                 method_call_read, method_call_write)
+            self.add_attribute(attr, self.write_attributes)
 
-    def read_floats(self, attribute_con, sensor_name):
-        self.info_stream("Reading attribute %s", attribute_con.get_name())
+    def write_attribute(self, attr):
+        name = attr.get_name()
+        attr.set_value(attr.get_write_value())
 
-    def write_floats(self, attribute_con, sensor_name):
-        self.info_stream("Writting attribute %s", attribute_con.get_name())
+    def write_attributes(self, attr):
+        name = attr.get_name()
+        self.info_stream("Writting attribute %s", name)
+        attr.set_value(self.model_quantities.__dict__[name])
+
+    def write_sensor_name(self, attr):
+        name = attr.get_name()
+        data = attr.get_write_value()
+	attr.set_value(data)
+	self.model_quantities = self.model.sim_quantities[data]
+
+    def write_max_slew_rate(self, attr):
+        name = attr.get_name()
+	data = attr.get_write_value()
+        attr.set_value(data)
+        self.model_quantities.__dict__[name] = data
+
+    def write_min_bound(self, attr):
+        name = attr.get_name()
+        data = attr.get_write_value()
+        self.model_quantities.__dict__[name] = data
+
+    def write_max_bound(self, attr):
+        name = attr.get_name()
+        data = attr.get_write_value()
+        self.model_quantities.__dict__[name] = data
+
+    def write_mean(self, attr):
+        name = attr.get_name()
+        data = attr.get_write_value()
+        self.model_quantities.__dict__[name] = data
+
+    def write_std_dev(self, attr):
+        name = attr.get_name()
+        data = attr.get_write_value()
+        self.model_quantities.__dict__[name] = data
 
 class WeatherModel(model.Model):
 
