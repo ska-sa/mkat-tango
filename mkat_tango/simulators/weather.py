@@ -113,7 +113,7 @@ class WeatherSimControl(Device):
         attr_props = UserDefaultAttrProp()
         attr = Attr('sensor_name', DevString, AttrWriteType.READ_WRITE)
 	attr.set_default_properties(attr_props)
-	self.add_attribute(attr, self.write_attribute)
+	self.add_attribute(attr, self.read_attribute)
 
         for attribute_name in control_attributes:
             MODULE_LOGGER.info(
@@ -121,47 +121,30 @@ class WeatherSimControl(Device):
             attr_props = UserDefaultAttrProp()
             attr = Attr(attribute_name, DevDouble, AttrWriteType.READ_WRITE)
             attr.set_default_properties(attr_props)
-            self.add_attribute(attr, self.write_attributes)
+            self.add_attribute(attr, self.read_attributes, self.write_attributes)
 
-    def write_attribute(self, attr):
+    def read_attribute(self, attr):
         name = attr.get_name()
+        self.info_stream("Reading attribute %s", name)
         attr.set_value(attr.get_write_value())
 
-    def write_attributes(self, attr):
+    def read_attributes(self, attr):
         name = attr.get_name()
-        self.info_stream("Writting attribute %s", name)
+        self.info_stream("Reading attribute %s", name)
         attr.set_value(self.model_quantities.__dict__[name])
 
     def write_sensor_name(self, attr):
         name = attr.get_name()
         data = attr.get_write_value()
-	attr.set_value(data)
-	self.model_quantities = self.model.sim_quantities[data]
+        self.info_stream("Writing attribute {} with value: {}".format(name, data))
+        attr.set_value(data)
+        self.model_quantities = self.model.sim_quantities[data]
 
-    def write_max_slew_rate(self, attr):
+    def write_attributes(self, attr):
         name = attr.get_name()
 	data = attr.get_write_value()
+        self.info_stream("Writing attribute {} with value: {}".format(name, data))
         attr.set_value(data)
-        self.model_quantities.__dict__[name] = data
-
-    def write_min_bound(self, attr):
-        name = attr.get_name()
-        data = attr.get_write_value()
-        self.model_quantities.__dict__[name] = data
-
-    def write_max_bound(self, attr):
-        name = attr.get_name()
-        data = attr.get_write_value()
-        self.model_quantities.__dict__[name] = data
-
-    def write_mean(self, attr):
-        name = attr.get_name()
-        data = attr.get_write_value()
-        self.model_quantities.__dict__[name] = data
-
-    def write_std_dev(self, attr):
-        name = attr.get_name()
-        data = attr.get_write_value()
         self.model_quantities.__dict__[name] = data
 
 class WeatherModel(model.Model):
