@@ -22,6 +22,33 @@ from mkat_tango.translators import tango_inspecting_client
 LOGGER = logging.getLogger(__name__)
 
 def _test_attr(attr_dummy_fn):
+    """Decorator for a :class:`PyTango.server.Device` test attribute
+
+    Allows an empty reading function. Attribute values are instead read from the
+    device instance's `attr_return_vals` dict.
+
+    Example
+    =======
+
+    class TangoTestDevice(PyTango.server.Device):
+        __metaclass__ = PyTango.server..DeviceMeta
+
+        def init_device(self):
+            super(TangoTestDevice, self).init_device()
+            self.attr_return_vals = dict(
+                blah=(123.456, time.time(), PyTango.AttrQuality.ATTR_VALID))
+
+        @PyTango.Server.attribute(dtype=float)
+        @_test_attr
+        def blah(self): pass
+
+    This will set up a read function for the `blah` attribute that reads the
+    (value, timestamp, attribute quality) tuple from
+    `self.attr_return_vals['blah']`. If the timestamp value is None,
+    `self.attr_time()` is called to get the timestamp. `self.attr_time` is
+    initialised to time.time()
+
+    """
     attr_name = attr_dummy_fn.__name__
 
     @wraps(attr_dummy_fn)
@@ -48,8 +75,8 @@ class TangoTestDevice(TS.Device):
         super(TangoTestDevice, self).init_device()
         name = self.get_name()
         self.instances[name] = self
-        # Return values for attributes as (val, timestamp, attr_quality). If timestamp is
-        # None, self.attr_time is called to get the time
+        # Return values for attributes as (val, timestamp, attr_quality). If
+        # timestamp is None, self.attr_time is called to get the time
         self.attr_return_vals = dict(
             ScalarBool=(True, None, AttrQuality.ATTR_VALID),
             ScalarDevUChar=('a', None, AttrQuality.ATTR_VALID),
@@ -113,6 +140,13 @@ class test_TangoInspectingClient(unittest.TestCase):
 
     @classmethod
     def setUpClassWithCleanup(cls):
+        """Do class-level setup  and ensure that cleanup functions are called
+
+        In this method calls to `cls.addCleanup` is forwarded to
+        `cls.addCleanupClass`, which means callables registered with
+        `cls.addCleanup()` is added to the class-level cleanup function stack.
+
+        """
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.tango_context = TangoTestContext(
             TangoTestDevice, db=cls.tango_db)
@@ -125,10 +159,12 @@ class test_TangoInspectingClient(unittest.TestCase):
 
     @classmethod
     def addCleanupClass(cls, function, *args, **kwargs):
+        """Add a cleanp that will be called at class tear-down time"""
         cls._class_cleanups.append((function, args, kwargs))
 
     @classmethod
     def doCleanupsClass(cls):
+        """Run class-level cleanups registered with `cls.addCleanupClass()`"""
         results = []
         while cls._class_cleanups:
             function, args, kwargs = cls._class_cleanups.pop()
@@ -146,6 +182,13 @@ class test_TangoInspectingClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
+
+        Any exceptions raised during `cls.setUpClassWithCleanup` will result in
+        the cleanups registered up to that point being called before re-raising
+        the exception.
+
+        """
         try:
             with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
                 cls_addCleanup.side_effect = cls.addCleanupClass
@@ -213,7 +256,7 @@ class test_TangoInspectingClient(unittest.TestCase):
         recorded_samples = {attr:[] for attr in test_attributes}
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
-            sec.side_effect = lambda attr, *x : recorded_samples[attr].append(x)
+            sec.side_effect = lambda attr, *x: recorded_samples[attr].append(x)
             self.addCleanup(self.DUT.clear_attribute_sampling)
             LOGGER.debug('Setting attribute sampling')
             self.DUT.setup_attribute_sampling()

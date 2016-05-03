@@ -62,6 +62,7 @@ def set_attributes_polling(test_case, device_proxy, device_server, poll_periods)
                 device_proxy.poll_attribute(attr, new_period)
 
     def restore_polling():
+        """Restore initial polling, for use during cleanup / teardown"""
         for attr, period in initial_polling.items():
             if period == 0:
                 continue            # zero period implies no polling, nothing to do
