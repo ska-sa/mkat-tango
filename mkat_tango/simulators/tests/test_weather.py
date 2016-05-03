@@ -7,12 +7,12 @@ from random import gauss
 
 from devicetest import DeviceTestCase
 
+from mkat_tango.testutils import disable_attributes_polling
+
 # DUT
 from mkat_tango.simulators import weather
 
 LOGGER = logging.getLogger(__name__)
-
-LOGGER.debug('Importing')
 
 class AlwaysDifferentGauss(object):
 
@@ -55,46 +55,6 @@ def read_attributes_as_dicts(dev, attrs):
         res = result[attr.name] = dict(attr.__dict__)
         res['time'] = attr.time.totime()
     return result
-
-def disable_attributes_polling(test_case, device_proxy, device_server, attributes):
-    """Disable polling for a tango device server, en re-eable at end of test"""
-
-    # TODO (NM 2016-04-11) check if this is still needed after upgrade to Tango 9.x For
-    # some reason it only works if the device_proxy is used to set polling, but the
-    # device_server is used to clear the polling. If polling is cleared using device_proxy
-    # it seem to be impossible to restore the polling afterwards.
-
-    initial_polling = {attr: device_proxy.get_attribute_poll_period(attr)
-                       for attr in attributes}
-    for attr, period in initial_polling.items():
-        if period == 0:
-            continue            # zero period implies no polling, nothing to do
-        device_server.stop_poll_attribute(attr)
-
-    def restore_polling():
-        retry_time = 0.5
-        for attr, period in initial_polling.items():
-            if period == 0:
-                continue            # zero period implies no polling, nothing to do
-            try:
-                device_proxy.poll_attribute(attr, period)
-                # TODO (NM 2016-04-11) For some reason Tango doesn't seem to handle
-                # back-to-back calls, and even with the sleep it sometimes goes bad. Need
-                # to check if this is fixed (and core dumps) when we upgrade to Tango 9.x
-                time.sleep(0.05)
-            except Exception:
-                retry = True
-                LOGGER.warning('retrying restore of attribute {} in {} due to unhandled'
-                               'exception in poll_attribute command'
-                               .format(attr, retry_time), exc_info=True)
-            else:
-                retry = False
-
-            if retry:
-                time.sleep(retry_time)
-                device_proxy.poll_attribute(attr, period)
-
-    test_case.addCleanup(restore_polling)
 
 
 class test_Weather(DeviceTestCase):
