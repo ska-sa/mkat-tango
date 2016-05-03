@@ -97,24 +97,31 @@ class WeatherSimControl(Device):
     def init_device(self):
         super(WeatherSimControl, self).init_device()
         name = self.get_name()
+        #Get the name of the device
         self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
         self.device_instance = Weather.instances[self.device_name]
+        #Get the device instance model to be controlled
         self.model = self.device_instance.model
         self.set_state(DevState.ON)
-        self.dp = PyTango.DeviceProxy(self.device_name)
         self.model_quantities = ''
 
     def initialize_dynamic_attributes(self):
-        weather_sensors = self.dp.get_attribute_list()
-        control_attributes = vars(quantities.GaussianSlewLimited(0,0)).keys()
+        '''The device method that sets up attributes during run time'''
+        #Get attributes to control the model
+        #from GuassianSlewLimited class variable
+        control_attributes = vars(quantities.GaussianSlewLimited(0, 0)).keys()
+        #Get only gaussian random variables
         control_attributes = [attr for attr in control_attributes
                               if not attr.startswith('last')]
 
+        #Add the first string attribute that takes a sensor name
+        #from the list of available simulator device attributes
         attr_props = UserDefaultAttrProp()
         attr = Attr('sensor_name', DevString, AttrWriteType.READ_WRITE)
-	attr.set_default_properties(attr_props)
-	self.add_attribute(attr, self.read_attribute)
+        attr.set_default_properties(attr_props)
+        self.add_attribute(attr, self.read_attribute)
 
+        #Add a list of float attributes from the list of Guassian variables
         for attribute_name in control_attributes:
             MODULE_LOGGER.info(
             "Added weather {} attribute control".format(attribute_name))
@@ -123,26 +130,56 @@ class WeatherSimControl(Device):
             attr.set_default_properties(attr_props)
             self.add_attribute(attr, self.read_attributes, self.write_attributes)
 
+#TODO Since only a Guassian quantities are assumed
+     #also to include other quantities
+#TODO Need to add an active flag and current value
+     #attribute to allow pausing of the set of sensor values
+
     def read_attribute(self, attr):
+        '''Method reading a sensor name
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+            The attribute to read from.
+	'''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
         attr.set_value(attr.get_write_value())
 
     def read_attributes(self, attr):
+        '''Method reading an attribute value
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+            The attribute to read from.
+	'''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
         attr.set_value(self.model_quantities.__dict__[name])
 
     def write_sensor_name(self, attr):
+        '''Method writing a sensor name
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+            The attribute to write to.
+	'''
         name = attr.get_name()
         data = attr.get_write_value()
         self.info_stream("Writing attribute {} with value: {}".format(name, data))
         attr.set_value(data)
+        #New specific model for the written sensor name
         self.model_quantities = self.model.sim_quantities[data]
 
     def write_attributes(self, attr):
+        '''Method writing an attribute value
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+            The attribute to write to.
+	'''
         name = attr.get_name()
-	data = attr.get_write_value()
+        data = attr.get_write_value()
         self.info_stream("Writing attribute {} with value: {}".format(name, data))
         attr.set_value(data)
         self.model_quantities.__dict__[name] = data
