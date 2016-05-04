@@ -113,6 +113,7 @@ class WeatherSimControl(Device):
     @attribute(dtype=str)
     def sensor_name(self):
         return self._sensor_name
+
     @sensor_name.write
     def sensor_name(self, name):
         self._sensor_name = name
@@ -121,6 +122,7 @@ class WeatherSimControl(Device):
     @attribute(dtype=bool)
     def pause_active(self):
         return self._pause_active
+
     @pause_active.write
     def pause_active(self, isActive):
         self._pause_active = isActive
