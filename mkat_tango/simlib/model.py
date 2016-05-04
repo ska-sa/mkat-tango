@@ -1,5 +1,6 @@
 import logging
 import time
+import numpy
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -8,6 +9,7 @@ class Model(object):
                  time_func=time.time):
         self.name = name
         self.min_update_period = min_update_period
+	self.stored_min_update_period = min_update_period
         self.time_func = time_func
         self.start_time = start_time or time_func()
         self.last_update_time = self.start_time
@@ -53,3 +55,16 @@ class Model(object):
                 self._sim_state[var] = (quant.next_val(sim_time), sim_time)
         except Exception:
             MODULE_LOGGER.exception('Exception in update loop')
+
+    def pause_update(self, pause):
+        """Halts update of the sensor values to allowing manipulation of the values
+        by the simulator controller
+        Parameters
+        =========
+        pause : bool
+            The boolean indicating whether to pause or not
+        """
+        if pause:
+           self.min_update_period = numpy.inf
+	else:
+           self.min_update_period = self.stored_min_update_period

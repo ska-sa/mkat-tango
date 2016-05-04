@@ -103,6 +103,9 @@ class WeatherSimControl(Device):
         self.device_instance = Weather.instances[self.device_name]
         # Get the device instance model to be controlled
         self.model = self.device_instance.model
+	# Get weather device proxy and get a list of attributes it contain
+	self.device_proxy = PyTango.DeviceProxy(self.device_name)
+	self.device_sensors = self.device_proxy.get_attribute_list()
         self.set_state(DevState.ON)
         self.model_quantities = ''
         self._sensor_name = ''
@@ -116,8 +119,12 @@ class WeatherSimControl(Device):
 
     @sensor_name.write
     def sensor_name(self, name):
-        self._sensor_name = name
-        self.model_quantities = self.model.sim_quantities[self._sensor_name]
+        if name in self.device_sensors:
+            self._sensor_name = name
+            self.model_quantities = self.model.sim_quantities[self._sensor_name]
+        else:
+            raise NameError('Name does not exist in the sensor list {}'.
+                            format(self.device_sensors))
 
     @attribute(dtype=bool)
     def pause_active(self):
@@ -126,10 +133,7 @@ class WeatherSimControl(Device):
     @pause_active.write
     def pause_active(self, isActive):
         self._pause_active = isActive
-        if self._pause_active:
-            self.model.min_update_period = numpy.inf
-        else:
-            self.model.min_update_period = 0.99
+        self.model.pause_update(isActive)
 
     def initialize_dynamic_attributes(self):
         '''The device method that sets up attributes during run time'''
