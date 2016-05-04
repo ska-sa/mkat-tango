@@ -17,7 +17,7 @@ import weakref
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
 from PyTango.server import Device, DeviceMeta, command, server_run
-from PyTango import AttrWriteType,  DevState
+from PyTango import AttrWriteType,  DevState, CommandInfo
 from PyTango import Attr, DevString, DevBoolean, DevDouble
 from PyTango import UserDefaultAttrProp, Except, ErrSeverity
 
@@ -44,7 +44,7 @@ class MkatAntennaPositioner(Device):
     def initialize_dynamic_attributes(self):
         sensors = self.ap_model.get_sensors()
         for sensor in sensors:
-            MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
+            #MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
             attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
             sensor_name = self.formatter(sensor.name)
             method_call_read = None
@@ -126,36 +126,61 @@ class MkatAntennaPositioner(Device):
         sensor_name = attr_name.replace('_', '-')
         return sensor_name
     
-    @command
+    @command(dtype_out=[str])
     def TurnOn(self):
         self.set_state(DevState.ON)
-        self.ap_model.set_mode(ApOperMode.stop)
+        #self.ap_model.set_mode(ApOperMode.stop)
         MODULE_LOGGER.info("Turning on the device")
+        reply = ["ok"]
+        return reply
         
-    @command
+    @command(dtype_out=[str])
     def TurnOff(self):
         self.set_state(DevState.OFF)
-        self.ap_model.set_mode(ApOperMode.shutdown)
+        #self.ap_model.set_mode(ApOperMode.shutdown)
         MODULE_LOGGER.info("Turning off the device")
+        reply = ["ok"]
+        return reply
     
-    @command
+    @command(dtype_out=[str])
     def Stop(self):
-        '''Request mode stop.'''
+        """Request mode stop.
+
+        If current mode is 'shutdown' or 'stow' or 'maintenance' then the
+        warning horn will sound for 10 seconds if it is enabled.
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
+        
         command_name = "Stop()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
                 self.ap_model.set_mode(ApOperMode.stop)
                 MODULE_LOGGER.info("Ok")
+                reply = ["ok"]
             else:
                 Except.throw_exception(self.COMMAND_ERROR_REASON,
                                        "Antenna is not in remote control", command_name,
                                        ErrSeverity.WARN)
+                reply = ["fail", "Antenna is not in remote control."]
         else:
             Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
                                    command_name, ErrSeverity.WARN)
-               
+        
+        return reply
+        
     @command
     def Maintenance(self):
+        """Request mode maintenance.
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
         command_name = "Maintenance()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
@@ -177,6 +202,13 @@ class MkatAntennaPositioner(Device):
         
     @command
     def Stow(self):
+        """Request mode stow.
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
         command_name = "Stow()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
@@ -198,32 +230,65 @@ class MkatAntennaPositioner(Device):
                                    self.COMMAND_ERROR_DESC_OFF, command_name,
                                    ErrSeverity.WARN)
         
-    @command
-    def Slew(self):
+    @command(dtype_in=[float], dtype_out=[str])
+    def Slew(self, azim_elev_coordinates):
+        """Request the AP to slew.
+
+        Request the AP to move (slew) the antenna to the position specified by
+        the azimuth and elevation parameters.
+
+        Parameters
+        ----------
+        azim : float
+            Azimuth coordinate (degrees)
+        elev : float
+            Elevation coordinate (degrees)
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
         command_name = "Slew()"
         if self.get_state() != DevState.OFF:
             if self.ap_model.in_remote_control():
                 if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.slew,
                                                 ApOperMode.track]:
-                    Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
-                                           "switch Antenna mode to 'slew' while in mode"
-                                           "'%s'" % self.ap_model.mode(), command_name,
-                                           ErrSeverity.WARN)   
+#                    Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
+#                                           "switch Antenna mode to 'slew' while in mode"
+#                                           "'%s'" % self.ap_model.mode(), command_name,
+#                                           ErrSeverity.WARN)   
+                    reply = ["fail", "Unable to switch Antenna mode to 'slew' while in "
+                                 "mode '%s'" % self.ap_model.mode()]
                 else:
-                    attributes = self.get_device_attr()
-                    requested_azim = attributes.get_attr_by_name('requested_azim')
-                    requested_elev = attributes.get_attr_by_name('requested_elev')
-                    self.ap_model.slew(requested_azim.get_write_value(),
-                                       requested_elev.get_write_value())
+                    #attributes = self.get_device_attr()
+                    #requested_azim = attributes.get_attr_by_name('requested_azim')
+                    #requested_elev = attributes.get_attr_by_name('requested_elev')
+                    requested_azim, requested_elev = azim_elev_coordinates
+                    self.ap_model.slew(requested_azim, requested_elev)
                     MODULE_LOGGER.info("OK")
+                    reply = ["ok"]
+            else:
+                reply = ["fail", "Antenna is not in remote control."]
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
-                                   command_name, ErrSeverity.WARN)
-                                   
+#            Except.throw_exception(self.COMMAND_ERROR_REASON, self.COMMAND_ERROR_DESC_OFF,
+#                                   command_name, ErrSeverity.WARN)
+            pass
+        
+        return reply                           
     
     @command
     def Clear_Track_Stack(self):
-        pass
+        """Clear the stack with the track samples.
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
+        self.ap_model.azim_drive.clear_pointing_samples()
+        self.ap_model.elev_drive.clear_pointing_samples()
+        return ["ok"]
     
     @command
     def Enable_Motion_Profiler(self):
@@ -253,12 +318,12 @@ class MkatAntennaPositioner(Device):
     def Help(self):
         pass
     
-    @command
+    @command()
     def Log_Level(self):
         pass
     
-    @command
-    def Rate(self):
+    @command(dtype_in=[float], dtype_out=[str])
+    def Rate(self, azim_elev_rates):
         """Request the AP to move the antenna at the rate specified.
 
         Parameters
@@ -273,8 +338,9 @@ class MkatAntennaPositioner(Device):
         success : 'ok' | 'fail' message
             Whether the request succeeded
         """
+        azim_rate, elev_rate = azim_elev_rates
         if self.ap_model.in_remote_control():
-            if self._model.mode() not in [ApOperMode.stop]:
+            if self.ap_model.mode() not in [ApOperMode.stop]:
                 reply = ["fail", "Antenna mode '%s' != 'stop'." % self.ap_model.mode()]
             else:
                 self.ap_model.rate(azim_rate, elev_rate)
@@ -285,7 +351,21 @@ class MkatAntennaPositioner(Device):
     
     @command
     def Reset_Failures(self):
-        pass
+        """Request informing the AP to clear/acknowledge any failures.
+
+        All safety relevant failures are latched and the AP requires a command
+        to clear/acknowledge the existing failures.
+
+        Returns
+        -------
+        success : 'ok' | 'fail' message
+            Whether the request succeeded
+        """
+        if self.ap_model.in_remote_control():
+            self.ap_model.reset_failures()
+            return ["ok"]
+        else:
+            return ["fail", "Antenna is not in remote control."]
     
     @command
     def Restart(self):
