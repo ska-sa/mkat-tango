@@ -1,11 +1,29 @@
+#!/usr/bin/env python
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+"""
+MeerKAT weather simulator and weather simulator control.
+    @author MeerKAT CAM team <cam@ska.ac.za>
+    """
+
 import time
 import weakref
 import logging
 import collections
+import PyTango
 
 from functools import partial
 
+from PyTango import UserDefaultAttrProp
 from PyTango import AttrQuality, DevState
+from PyTango import Attr, AttrWriteType, WAttribute
+from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
@@ -71,6 +89,77 @@ class Weather(Device):
     def always_executed_hook(self):
         self.model.update()
 
+class WeatherSimControl(Device):
+    __metaclass__ = DeviceMeta
+
+    instances = weakref.WeakValueDictionary()
+
+    def init_device(self):
+        super(WeatherSimControl, self).init_device()
+        name = self.get_name()
+        # Get the name of the device
+        self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
+        self.device_instance = Weather.instances[self.device_name]
+        # Get the device instance model to be controlled
+        self.model = self.device_instance.model
+        self.set_state(DevState.ON)
+        self.model_quantities = ''
+        self._sensor_name = ''
+
+    # Static attributes of the device
+
+    @attribute(dtype=str)
+    def sensor_name(self):
+        return self._sensor_name
+
+    @sensor_name.write
+    def sensor_name(self, name):
+        self._sensor_name = name
+        self.model_quantities = self.model.sim_quantities[self._sensor_name]
+
+    def initialize_dynamic_attributes(self):
+        '''The device method that sets up attributes during run time'''
+        # Get attributes to control the model
+        # from GuassianSlewLimited class variable
+        control_attributes = vars(quantities.GaussianSlewLimited(0, 0)).keys()
+
+        # Add a list of float attributes from the list of Guassian variables
+        for attribute_name in control_attributes:
+            MODULE_LOGGER.info(
+            "Added weather {} attribute control".format(attribute_name))
+            attr_props = UserDefaultAttrProp()
+            attr = Attr(attribute_name, DevDouble, AttrWriteType.READ_WRITE)
+            attr.set_default_properties(attr_props)
+            self.add_attribute(attr, self.read_attributes, self.write_attributes)
+
+# AR 2016-05-03 TODO Since only a Guassian quantities are assumed
+     # also to include other quantities
+# AR 2016-05-03 TODO Need to add an active flag and current value
+     # attribute to allow pausing of the set of sensor values
+
+    def read_attributes(self, attr):
+        '''Method reading an attribute value
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+            The attribute to read from.
+	'''
+        name = attr.get_name()
+        self.info_stream("Reading attribute %s", name)
+        attr.set_value(getattr(self.model_quantities, name))
+
+    def write_attributes(self, attr):
+        '''Method writing an attribute value
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+            The attribute to write to.
+	'''
+        name = attr.get_name()
+        data = attr.get_write_value()
+        self.info_stream("Writing attribute {} with value: {}".format(name, data))
+        attr.set_value(data)
+        setattr(self.model_quantities, name, data)
 
 class WeatherModel(model.Model):
 
@@ -99,4 +188,7 @@ class WeatherModel(model.Model):
         super(WeatherModel, self).setup_sim_quantities()
 
 
-weather_main = partial(main.simulator_main, Weather)
+weather_main = partial(main.simulator_main, Weather, WeatherSimControl)
+
+if __name__ == "__main__":
+    weather_main()

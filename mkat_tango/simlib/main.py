@@ -4,7 +4,7 @@ import threading
 
 from PyTango.server import server_run
 
-def simulator_main(sim_class):
+def simulator_main(sim_class, sim_control_class=None):
     """Main function for a simulator with class sim_class
 
     sim_class is a tango.server.Device subclass
@@ -25,4 +25,7 @@ def simulator_main(sim_class):
         '%(pathname)s : %(lineno)d - %(message)s',
         level=logging.INFO)
 
-    server_run([sim_class])
+    classes = [sim_class]
+    if sim_control_class:
+        classes.append(sim_control_class)
+    server_run(classes)
