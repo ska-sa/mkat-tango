@@ -17,7 +17,6 @@ import weakref
 import logging
 import collections
 import PyTango
-import numpy
 
 from functools import partial
 
@@ -106,28 +105,17 @@ class WeatherSimControl(Device):
         self.set_state(DevState.ON)
         self.model_quantities = ''
         self._sensor_name = ''
-        self._pause_active = ''
 
     # Static attributes of the device
 
     @attribute(dtype=str)
     def sensor_name(self):
         return self._sensor_name
+
     @sensor_name.write
     def sensor_name(self, name):
         self._sensor_name = name
         self.model_quantities = self.model.sim_quantities[self._sensor_name]
-
-    @attribute(dtype=bool)
-    def pause_active(self):
-        return self._pause_active
-    @pause_active.write
-    def pause_active(self, isActive):
-        self._pause_active = isActive
-        if self._pause_active:
-            self.model.min_update_period = numpy.inf
-        else:
-            self.model.min_update_period = 0.99
 
     def initialize_dynamic_attributes(self):
         '''The device method that sets up attributes during run time'''
@@ -146,6 +134,8 @@ class WeatherSimControl(Device):
 
 # AR 2016-05-03 TODO Since only a Guassian quantities are assumed
      # also to include other quantities
+# AR 2016-05-03 TODO Need to add an active flag and current value
+     # attribute to allow pausing of the set of sensor values
 
     def read_attributes(self, attr):
         '''Method reading an attribute value
@@ -156,14 +146,7 @@ class WeatherSimControl(Device):
 	'''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
-        if name == 'last_val':
-            if self._pause_active:
-                data, t = self.model.quantity_state[self._sensor_name]
-                attr.set_value(data)
-            else:
-                attr.set_value(self.model_quantities.__dict__[name])
-        else:
-                attr.set_value(self.model_quantities.__dict__[name])
+        attr.set_value(getattr(self.model_quantities, name))
 
     def write_attributes(self, attr):
         '''Method writing an attribute value
@@ -176,13 +159,7 @@ class WeatherSimControl(Device):
         data = attr.get_write_value()
         self.info_stream("Writing attribute {} with value: {}".format(name, data))
         attr.set_value(data)
-        if name == 'last_val':
-            if self._pause_active:
-                self.model.quantity_state[self._sensor_name] = data, numpy.inf
-            else:
-                setattr(self.model_quantities, name, data)
-        else:
-            setattr(self.model_quantities, name, data)
+        setattr(self.model_quantities, name, data)
 
 class WeatherModel(model.Model):
 
