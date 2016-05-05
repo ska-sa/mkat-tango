@@ -103,8 +103,8 @@ class WeatherSimControl(Device):
         self.device_instance = Weather.instances[self.device_name]
         # Get the device instance model to be controlled
         self.model = self.device_instance.model
-	# Get a list of attributes a device contains from the model
-	self.device_sensors = self.model.sim_quantities.keys()
+        # Get a list of attributes a device contains from the model
+        self.device_sensors = self.model.sim_quantities.keys()
         self.set_state(DevState.ON)
         self.model_quantities = ''
         self._sensor_name = ''
@@ -158,17 +158,10 @@ class WeatherSimControl(Device):
         ==========
         attr : PyTango.DevAttr
             The attribute to read from.
-	'''
+        '''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
-        if name == 'last_val':
-            if self._pause_active:
-                data, t = self.model.quantity_state[self._sensor_name]
-                attr.set_value(data)
-            else:
-                attr.set_value(getattr(self.model_quantities, name))
-        else:
-                attr.set_value(getattr(self.model_quantities, name))
+        attr.set_value(getattr(self.model_quantities, name))
 
     def write_attributes(self, attr):
         '''Method writing an attribute value
@@ -176,16 +169,14 @@ class WeatherSimControl(Device):
         ==========
         attr : PyTango.DevAttr
             The attribute to write to.
-	'''
+        '''
         name = attr.get_name()
         data = attr.get_write_value()
         self.info_stream("Writing attribute {} with value: {}".format(name, data))
         attr.set_value(data)
-        if name == 'last_val':
-            if self._pause_active:
-                self.model.quantity_state[self._sensor_name] = data, numpy.inf
-            else:
-                setattr(self.model_quantities, name, data)
+        setattr(self.model_quantities, name, data)
+        if name == 'last_val' and self._pause_active:
+            self.model.quantity_state[self._sensor_name] = data, time.time()
         else:
             setattr(self.model_quantities, name, data)
 
