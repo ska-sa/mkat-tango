@@ -16,18 +16,10 @@ Tests for the MeerKAT Antenna Positioner Simulator.
 import unittest2 as unittest
 import time
 import logging
-import threading
-import mock
-#from katcp import Message, Sensor
-#from katcp.testutils import BlockingTestClient, TestLogHandler, TestUtilMixin
-#from katproxy.testutils import DualTestMixin
-#from katproxy.sim.mkat_ap import MkatApDevice, MkatApTestDevice, MkatApModel
-#from katproxy.sim.mkat_ap import Control, Drive, EStopReason
 
 from devicetest import DeviceTestCase 
-from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner
-
-#ogging.getLogger("katcp").addHandler(TestLogHandler())
+from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner, unformatter
+from PyTango import CmdArgType
 
 logger = logging.getLogger(__name__)
 
@@ -234,8 +226,6 @@ class TestProxyWrapper(object):
     def assertCommandSucceeds(self, command_name, *params, **kwargs):
         """Assert that given command succeeds when called with given parameters.
 
-        Optionally also checks the arguments.
-
         Parameters
         ----------
         requestname : str
@@ -243,8 +233,6 @@ class TestProxyWrapper(object):
         params : list of objects
             The parameters with which to call the request.
         """
-        print params
-        
         if params == ():
             reply = self.device_proxy.command_inout(command_name)
         else:
@@ -256,8 +244,6 @@ class TestProxyWrapper(object):
                               "has name '%s'." % (command_name, reply_name))
 
 
-        print reply
-        print type(reply)
         msg = ("Expected request '%s' called with parameters %r to succeed, "
                "but it failed %s."
                % (command_name, params, ("with error '%s'" % reply[1]
@@ -276,7 +262,7 @@ class TestProxyWrapper(object):
             The name of the request.
         params : list of objects
             The parameters with which to call the request.
-        """                                                    *params))
+        """                                                    
         if params == ():
             reply = self.device_proxy.command_inout(command_name)
         else:
@@ -284,143 +270,73 @@ class TestProxyWrapper(object):
             
         reply_name = self.device_proxy.command_query(command_name).cmd_name
         
-        print reply
+        #print reply
         msg = "Reply to command '%s' has name '%s'." % (command_name, reply_name)
         self.test_inst.assertEqual(reply_name, command_name, msg)
 
         msg = ("Expected request '%s' called with parameters %r to fail, "
                "but it was successful." % (command_name, params))
         self.test_inst.assertFalse(reply[0]=='ok', msg)
-
-    def test_sensor_list(self, expected_attributes, ignore_descriptions=False):
-        """Test that list of attributes on the device equals the provided list.
+        
+    def wait_until_sensor_equals(self, timeout, attr_name, value,
+                                 attr_data_type=CmdArgType.DevString, places=7, pollfreq=0.02):
+        """Wait until a attribute's value equals the given value, or times out.
 
         Parameters
         ----------
-        expected_attributes : list of tuples
-            The list of expected sensors. Each tuple contains the arguments
-            returned by each sensor-list inform, as unescaped strings.
-        ignore_descriptions : boolean, optional
-            If this is true, sensor descriptions will be ignored in the
-            comparison.
+        timeout : float
+            How long to wait before timing out, in seconds.
+        attr_name : str
+            The name of the sensor.
+        value : obj
+            The expected value of the sensor. Type must match sensortype.
+        attr_data_type : type, optional
+            The type to use to convert the sensor value.
+        places : int, optional
+            The number of places to use in a float comparison. Has no effect
+            if sensortype is not float.
+        pollfreq : float, optional
+            How frequently to poll for the sensor value.
 
         """
-        def sensortuple(name, description, units, stype, *params):
-            # ensure float params reduced to the same format
-            if stype == "float":
-                params = ["%g" % float(p) for p in params]
-            return (name, description, units, stype) + tuple(params)
+        # TODO Should be changed to use some varient of SensorTransitionWaiter
 
-        #reply, informs = self.blocking_request(Message.request("sensor-list"))
-#        attr = self.get_attribute_list()
-#
-#        msg = ("Could not retrieve sensor list: %s"
-#               % (reply.arguments[1] if len(reply.arguments) >= 2 else ""))
-#        self.test.assertTrue(reply.reply_ok(), msg)
-#
-#        expected_sensors = [sensortuple(*t) for t in expected_sensors]
-#        got_sensors = [sensortuple(*m.arguments) for m in informs]
+        stoptime = time.time() + timeout
+        success = False
 
-        # print ",\n".join([str(t) for t in got_sensors])
+        if attr_data_type == CmdArgType.DevDouble:
+            cmpfun = lambda got, exp: abs(got - exp) < 10 ** -places
+        else:
+            cmpfun = lambda got, exp: got == exp
 
-#        if ignore_descriptions:
-#            expected_sensors = [s[:1] + s[2:] for s in expected_sensors]
-#            got_sensors = [s[:1] + s[2:] for s in got_sensors]
-#
-#        expected_set = set(expected_sensors)
-#        got_set = set(got_sensors)
-#
-#        msg = ("Sensor list differs from expected list.\n"
-#               "These sensors are missing:\n%s\n"
-#               "Found these unexpected sensors:\n%s"
-#               % ("\n".join(sorted([str(t) for t in expected_set - got_set])),
-#                  "\n".join(sorted([str(t) for t in got_set - expected_set]))))
-#        self.test.assertEqual(got_set, expected_set, msg)
+        lastval = None
+        while time.time() < stoptime:
+            lastval = self.device_proxy.read_attribute(attr_name).value
+            if cmpfun(lastval, value):
+                success = True
+                break
+            time.sleep(pollfreq)
+
+        if not success:
+            self.test_inst.fail("Timed out while waiting %ss for %s sensor to"
+                           " become %s. Last value was %s." %
+                           (timeout, attr_name, value, lastval))
+
         
         
-class MkatApKatcpTests(DeviceTestCase):
-    """
-    KATCP tests that can be run on both the AP Simulator and the ACU HW
-    Simulator.
-    """
-    addr = None
-    sensor_lag = 0.2
+class MkatApTangoTests(DeviceTestCase):
+    
     external = False
-    EXPECTED_VERSION_CONNECT_INFORMS = [
-        '#version-connect katcp-protocol*',
-        '#version-connect katcp-library*',
-        '#version-connect katcp-device*',
-    ]
-
     device = MkatAntennaPositioner
     
-    def formatter(self, sensor_name):
+    def test_attribute_list_basic(self):
         """
-        Removes the dash(es) in the sensor name and replaces them with underscore(s)
-        to guard against illegal attribute identifiers in TANGO
-        
-        Parameters
-        ----------
-        sensor_name : str
-            The name of the sensor. For example:
-            
-            'actual-azim'
-        
-        Returns
-        -------
-        attr_name : str
-            The legal identifier for an attribute. For example:
-            
-            'actual_azim'
-        """
-        attr_name = sensor_name.replace('-', '_')
-        return attr_name
-
-    def unformatter(self, attr_name):
-        """
-        Removes the underscore(s) in the attribute name and replaces them with 
-        dashe(s), so that we can access the the KATCP Sensors using their identifiers
-        
-        Parameters
-        ----------
-        attr_name : str
-            The name of the sensor. For example:
-            
-            'actual_azim'
-        
-        Returns
-        -------
-        sensor_name : str
-            The legal identifier for an attribute. For example:
-            
-            'actual-azim'
-        """
-        sensor_name = attr_name.replace('_', '-')
-        return sensor_name
-
-    def test_sensor_list(self):
-        def log_expected_sensor_list():
-            """Useful debug function to generate EXPECTED_SENSOR_LIST"""
-            #reply, informs = self.client.blocking_request(Message.request("sensor-list"))
-            #for inform in informs:
-                #logger.debug("(%s)," % ', '.join(["'%s'" % str(i) for i in inform.arguments]))
-              #  logger.debug(str(inform))
-            pass
-
-        #log_expected_sensor_list() # Useful to get the expected list
-
-        #self.client.test_sensor_list(EXPECTED_SENSOR_LIST, ignore_descriptions=True)
-
-    def test_sensor_list_basic(self):
-        """
-        Test sensor list but only check the sensor names.
+        Test attribute list but only check the attribute names.
         """
         def get_actual_sensor_list():
-            """Return the list of actual sensors of the connected server"""
-            #reply, informs = self.client.blocking_request(
-             #       Message.request("sensor-list"))
+            """Return the list of actual attributes of the connected device server"""
             attr_list = self.device.get_attribute_list()
-            sens_list = [self.unformatter(attr) for attr in attr_list]
+            sens_list = [unformatter(attr) for attr in attr_list]
             return sens_list
 
         if self.external:
@@ -443,25 +359,17 @@ class MkatApKatcpTests(DeviceTestCase):
             % ("\n".join(sorted([str(t) for t in expected_set - actual_set])),
                "\n".join(sorted([str(t) for t in actual_set - expected_set]))))
 
-    def test_request_list(self):
-        def log_expected_request_list():
-            """Useful debug function to generate EXPECTED_REQUEST_LIST"""
-            #reply, informs = self.client.blocking_request(Message.request("help"))
-            #for inform in informs:
-              #  logger.debug("('%s')," % inform.arguments[0])
-            pass
-
-        def get_actual_request_list():
+    def test_command_list(self):
+        
+        def get_actual_command_list():
             """Return the list of actual requests of the connected server"""
-            #reply, informs = self.client.blocking_request(Message.request("help"))
             command_list = self.device.command_list_query()
-            req_list = [self.unformatter(command.cmd_name.lower()) for command in command_list]
+            req_list = [unformatter(command.cmd_name.lower()) for command in command_list]
             return req_list
 
-        #log_expected_sensor_list() # Useful to get the expected list
 
         expected_set = set(EXPECTED_REQUEST_LIST)
-        actual_set = set(get_actual_request_list())
+        actual_set = set(get_actual_command_list())
         self.assertEqual(actual_set, expected_set,
             "\n\n!Actual request list differs from expected list!\n\nThese requests are"
             " missing:\n%s\n\nFound these unexpected requests:\n%s"
@@ -475,16 +383,16 @@ class TestMkatAp(DeviceTestCase):
     device = MkatAntennaPositioner
     
     def setUp(self):
-        #self.addCleanup(self.tear_down_threads)
-        #self.set_up_device_and_client(MkatApDevice, MkatApModel, MkatApTestDevice)
         super(TestMkatAp, self).setUp()
         self.instance = MkatAntennaPositioner.instances[self.device.name()]
         self.client = TestProxyWrapper(self, self.device)
-#        if not self.external:
-#            # MkatApModel with faster azim and elev max rates to allow tests to execute
-#            # quicker.
-#            self.client.assertCommandSucceeds("set_max_rate_azim_drive", 20.0)
-#            self.client.assertCommandSucceeds("set-max-rate-elev-drive", 10.0)
+       #TODO Need to get the command to turn on the device invoked here, may need to change
+        # the code in my device commands
+        if not self.external:
+            # MkatApModel with faster azim and elev max rates to allow tests to execute
+            # quicker.
+            self.instance.ap_model.azim_drive.set_max_rate(20.0)
+            self.instance.ap_model.elev_drive.set_max_rate(10.0)
          
         def cleanup_refs(): del self.instance
         self.addCleanup(cleanup_refs)
@@ -541,273 +449,203 @@ class TestMkatAp(DeviceTestCase):
         el_req_pos = self.device.requested_elev
         self.assertEqual(az_req_pos, AZ_REQ_POS)
         self.assertEqual(el_req_pos, EL_REQ_POS)
-#        self.client.wait_until_sensor_equals(2, 'on-target', 0, sensortype=bool)
-#        self.client.wait_until_sensor_equals(10, 'on-target', 1, sensortype=bool)
-#        azim = self.device.actual_azim
-#        elev = self.device.actual_elev
-#        self.assertAlmostEqual(az_req_pos, azim, 2)
-#        self.assertAlmostEqual(el_req_pos, elev, 2)
-#        self.client.assert_request_succeeds("stop")
-#        self.assertEqual(self.client.get_sensor_value("mode"), "stop")
-##
-#    def test_switch_between_track_and_slew(self):
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(1, 'mode', 'stop')
-#        self.client.assert_request_succeeds("track")
-#        self.client.wait_until_sensor_equals(1, 'mode', 'track')
-#        self.client.assert_request_succeeds("slew", 210, 65)
-#        self.client.wait_until_sensor_equals(1, 'mode', 'slew')
-#        self.client.assert_request_succeeds("slew", 220, 75)
-#        self.client.wait_until_sensor_equals(1, 'mode', 'slew')
-#        self.client.assert_request_succeeds("track")
-#        self.client.wait_until_sensor_equals(1, 'mode', 'track')
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(1, 'mode', 'stop')
-#
-#    def test_track(self):
-#        MAX_AZIM_FOR_TEST = 250
-#        MAX_ELEV_FOR_TEST = 70
-#        MAX_TRACK_WAIT_TIME = 40 # 5s + 50samples*0.5s/sample = 30
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
-#        azim = round(self.client.get_sensor_value("actual-azim", float), 3)
-#        elev = round(self.client.get_sensor_value("actual-elev", float), 3)
-#        if azim > MAX_AZIM_FOR_TEST:
-#            azim = MAX_AZIM_FOR_TEST
-#        if elev > MAX_ELEV_FOR_TEST:
-#            elev = MAX_ELEV_FOR_TEST
-#        # Load a few samples to track
-#        t0 = time.time() + 5
-#        for i in xrange(0, 50):
-#            # New sample every 500ms with 0.1deg movement
-#            self.client.assert_request_succeeds("track-az-el",
-#                    t0+(i*0.5),
-#                    (azim+5)+(i*0.1),
-#                    (elev+5)+(i*0.1))
-#        # Start tracking
-#        self.client.assert_request_succeeds("track")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'track')
-#        self.client.wait_until_sensor_equals(2, 'on-target', 0, sensortype=bool)
-#        self.client.wait_until_sensor_equals(MAX_TRACK_WAIT_TIME,
-#            'on-target', 1, sensortype=bool)
-#        # Check requested vs actual after target reached
-#        az_req_pos = round(self.client.get_sensor_value("requested-azim", float), 3)
-#        el_req_pos = round(self.client.get_sensor_value("requested-elev", float), 3)
-#        azim = round(self.client.get_sensor_value("actual-azim", float), 3)
-#        elev = round(self.client.get_sensor_value("actual-elev", float), 3)
-#        self.assertAlmostEqual(az_req_pos, azim, 2)
-#        self.assertAlmostEqual(el_req_pos, elev, 2)
-#        # Mode should still be track
-#        self.client.wait_until_sensor_equals(2, 'mode', 'track')
-#        # Add a few samples in the past (these should be ignored)
-#        t1 = time.time() - 200
-#        self.client.assert_request_succeeds("track-az-el", t1, azim+2, elev+2)
-#        self.client.assert_request_succeeds("track-az-el", t1+0.5, azim+2.5, elev+2.5)
-#        self.client.assert_request_succeeds("track-az-el", t1+1, azim+3, elev+3)
-#        self.client.assert_request_succeeds("track-az-el", t1+1.5, azim+3.5, elev+3.5)
-#        self.client.wait_until_sensor_equals(2, 'on-target', 1, sensortype=bool)
-#        self.assertAlmostEqual(az_req_pos, azim, 2)
-#        self.assertAlmostEqual(el_req_pos, elev, 2)
-#        # Add a few more samples, and check that tracking continues
-#        t2 = time.time() + 2
-#        self.client.assert_request_succeeds("track-az-el", t2, azim+2, elev+2)
-#        self.client.assert_request_succeeds("track-az-el", t2+0.5, azim+2.5, elev+2.5)
-#        self.client.assert_request_succeeds("track-az-el", t2+1, azim+3, elev+3)
-#        self.client.assert_request_succeeds("track-az-el", t2+1.5, azim+3.5, elev+3.5)
-#        self.client.wait_until_sensor_equals(2, 'on-target', 0, sensortype=bool)
-#        # Stop the drive
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
-#
-#    def test_stow(self):
-#        # Make test start nice and close to the actual stow position
-#        ELEV_FOR_TEST = MkatApModel.STOW_ELEV - 2
-#        MAX_STOW_WAIT_TIME = 5
-#        self.testclient.assert_request_succeeds("set-elev-drive-position",
+        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_sensor_equals(10, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        azim = self.device.actual_azim
+        elev = self.device.actual_elev
+        self.assertAlmostEqual(az_req_pos, azim, 2)
+        self.assertAlmostEqual(el_req_pos, elev, 2)
+        self.client.assertCommandSucceeds("Stop")
+        self.assertEqual(self.device.mode, "stop")
+
+    def test_switch_between_track_and_slew(self):
+        self.client.assertCommandSucceeds("TurnOn")
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(1, 'mode', 'stop')
+        self.client.assertCommandSucceeds("Track")
+        self.client.wait_until_sensor_equals(1, 'mode', 'track')
+        self.client.assertCommandSucceeds("Slew", 210, 65)
+        self.client.wait_until_sensor_equals(1, 'mode', 'slew')
+        self.client.assertCommandSucceeds("Slew", 220, 75)
+        self.client.wait_until_sensor_equals(1, 'mode', 'slew')
+        self.client.assertCommandSucceeds("Track")
+        self.client.wait_until_sensor_equals(1, 'mode', 'track')
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(1, 'mode', 'stop')
+
+    def test_track(self):
+        MAX_AZIM_FOR_TEST = 250
+        MAX_ELEV_FOR_TEST = 70
+        MAX_TRACK_WAIT_TIME = 40 # 5s + 50samples*0.5s/sample = 30
+        self.client.assertCommandSucceeds("TurnOn")
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        azim = round(self.device.actual_azim, 3)
+        elev = round(self.device.actual_elev, 3)
+        if azim > MAX_AZIM_FOR_TEST:
+            azim = MAX_AZIM_FOR_TEST
+        if elev > MAX_ELEV_FOR_TEST:
+            elev = MAX_ELEV_FOR_TEST
+        # Load a few samples to track
+        t0 = time.time() + 5
+        for i in xrange(0, 50):
+            # New sample every 500ms with 0.1deg movement
+            self.client.assertCommandSucceeds("Track_Az_El",
+                    t0+(i*0.5),
+                    (azim+5)+(i*0.1),
+                    (elev+5)+(i*0.1))
+        # Start tracking
+        self.client.assertCommandSucceeds("Track")
+        self.client.wait_until_sensor_equals(2, 'mode', 'track')
+        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_sensor_equals(MAX_TRACK_WAIT_TIME,
+            'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        # Check requested vs actual after target reached
+        az_req_pos = round(self.device.requested_azim, 3)
+        el_req_pos = round(self.device.requested_elev, 3)
+        azim = round(self.device.actual_azim, 3)
+        elev = round(self.device.actual_elev, 3)
+        self.assertAlmostEqual(az_req_pos, azim, 2)
+        self.assertAlmostEqual(el_req_pos, elev, 2)
+        # Mode should still be track
+        self.client.wait_until_sensor_equals(2, 'mode', 'track')
+        # Add a few samples in the past (these should be ignored)
+        t1 = time.time() - 200
+        self.client.assertCommandSucceeds("Track_Az_El", t1, azim+2, elev+2)
+        self.client.assertCommandSucceeds("Track_Az_El", t1+0.5, azim+2.5, elev+2.5)
+        self.client.assertCommandSucceeds("Track_Az_El", t1+1, azim+3, elev+3)
+        self.client.assertCommandSucceeds("Track_Az_El", t1+1.5, azim+3.5, elev+3.5)
+        self.client.wait_until_sensor_equals(2, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.assertAlmostEqual(az_req_pos, azim, 2)
+        self.assertAlmostEqual(el_req_pos, elev, 2)
+        # Add a few more samples, and check that tracking continues
+        t2 = time.time() + 2
+        self.client.assertCommandSucceeds("Track_Az_El", t2, azim+2, elev+2)
+        self.client.assertCommandSucceeds("Track_Az_El", t2+0.5, azim+2.5, elev+2.5)
+        self.client.assertCommandSucceeds("Track_Az_El", t2+1, azim+3, elev+3)
+        self.client.assertCommandSucceeds("Track_Az_El", t2+1.5, azim+3.5, elev+3.5)
+        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
+        # Stop the drive
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+
+    def test_stow(self):
+        # Make test start nice and close to the actual stow position
+        self.client.assertCommandSucceeds("TurnOn")
+        ELEV_FOR_TEST = self.instance.ap_model.STOW_ELEV - 2 #MkatApModel.STOW_ELEV - 2
+        MAX_STOW_WAIT_TIME = 5
+#        self.testclient.assertCommandSucceeds("set-elev-drive-position",
 #            ELEV_FOR_TEST)
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
-#        self.client.assert_request_succeeds("stow")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stowing')
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
-#        self.client.assert_request_succeeds("stow")
-#        self.client.wait_until_sensor_equals(MAX_STOW_WAIT_TIME, 'mode', 'stowed')
-#
-#    def test_maintenance(self):
-#        # Make test start nice and close to the actual maint position
-#        AZIM_FOR_TEST = MkatApModel.MAINT_AZIM - 5
-#        ELEV_FOR_TEST = MkatApModel.MAINT_ELEV - 2
-#        MAX_MAINT_WAIT_TIME = 5
+        self.instance.ap_model.elev_drive.set_position(ELEV_FOR_TEST)
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.assertCommandSucceeds("Stow")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stowing')
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.assertCommandSucceeds("Stow")
+        self.client.wait_until_sensor_equals(MAX_STOW_WAIT_TIME, 'mode', 'stowed')
+
+    def test_maintenance(self):
+        # Make test start nice and close to the actual maint position
+        self.client.assertCommandSucceeds("TurnOn")
+        AZIM_FOR_TEST = self.instance.ap_model.MAINT_AZIM - 5
+        ELEV_FOR_TEST = self.instance.ap_model.MAINT_ELEV - 2
+        MAX_MAINT_WAIT_TIME = 5
 #        self.testclient.assert_request_succeeds("set-azim-drive-position",
 #            AZIM_FOR_TEST)
+        self.instance.ap_model.azim_drive.set_position(AZIM_FOR_TEST)
 #        self.testclient.assert_request_succeeds("set-elev-drive-position",
 #            ELEV_FOR_TEST)
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
-#        self.client.assert_request_succeeds("maintenance")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'going-to-maintenance')
-#        self.client.assert_request_succeeds("stop")
-#        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
-#        self.client.assert_request_succeeds("maintenance")
-#        self.client.wait_until_sensor_equals(MAX_MAINT_WAIT_TIME, 'mode',
-#            'maintenance')
-#
-#    def test_set_indexer_position(self):
-#        # Test for 'l'
-#        self.client.assert_request_succeeds("set-indexer-position", "l")
-#        while self.client.get_sensor_value("indexer-position") == "moving":
-#            print ("ridx-pos=%.4f" %
-#                self.client.get_sensor_value("indexer-position-raw", float))
-#            time.sleep(0.5)
-#        self.assertEqual(self.client.get_sensor_value("indexer-position"), "l")
-#        self.assertAlmostEqual(self.client.get_sensor_value("indexer-position-raw", float),
-#                4.0, 2)
-#        # Test for 'u'
-#        self.client.assert_request_succeeds("set-indexer-position", "u")
-#        while self.client.get_sensor_value("indexer-position") == "moving":
-#            print ("ridx-pos=%.4f" %
-#                self.client.get_sensor_value("indexer-position-raw", float))
-#            time.sleep(0.5)
-#        self.assertEqual(self.client.get_sensor_value("indexer-position"), "u")
-#        self.assertAlmostEqual(self.client.get_sensor_value("indexer-position-raw", float),
-#                6.0, 2)
-#        # Test for 'x'
-#        self.client.assert_request_succeeds("set-indexer-position", "x")
-#        while self.client.get_sensor_value("indexer-position") == "moving":
-#            print ("ridx-pos=%.4f" %
-#                self.client.get_sensor_value("indexer-position-raw", float))
-#            time.sleep(0.5)
-#        self.assertEqual(self.client.get_sensor_value("indexer-position"), "x")
-#        self.assertAlmostEqual(self.client.get_sensor_value("indexer-position-raw", float),
-#                2.0, 2)
-#        # Test for 's'
-#        self.client.assert_request_succeeds("set-indexer-position", "s")
-#        while self.client.get_sensor_value("indexer-position") == "moving":
-#            print ("ridx-pos=%.4f" %
-#                self.client.get_sensor_value("indexer-position-raw", float))
-#            time.sleep(0.5)
-#        self.assertEqual(self.client.get_sensor_value("indexer-position"), "s")
-#        self.assertAlmostEqual(self.client.get_sensor_value("indexer-position-raw", float),
-#                8.0, 2)
-#        # Test some invalid ridx positions
-#        self.client.assert_request_fails("set-indexer-position", "k")
-#        self.assertEqual(self.client.get_sensor_value("indexer-position"), "s")
-#        self.client.assert_request_fails("set-indexer-position", "moving")
-#        self.assertEqual(self.client.get_sensor_value("indexer-position"), "s")
-#
-#    def test_set_on_source_threshold(self):
-#        self.client.assert_request_succeeds("stop")
-#        # Slew to a position and check that threshold is the default 1e-6
-#        AZ_REQ_POS = -170
-#        EL_REQ_POS = 20
-#        self.client.assert_request_succeeds("slew", AZ_REQ_POS, EL_REQ_POS)
-#        self.client.wait_until_sensor_equals(2, 'on-target', 0, sensortype=bool)
-#        self.client.wait_until_sensor_equals(30, 'on-target', 1, sensortype=bool)
-#        self.assertAlmostEqual(self.client.get_sensor_value("actual-azim", float),
-#                AZ_REQ_POS, 2)
-#        self.assertAlmostEqual(self.client.get_sensor_value("actual-elev", float),
-#                EL_REQ_POS, 2)
-#        self.client.assert_request_succeeds("stop")
-#        # Set new threshold and slew to a position and check that the new threshold has
-#        # been applied
-#        self.client.assert_request_succeeds("set-on-source-threshold", 1e-1)
-#        self.assertEqual(self.client.get_sensor_value("on-source-threshold", float),
-#                1e-1)
-#        AZ_REQ_POS = -160
-#        EL_REQ_POS = 30
-#        self.client.assert_request_succeeds("slew", AZ_REQ_POS, EL_REQ_POS)
-#        self.client.wait_until_sensor_equals(2, 'on-target', 0, sensortype=bool)
-#        self.client.wait_until_sensor_equals(30, 'on-target', 1, sensortype=bool)
-#        self.assertAlmostEqual(self.client.get_sensor_value("actual-azim", float),
-#                AZ_REQ_POS, 0)
-#        self.assertAlmostEqual(self.client.get_sensor_value("actual-elev", float),
-#                EL_REQ_POS, 0)
-#        self.assertNotAlmostEqual(self.client.get_sensor_value("actual-azim", float),
-#                AZ_REQ_POS, 2)
-#        self.assertNotAlmostEqual(self.client.get_sensor_value("actual-elev", float),
-#                EL_REQ_POS, 2)
-#
-#    def test_sensor_sampling(self):
-#        # test for specific issue re incorrect sensor name in sampling
-#
-#        # start the sensor sampling
-#        self.client.assert_request_succeeds("sensor-sampling", "requested-elev", "period", "1.0", args_echo=True)
-#        get_informs = self.client.message_recorder(whitelist=["sensor-status"])
-#
-#        # wait for a couple of sample periods so that there is likely to be a message
-#        time.sleep(2.0)
-#
-#        # look for a sensor-status inform for this sensor
-#        elev_informs = [m for m in get_informs() if "requested-elev" in m.arguments]
-#        self.assertTrue(elev_informs, "Expected a sensor-status inform for sensor 'requested-elev' but did not receive one.")
-#
-#    def test_sensor_sampling_reconnect(self):
-#        # test sensor sampling not propagating to a new client connection
-#
-#        # start the sensor sampling
-#        self.client.assert_request_succeeds("sensor-sampling", "requested-elev", "period", "1.0", args_echo=True)
-#        get_informs = self.client.message_recorder(whitelist=["sensor-status"])
-#
-#        # wait for a couple of sample periods so that there is likely to be a message
-#        time.sleep(2.0)
-#
-#        # look for a sensor-status inform for this sensor
-#        elev_informs = [m for m in get_informs() if "requested-elev" in m.arguments]
-#        self.assertTrue(elev_informs, "Expected a sensor-status inform for sensor 'requested-elev' but did not receive one.")
-#
-#        # kill the client and make a new one
-#        self.replace_client()
-#        get_informs = self.client.message_recorder(whitelist=["sensor-status"])
-#
-#        logging.info('sensor_sampling_reconnect: client reconnected: %s' % str(self.client.is_connected()))
-#
-#        # wait for a couple of sample periods to allow any messages to arrive
-#        time.sleep(2.0)
-#
-#        elev_informs = [m for m in get_informs() if "requested-elev" in m.arguments]
-#        self.assertFalse(elev_informs, "Did not expect a sensor-status inform for sensor 'requested-elev' after reconnection, but received one.")
-#
-#    def test_sensor_values_match_types(self):
-#        """Test that the values returned by ?sensor-values match the types in ?sensor-list."""
-#        sensors = {}
-#        sensors_seen = set()
-#
-#        # list sensors
-#        reply, informs = self.client.blocking_request(Message.request("sensor-list"))
-#        self.assertEqual(reply.arguments[0], "ok")
-#        self.assertEqual(int(reply.arguments[1]), len(informs))
-#        for msg in informs:
-#            name, description, units, formatted_type = msg.arguments[:4]
-#            formatted_params = msg.arguments[4:]
-#            sensor_type = Sensor.parse_type(formatted_type)
-#            params = Sensor.parse_params(sensor_type, formatted_params)
-#            sensors[name] = Sensor(sensor_type, name, description, units, params)
-#
-#        # check sensor values
-#        reply, informs = self.client.blocking_request(Message.request("sensor-value"))
-#        self.assertEqual(reply.arguments[0], "ok")
-#        self.assertEqual(int(reply.arguments[1]), len(informs))
-#        for msg in informs:
-#            raw_timestamp = msg.arguments[0]
-#            sensor_count = int(msg.arguments[1])
-#            self.assertEqual(sensor_count, 1)
-#            name, raw_status, raw_value = msg.arguments[2:]
-#
-#            sensor = sensors[name]
-#            sensors_seen.add(name)
-#            try:
-#                sensor.set_formatted(raw_timestamp, raw_status, raw_value)
-#            except ValueError, e:
-#                self.fail("Could not set value %r [status: %r; timestamp: %r] for sensor %r: %r" %
-#                    (raw_value, raw_status, raw_timestamp, name, e))
-#
-#        # check that we got values for all of them
-#        self.assertEqual(set(sensors.keys()), sensors_seen)
-#        
+        self.instance.ap_model.elev_drive.set_position(ELEV_FOR_TEST)
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.assertCommandSucceeds("Maintenance")
+        self.client.wait_until_sensor_equals(2, 'mode', 'going-to-maintenance')
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.assertCommandSucceeds("Maintenance")
+        self.client.wait_until_sensor_equals(MAX_MAINT_WAIT_TIME, 'mode',
+            'maintenance')
+
+    def test_set_indexer_position(self):
+        # Test for 'l'
+        self.client.assertCommandSucceeds("TurnOn")
+        self.client.assertCommandSucceeds("Set_Indexer_Position", "l")
+        while self.device.indexer_position == "moving":
+            print ("ridx-pos=%.4f" %
+                self.device.indexer_position_raw)
+            time.sleep(0.5)
+        self.assertEqual(self.device.indexer_position, "l")
+        self.assertAlmostEqual(self.device.indexer_position_raw,
+                4.0, 2)
+        # Test for 'u'
+        self.client.assertCommandSucceeds("Set_Indexer_Position", "u")
+        while self.device.indexer_position == "moving":
+            print ("ridx-pos=%.4f" %
+                self.device.indexer_position_raw)
+            time.sleep(0.5)
+        self.assertEqual(self.device.indexer_position, "u")
+        self.assertAlmostEqual(self.device.indexer_position_raw,
+                6.0, 2)
+        # Test for 'x'
+        self.client.assertCommandSucceeds("Set_Indexer_Position", "x")
+        while self.device.indexer_position == "moving":
+            print ("ridx-pos=%.4f" %
+                self.device.indexer_position_raw)
+            time.sleep(0.5)
+        self.assertEqual(self.device.indexer_position, "x")
+        self.assertAlmostEqual(self.device.indexer_position_raw,
+                2.0, 2)
+        # Test for 's'
+        self.client.assertCommandSucceeds("Set_Indexer_Position", "s")
+        while self.device.indexer_position == "moving":
+            print ("ridx-pos=%.4f" %
+                self.device.indexer_position_raw)
+            time.sleep(0.5)
+        self.assertEqual(self.device.indexer_position, "s")
+        self.assertAlmostEqual(self.device.indexer_position_raw,
+                8.0, 2)
+        # Test some invalid ridx positions
+        self.client.assertCommandFails("Set_Indexer_Position", "k")
+        self.assertEqual(self.device.indexer_position, "s")
+        self.client.assertCommandFails("Set_Indexer_Position", "moving")
+        self.assertEqual(self.device.indexer_position, "s")
+
+    def test_set_on_source_threshold(self):
+        self.client.assertCommandSucceeds("TurnOn")
+        self.client.assertCommandSucceeds("Stop")
+        # Slew to a position and check that threshold is the default 1e-6
+        AZ_REQ_POS = -170
+        EL_REQ_POS = 20
+        self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
+        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_sensor_equals(30, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.assertAlmostEqual(self.device.actual_azim,
+                AZ_REQ_POS, 2)
+        self.assertAlmostEqual(self.device.actual_elev,
+                EL_REQ_POS, 2)
+        self.client.assertCommandSucceeds("Stop")
+        # Set new threshold and slew to a position and check that the new threshold has
+        # been applied
+        self.client.assertCommandSucceeds("Set_On_Source_Threshold", 1e-1)
+        self.assertEqual(self.device.on_source_threshold,
+                1e-1)
+        AZ_REQ_POS = -160
+        EL_REQ_POS = 30
+        self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
+        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_sensor_equals(30, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.assertAlmostEqual(self.device.actual_azim,
+                AZ_REQ_POS, 0)
+        self.assertAlmostEqual(self.device.actual_elev,
+                EL_REQ_POS, 0)
+        self.assertNotAlmostEqual(self.device.actual_azim,
+                AZ_REQ_POS, 2)
+        self.assertNotAlmostEqual(self.device.actual_elev,
+                EL_REQ_POS, 2)
 
 if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
     unittest.main()
-
