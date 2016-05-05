@@ -72,10 +72,12 @@ class TangoInspectingClient(object):
         """
         event_type = tango_event_data.event
         attr_value = tango_event_data.attr_value
-        name = attr_value.name
-        value = attr_value.value
-        quality = attr_value.quality
-        timestamp = attr_value.time.totime()
+        name = getattr(attr_value, 'name', None)
+        value = getattr(attr_value, 'value', None)
+        quality = getattr(attr_value, 'quality', None)
+        timestamp = (attr_value.time.totime()
+                     if hasattr(attr_value, 'time') else None)
+
         received_timestamp = tango_event_data.reception_date.totime()
 
         self.sample_event_callback(name, received_timestamp, timestamp,
@@ -94,10 +96,11 @@ class TangoInspectingClient(object):
         pass
 
     def setup_attribute_sampling(self, periodic=True, change=True, archive=True,
-                                 data_ready=True, quality=True, user=True):
+                                 data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
         for attr_name in self.device_attributes:
+            if attr_name != 'ScalarBool': continue
             subs = lambda etype: dp.subscribe_event(
                 attr_name, etype, self.tango_event_handler)
 
@@ -109,8 +112,6 @@ class TangoInspectingClient(object):
                 self._event_ids.add(subs(PyTango.EventType.ARCHIVE_EVENT))
             if data_ready:
                 self._event_ids.add(subs(PyTango.EventType.DATA_READY_EVENT))
-            if quality:
-                self._event_ids.add(subs(PyTango.EventType.QUALITY_EVENT))
             if user:
                 self._event_ids.add(subs(PyTango.EventType.USER_EVENT))
 
