@@ -106,9 +106,9 @@ class WeatherSimControl(Device):
         # Get a list of attributes a device contains from the model
         self.device_sensors = self.model.sim_quantities.keys()
         self.set_state(DevState.ON)
-        self.model_quantities = ''
+        self.model_quantities = None
         self._sensor_name = ''
-        self._pause_active = ''
+        self._pause_active = False
 
     # Static attributes of the device
 
