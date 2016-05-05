@@ -17,6 +17,7 @@ import weakref
 import logging
 import collections
 import PyTango
+import numpy
 
 from functools import partial
 
@@ -102,9 +103,12 @@ class WeatherSimControl(Device):
         self.device_instance = Weather.instances[self.device_name]
         # Get the device instance model to be controlled
         self.model = self.device_instance.model
+        # Get a list of attributes a device contains from the model
+        self.device_sensors = self.model.sim_quantities.keys()
         self.set_state(DevState.ON)
-        self.model_quantities = ''
+        self.model_quantities = None
         self._sensor_name = ''
+        self._pause_active = False
 
     # Static attributes of the device
 
@@ -114,8 +118,21 @@ class WeatherSimControl(Device):
 
     @sensor_name.write
     def sensor_name(self, name):
-        self._sensor_name = name
-        self.model_quantities = self.model.sim_quantities[self._sensor_name]
+        if name in self.device_sensors:
+            self._sensor_name = name
+            self.model_quantities = self.model.sim_quantities[self._sensor_name]
+        else:
+            raise NameError('Name does not exist in the sensor list {}'.
+                            format(self.device_sensors))
+
+    @attribute(dtype=bool)
+    def pause_active(self):
+        return self._pause_active
+
+    @pause_active.write
+    def pause_active(self, isActive):
+        self._pause_active = isActive
+        setattr(self.model, 'paused', isActive)
 
     def initialize_dynamic_attributes(self):
         '''The device method that sets up attributes during run time'''
@@ -134,8 +151,6 @@ class WeatherSimControl(Device):
 
 # AR 2016-05-03 TODO Since only a Guassian quantities are assumed
      # also to include other quantities
-# AR 2016-05-03 TODO Need to add an active flag and current value
-     # attribute to allow pausing of the set of sensor values
 
     def read_attributes(self, attr):
         '''Method reading an attribute value
@@ -143,7 +158,7 @@ class WeatherSimControl(Device):
         ==========
         attr : PyTango.DevAttr
             The attribute to read from.
-	'''
+        '''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
         attr.set_value(getattr(self.model_quantities, name))
@@ -154,12 +169,16 @@ class WeatherSimControl(Device):
         ==========
         attr : PyTango.DevAttr
             The attribute to write to.
-	'''
+        '''
         name = attr.get_name()
         data = attr.get_write_value()
         self.info_stream("Writing attribute {} with value: {}".format(name, data))
         attr.set_value(data)
         setattr(self.model_quantities, name, data)
+        if name == 'last_val' and self._pause_active:
+            self.model.quantity_state[self._sensor_name] = data, time.time()
+        else:
+            setattr(self.model_quantities, name, data)
 
 class WeatherModel(model.Model):
 

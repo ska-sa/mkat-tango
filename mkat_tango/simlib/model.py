@@ -1,5 +1,6 @@
 import logging
 import time
+import numpy
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class Model(object):
         self.sim_quantities = {}
         self._sim_state = {}
         self.setup_sim_quantities()
+        self.paused = False # Flag to pause updates
         # Making a public reference to _sim_state. Allows us to hook read-only views
         # or updates or whatever the future requires of this humble public attribute.
         self.quantity_state = self._sim_state
@@ -40,10 +42,10 @@ class Model(object):
     def update(self):
         sim_time = self.time_func()
         dt = sim_time - self.last_update_time
-        if dt < self.min_update_period:
+        if dt < self.min_update_period or self.paused:
             MODULE_LOGGER.debug(
-                "Sim {} skipping update at {}, dt {} < {}"
-                .format(self.name, sim_time, dt, self.min_update_period))
+                "Sim {} skipping update at {}, dt {} < {} and pause {}"
+                .format(self.name, sim_time, dt, self.min_update_period, self.paused))
             return
 
         MODULE_LOGGER.info("Stepping at {}, dt: {}".format(sim_time, dt))
