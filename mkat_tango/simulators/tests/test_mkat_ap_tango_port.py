@@ -19,7 +19,7 @@ import logging
 
 from devicetest import DeviceTestCase 
 from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner, unformatter
-from PyTango import CmdArgType
+from PyTango import CmdArgType, DevState
 
 logger = logging.getLogger(__name__)
 
@@ -644,6 +644,37 @@ class TestMkatAp(DeviceTestCase):
                 AZ_REQ_POS, 2)
         self.assertNotAlmostEqual(self.device.actual_elev,
                 EL_REQ_POS, 2)
+                
+    def test_attribute_values(self):
+        self.assertEqual(self.device.mode, 'shutdown')
+        self.assertEqual(self.device.requested_azim, -185.0)
+        self.assertEqual(self.device.requested_elev, 15.0)
+        self.assertEqual(self.device.failure_present, False)
+        self.assertEqual(self.device.actual_azim, -185.0)
+        self.assertEqual(self.device.actual_elev, 15.0)
+        self.assertEqual(self.device.requested_azim_rate, 0.0)
+        self.assertEqual(self.device.requested_elev_rate, 0.0)
+        self.assertEqual(self.device.actual_azim_rate, 0.0)
+        self.assertEqual(self.device.actual_elev_rate, 0.0)
+        self.assertEqual(self.device.State(), DevState.OFF)
+        self.assertEqual(self.device.Status(), 'The device is in OFF state.')
+        
+    def test_stop(self):
+        self.assertEqual(self.device.mode, 'shutdown')
+        self.client.assertCommandSucceeds("TurnOn")
+        self.client.assertCommandFails("Slew", 78, 23)
+        self.assertNotEqual(self.device.mode, 'stop')
+        self.assertEqual(self.device.mode, 'shutdown')
+        self.client.assertCommandSucceeds("Stop")
+        self.assertEqual(self.device.mode, 'stop')
+        self.client.assertCommandSucceeds("Slew", 89, 89)
+        self.assertNotEqual(self.device.mode, 'stop')
+        self.client.assertCommandSucceeds("Stow")
+        self.client.wait_until_sensor_equals(11, 'mode', 'stowed', attr_data_type=CmdArgType.DevString)
+        self.assertNotEqual(self.device.mode, 'stop')
+        self.client.assertCommandSucceeds("Stop")
+        self.assertEqual(self.device.mode, 'stop')
+        
 
 if __name__ == '__main__':
 
