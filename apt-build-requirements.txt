@@ -1,5 +1,5 @@
-mysql-client
-mysql-server
+mysql-client-5.5
+mysql-server-5.5
 tango-common
 libtango-dev
 libboost-python-dev
