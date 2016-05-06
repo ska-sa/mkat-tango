@@ -1,7 +1,5 @@
-mysql-client-core-5.6
-mysql-server-core-5.6
-mysql-server-5.6
-mysql-client-5.6
+mysql-server
+mysql-client-
 tango-common
 tango-db
 tango-starter
