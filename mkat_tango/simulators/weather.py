@@ -137,8 +137,13 @@ class WeatherSimControl(Device):
     def initialize_dynamic_attributes(self):
         '''The device method that sets up attributes during run time'''
         # Get attributes to control the model
-        # from GuassianSlewLimited class variable
-        control_attributes = vars(quantities.GaussianSlewLimited(0, 0)).keys()
+        # from class variables of the quantity models available
+	Quantity = quantities.Quantity
+        models = [cls for cls in vars()['Quantity'].__subclasses__()]
+        control_attributes = []
+
+        for cls in models:
+            control_attributes += [attr for attr in vars(cls()).keys()]
 
         # Add a list of float attributes from the list of Guassian variables
         for attribute_name in control_attributes:
@@ -148,9 +153,6 @@ class WeatherSimControl(Device):
             attr = Attr(attribute_name, DevDouble, AttrWriteType.READ_WRITE)
             attr.set_default_properties(attr_props)
             self.add_attribute(attr, self.read_attributes, self.write_attributes)
-
-# AR 2016-05-03 TODO Since only a Guassian quantities are assumed
-     # also to include other quantities
 
     def read_attributes(self, attr):
         '''Method reading an attribute value
