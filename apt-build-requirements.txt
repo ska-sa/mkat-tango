@@ -1,6 +1,7 @@
 mysql-common-5.6
 mysql-client-5.6
 mysql-server-5.6
+dbconfig-common
 libtango-dev
 libboost-python-dev
 liblog4tango5v5
