@@ -66,7 +66,7 @@ class GaussianSlewLimited(Quantity):
 
     """
 
-    adjustable_attributes = Qauntity.adjustable_attributes + frozenset(
+    adjustable_attributes = Quantity.adjustable_attributes | frozenset(
         ['mean', 'std_dev', 'max_slew_rate', 'min_bound', 'max_bound'])
 
     def __init__(self, mean, std_dev,
