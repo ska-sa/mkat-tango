@@ -28,9 +28,9 @@ from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-import quantities
-import model
-import main
+from mkat_tango.simlib import quantities
+from mkat_tango.simlib import model
+from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -98,6 +98,7 @@ class WeatherSimControl(Device):
     def init_device(self):
         super(WeatherSimControl, self).init_device()
         name = self.get_name()
+	self.instances[name] = self
         # Get the name of the device
         self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
         self.device_instance = Weather.instances[self.device_name]
