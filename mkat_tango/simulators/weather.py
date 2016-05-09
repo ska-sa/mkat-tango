@@ -28,9 +28,9 @@ from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-from mkat_tango.simlib import quantities
-from mkat_tango.simlib import model
-from mkat_tango.simlib import main
+import quantities
+import model
+import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -144,7 +144,7 @@ class WeatherSimControl(Device):
         control_attributes = []
 
         for cls in models:
-            control_attributes += [attr for attr in vars(cls()).keys()]
+            control_attributes += [attr for attr in cls.adjustable_attributes]
 
         # Add a list of float attributes from the list of Guassian variables
         for attribute_name in control_attributes:
