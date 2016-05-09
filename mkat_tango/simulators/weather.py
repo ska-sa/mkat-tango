@@ -136,10 +136,11 @@ class WeatherSimControl(Device):
 
     def initialize_dynamic_attributes(self):
         '''The device method that sets up attributes during run time'''
-        # Get attributes to control the model
-        # from class variables of the quantity models available
+        # Get attributes to control the device model quantities
+        # from class variables of the quantities included in the device model.
 	Quantity = quantities.Quantity
-        models = [cls for cls in vars()['Quantity'].__subclasses__()]
+        models = set([quant.__class__
+                      for quant in self.model.sim_quantities.values()])
         control_attributes = []
 
         for cls in models:

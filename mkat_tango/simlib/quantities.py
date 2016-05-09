@@ -12,6 +12,13 @@ ninf = float('-inf')
 class Quantity(object):
     __metaclass__ = abc.ABCMeta
 
+    adjustable_attributes = frozenset(['last_val', 'last_update_time'])
+    """Attributes that should be adjustable via a simulation control interface
+
+    Subclasses should add all the attributes to this set that users should be
+    able to adjust via a user interface at simulation runtime
+
+    """
     def __init__(self, start_value=None, start_time=None):
         """Subclasses must call this super __init__()
 
@@ -58,6 +65,9 @@ class GaussianSlewLimited(Quantity):
         Maximum quantity value, random values will be clipped if needed.
 
     """
+
+    adjustable_attributes = Qauntity.adjustable_attributes + frozenset(
+        ['mean', 'std_dev', 'max_slew_rate', 'min_bound', 'max_bound'])
 
     def __init__(self, mean, std_dev,
                  max_slew_rate=inf,
