@@ -145,22 +145,3 @@ class test_Weather(DeviceTestCase):
                                 "attribute {!r} unchanged after update".format(attr_name))
             dt = updated_attr['time'] - initial_attr['time']
             self.assertGreaterEqual(dt, update_period)
-
-class test_WeatherSimControl(DeviceTestCase):
-    control_device = weather.WeatherSimControl
-
-    expected_attributes = frozenset([
-        'mean', 'std_dev', 'max_slew_rate',
-        'max_bound', 'min_min', 'State', 'Status'])
-
-    def setUp(self):
-        """Setting up device server instance and object clean ups """
-        super(test_WeatherSimControl, self).setUp()
-        self.control_instance = weather.WeatherSimControl.instances[self.control_device.name()]
-        def cleanup_refs(): del self.control_instance
-        self.addCleanup(cleanup_refs)
-
-    def test_attribute_list(self):
-        """Testing expected attributes from the the control device"""
-        attributes = set(self.control_device.get_attribute_list())
-        self.assertEqual(attributes, self.expected_attributes)
