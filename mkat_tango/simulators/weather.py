@@ -98,7 +98,7 @@ class WeatherSimControl(Device):
     def init_device(self):
         super(WeatherSimControl, self).init_device()
         name = self.get_name()
-	self.instances[name] = self
+        self.instances[name] = self
         # Get the name of the device
         self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
         self.device_instance = Weather.instances[self.device_name]
@@ -139,7 +139,6 @@ class WeatherSimControl(Device):
         '''The device method that sets up attributes during run time'''
         # Get attributes to control the device model quantities
         # from class variables of the quantities included in the device model.
-	Quantity = quantities.Quantity
         models = set([quant.__class__
                       for quant in self.model.sim_quantities.values()])
         control_attributes = []
