@@ -53,6 +53,7 @@ class Weather(Device):
     @attribute(label="Current outside temperature", dtype=float,
                min_warning=-5, max_warning=45,
                max_alarm=50, min_alarm=-9,
+               min_value=-10, max_value=51,
                unit="Degrees Centigrade",
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def temperature(self):
@@ -61,6 +62,7 @@ class Weather(Device):
 
     @attribute(label="Wind speed", dtype=float,
                max_warning=15, max_alarm=25,
+               max_value=30, min_value=0,
                unit="m/s",
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_speed(self):
@@ -68,14 +70,14 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Wind direction", dtype=float,
-               unit="Degrees",
+               unit="Degrees", max_value=360, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
         value, update_time = self.model.quantity_state['wind_direction']
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Insolation", dtype=float,
-               unit="W/m^2",
+               unit="W/m^2", max_value=1200, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def insolation(self):
         value, update_time = self.model.quantity_state['insolation']
