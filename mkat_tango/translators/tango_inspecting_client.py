@@ -70,6 +70,8 @@ class TangoInspectingClient(object):
         said data.
 
         """
+        # TODO NM 2016-04-06 Call a different callback for non-sample events,
+        # i.e. error callbacks etc.
         event_type = tango_event_data.event
         attr_value = tango_event_data.attr_value
         name = getattr(attr_value, 'name', None)
@@ -83,14 +85,15 @@ class TangoInspectingClient(object):
         self.sample_event_callback(name, received_timestamp, timestamp,
                                    value, quality, event_type)
 
-
     def sample_event_callback(
             self, name, received_timestamp, timestamp, value, quality,
             event_type):
         """Callback called for every sample event. NOP implementation.
 
         Intended for subclasses to override this method, or for the method to be
-        replace in instances
+        replaced in instances
+
+        Parameters
 
         """
         pass
@@ -100,20 +103,31 @@ class TangoInspectingClient(object):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
         for attr_name in self.device_attributes:
-            if attr_name != 'ScalarBool': continue
-            subs = lambda etype: dp.subscribe_event(
-                attr_name, etype, self.tango_event_handler)
-
-            if periodic:
-                self._event_ids.add(subs(PyTango.EventType.PERIODIC_EVENT))
-            if change:
-                self._event_ids.add(subs(PyTango.EventType.CHANGE_EVENT))
-            if archive:
-                self._event_ids.add(subs(PyTango.EventType.ARCHIVE_EVENT))
-            if data_ready:
-                self._event_ids.add(subs(PyTango.EventType.DATA_READY_EVENT))
-            if user:
-                self._event_ids.add(subs(PyTango.EventType.USER_EVENT))
+            try:
+                subs = lambda etype: dp.subscribe_event(
+                    attr_name, etype, self.tango_event_handler)
+                # TODO NM Need an individual try-except around each of these
+                if periodic:
+                    self._event_ids.add(subs(PyTango.EventType.PERIODIC_EVENT))
+                if change:
+                    self._event_ids.add(subs(PyTango.EventType.CHANGE_EVENT))
+                if archive:
+                    self._event_ids.add(subs(PyTango.EventType.ARCHIVE_EVENT))
+                if data_ready:
+                    self._event_ids.add(subs(PyTango.EventType.DATA_READY_EVENT))
+                if user:
+                    self._event_ids.add(subs(PyTango.EventType.USER_EVENT))
+            except PyTango.DevFailed, exc:
+                exc_reasons = set([arg.reason for arg in exc.args])
+                if 'API_AttributePollingNotStarted' in exc_reasons:
+                    MODULE_LOGGER.warn('TODO NM: Need to implement something for '
+                                       'attributes that are not polled, processing '
+                                       'attribute {}'.format(attr_name))
+                elif 'API_EventPropertiesNotSet' in exc_reasons:
+                    MODULE_LOGGER.info('Attribute {} has no event properties set'
+                                       .format(attr_name))
+                else:
+                    raise
 
     def clear_attribute_sampling(self):
         """Unsubscribe from all Tango events previously subscribed to

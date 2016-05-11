@@ -94,30 +94,30 @@ class TangoTestDevice(TS.Device):
     @_test_attr
     def ScalarBool(self): pass
 
-    # @TS.attribute(dtype='DevUChar', doc='An example scalar UChar attribute',
-    #               polling_period=1000)
-    # @_test_attr
-    # def ScalarDevUChar(self): pass
+    @TS.attribute(dtype='DevUChar', doc='An example scalar UChar attribute',
+                  polling_period=1000)
+    @_test_attr
+    def ScalarDevUChar(self): pass
 
-    # @TS.attribute(dtype='DevLong', doc='An example scalar Long attribute',
-    #               polling_period=1000)
-    # @_test_attr
-    # def ScalarDevLong(self): pass
+    @TS.attribute(dtype='DevLong', doc='An example scalar Long attribute',
+                  polling_period=1000)
+    @_test_attr
+    def ScalarDevLong(self): pass
 
-    # @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute',
-    #               polling_period=1000)
-    # @_test_attr
-    # def ScalarDevDouble(self): pass
+    @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute',
+                  polling_period=1000)
+    @_test_attr
+    def ScalarDevDouble(self): pass
 
-    # @TS.attribute(dtype='DevString', doc='An example scalar String attribute',
-    #               polling_period=1000)
-    # @_test_attr
-    # def ScalarDevString(self): pass
+    @TS.attribute(dtype='DevString', doc='An example scalar String attribute',
+                  polling_period=1000)
+    @_test_attr
+    def ScalarDevString(self): pass
 
-    # @TS.attribute(dtype='DevEncoded', doc='An example scalar Encoded attribute',
-    #               polling_period=1000)
-    # @_test_attr
-    # def ScalarDevEncoded(self): pass
+    @TS.attribute(dtype='DevEncoded', doc='An example scalar Encoded attribute',
+                  polling_period=1000)
+    @_test_attr
+    def ScalarDevEncoded(self): pass
 
     static_commands = ('Mirror', 'MultiplyInts')
     # Commands that come from the Tango library
@@ -250,17 +250,16 @@ class test_TangoInspectingClient(unittest.TestCase):
         self._test_commands(self.DUT.device_commands)
 
 
-    # @unittest.skip('Seems to cause a segfault as soon as setup_attribute_sampling() '
-    #                'is called as of 2016-04-20, might be resolved by Tango upgrade')
     def test_setup_attribute_sampling(self):
         poll_period = 1000        # in milliseconds
         test_attributes = self.test_device.static_attributes
-        # set_attributes_polling(self, self.tango_dp, self.test_device,
-        #                        {attr: poll_period
-        #                         for attr in test_attributes})
+        set_attributes_polling(self, self.tango_dp, self.test_device,
+                               {attr: poll_period
+                                for attr in ['ScalarBool']})# test_attributes})
         recorded_samples = {attr:[] for attr in test_attributes}
         recorded_samples[None] = []
         self.DUT.inspect()
+        #import IPython ; IPython.embed()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
             def side_effect(attr, *x):
                 recorded_samples[attr].append(x)
