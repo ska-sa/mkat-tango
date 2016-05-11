@@ -13,11 +13,9 @@
     
 """
 from katcp import Sensor
-from PyTango import DeviceProxy, CmdArgType,DevState
-from tango_inspecting_client import TangoInspectingClient
+from PyTango import CmdArgType, DevState, AttrDataFormat
 
-
-def tango_attribute_descr2katcp_sensor(tango_attribute_descr):
+def tango_attr_descr2katcp_sensor(tango_attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
     
     Parameters
@@ -30,38 +28,33 @@ def tango_attribute_descr2katcp_sensor(tango_attribute_descr):
     sensor: katcp.Sensor object
     
     """
-    
     sensor_type = None
-    sensor_params = None 
+    sensor_params = None
     
-    if tango_attribute_descr.data_type == CmdArgType.DevDouble:
-        sensor_type = Sensor.FLOAT
-        sensor_params = [float(tango_attribute_descr.min_value), 
-                         float(tango_attribute_descr.max_value)]
-    elif tango_attribute_descr.data_type == CmdArgType.DevBoolean:
-        sensor_type = Sensor.BOOLEAN
-    elif tango_attribute_descr.data_type == CmdArgType.DevState:
-        sensor_type = Sensor.DISCRETE
-        state_enums = DevState.names
-        state_possible_vals = state_enums.keys()
-        sensor_params = state_possible_vals
-    elif (tango_attribute_descr.data_type == CmdArgType.DevString or
-          tango_attribute_descr.data_type == CmdArgType.DevEnum):
-        # TODO Should be DevEnum in Tango9. For now don't create sensor object
-        return None
-        #sensor_type = Sensor.DISCRETE
-        #sensor_params = attr_name.enum_labels
+    if tango_attr_descr.data_format == AttrDataFormat.SCALAR:
+        
+        if (tango_attr_descr.data_type == CmdArgType.DevDouble or
+            tango_attr_descr.data_type == CmdArgType.DevFloat):
+            sensor_type = Sensor.FLOAT
+            sensor_params = [float(tango_attr_descr.min_value), 
+                             float(tango_attr_descr.max_value)]
+        elif tango_attr_descr.data_type == CmdArgType.DevBoolean:
+            sensor_type = Sensor.BOOLEAN
+        elif tango_attr_descr.data_type == CmdArgType.DevState:
+            sensor_type = Sensor.DISCRETE
+            state_enums = DevState.names
+            state_possible_vals = state_enums.keys()
+            sensor_params = state_possible_vals
+        elif (tango_attr_descr.data_type == CmdArgType.DevString or
+            tango_attr_descr.data_type == CmdArgType.DevEnum):
+            # TODO Should be DevEnum in Tango9. For now don't create sensor object
+            #sensor_type = Sensor.DISCRETE
+            #sensor_params = attr_name.enum_labels
+            raise NotImplementedError("Cannot create DISCRETE sensors from the DevEnum"
+                                       "/DevString attributes yet! Tango9 feature issue")
+    else:
+        raise NotImplementedError("KATCP complexity with non-scalar data formats")
     
-    return Sensor(sensor_type, tango_attribute_descr.name, 
-                  tango_attribute_descr.description, 
-                  tango_attribute_descr.unit, sensor_params)
-
-
-dp = DeviceProxy('test/mkat_ap_tango/1')
-tic = TangoInspectingClient(dp)
-attrs = tic.inspect_attributes()
-             
-sensors = {}
-
-for attr_name in attrs.keys(): 
-    sensors[attr_name] = tango_attribute_descr2katcp_sensor(attrs[attr_name])
+    return Sensor(sensor_type, tango_attr_descr.name, 
+                  tango_attr_descr.description, 
+                  tango_attr_descr.unit, sensor_params)
