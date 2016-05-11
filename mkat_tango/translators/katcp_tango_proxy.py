@@ -45,13 +45,15 @@ def tango_attribute_descr2katcp_sensor(tango_attribute_descr):
         state_enums = DevState.names
         state_possible_vals = state_enums.keys()
         sensor_params = state_possible_vals
-    elif tango_attribute_descr.data_type == CmdArgType.DevString:
+    elif (tango_attribute_descr.data_type == CmdArgType.DevString or
+          tango_attribute_descr.data_type == CmdArgType.DevEnum):
         # TODO Should be DevEnum in Tango9. For now don't create sensor object
         return None
         #sensor_type = Sensor.DISCRETE
         #sensor_params = attr_name.enum_labels
     
-    return Sensor(sensor_type, tango_attribute_descr.name, tango_attribute_descr.description, 
+    return Sensor(sensor_type, tango_attribute_descr.name, 
+                  tango_attribute_descr.description, 
                   tango_attribute_descr.unit, sensor_params)
 
 
