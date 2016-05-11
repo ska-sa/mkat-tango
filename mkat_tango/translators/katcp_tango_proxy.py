@@ -51,8 +51,8 @@ def tango_attribute_descr2katcp_sensor(tango_attribute_descr):
         #sensor_type = Sensor.DISCRETE
         #sensor_params = attr_name.enum_labels
     
-    return Sensor(sensor_type, attrs[attr_name].name, attrs[attr_name].description, 
-                  attrs[attr_name].unit, sensor_params)
+    return Sensor(sensor_type, tango_attribute_descr.name, tango_attribute_descr.description, 
+                  tango_attribute_descr.unit, sensor_params)
 
 
 dp = DeviceProxy('test/mkat_ap_tango/1')
