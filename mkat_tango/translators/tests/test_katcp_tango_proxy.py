@@ -14,7 +14,6 @@ from mkat_tango.translators import katcp_tango_proxy
 
 LOGGER = logging.getLogger(__name__)
 
-
 class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
 
     @classmethod
@@ -24,7 +23,6 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
         devicetest.Patcher.unpatch_device_proxy()
-
 
     def test_from_address(self):
         DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
