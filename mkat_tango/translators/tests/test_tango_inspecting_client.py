@@ -162,7 +162,6 @@ class ClassCleanupUnittest(unittest.TestCase):
         if results:
             LOGGER.exception('Exception(s) raised during class cleanup')
 
-
     @classmethod
     def setUpClass(cls):
         """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
@@ -186,7 +185,6 @@ class ClassCleanupUnittest(unittest.TestCase):
 
 class test_TangoInspectingClient(ClassCleanupUnittest):
 
-
     @classmethod
     def setUpClassWithCleanup(cls):
         """Do class-level setup  and ensure that cleanup functions are called
@@ -206,7 +204,6 @@ class test_TangoInspectingClient(ClassCleanupUnittest):
         cls.test_device.log_attribute_reads = True
         cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
 
-
     def _test_attributes(self, attributes_data):
         # Check that the standard Tango sensors are there
         self.assertIn('State', attributes_data)
@@ -223,7 +220,6 @@ class test_TangoInspectingClient(ClassCleanupUnittest):
             td_props = getattr(
                 self.test_device, attr_name).get_properties()
             self.assertEqual(attr_data.description, td_props.description)
-
 
     def test_inspect_attributes(self):
         attributes_data = self.DUT.inspect_attributes()
@@ -249,7 +245,6 @@ class test_TangoInspectingClient(ClassCleanupUnittest):
         self.DUT.inspect()
         self._test_attributes(self.DUT.device_attributes)
         self._test_commands(self.DUT.device_commands)
-
 
     def test_setup_attribute_sampling(self):
         poll_period = 1000        # in milliseconds
