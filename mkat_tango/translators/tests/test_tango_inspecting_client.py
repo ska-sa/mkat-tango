@@ -139,9 +139,53 @@ class TangoTestDevice(TS.Device):
 # DevVarULongArray, DevVarStringArray, DevVarLongStringArray, DevVarDoubleStringArray
 
 
-class test_TangoInspectingClient(unittest.TestCase):
-
+class ClassCleanupUnittest(unittest.TestCase):
     _class_cleanups = []
+
+    @classmethod
+    def addCleanupClass(cls, function, *args, **kwargs):
+        """Add a cleanup that will be called at class tear-down time"""
+        cls._class_cleanups.append((function, args, kwargs))
+
+    @classmethod
+    def doCleanupsClass(cls):
+        """Run class-level cleanups registered with `cls.addCleanupClass()`"""
+        results = []
+        while cls._class_cleanups:
+            function, args, kwargs = cls._class_cleanups.pop()
+            try:
+                function(*args, **kwargs)
+            except Exception:
+                LOGGER.exception('Exception calling class cleanup function')
+                results.append(sys.exc_info())
+
+        if results:
+            LOGGER.exception('Exception(s) raised during class cleanup')
+
+
+    @classmethod
+    def setUpClass(cls):
+        """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
+
+        Any exceptions raised during `cls.setUpClassWithCleanup` will result in
+        the cleanups registered up to that point being called before re-raising
+        the exception.
+
+        """
+        try:
+            with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
+                cls_addCleanup.side_effect = cls.addCleanupClass
+                cls.setUpClassWithCleanup()
+        except Exception:
+            LOGGER.exception('Exception during setUpClass')
+            cls.doCleanupsClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.doCleanupsClass()
+
+class test_TangoInspectingClient(ClassCleanupUnittest):
+
 
     @classmethod
     def setUpClassWithCleanup(cls):
@@ -162,49 +206,6 @@ class test_TangoInspectingClient(unittest.TestCase):
         cls.test_device.log_attribute_reads = True
         cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
 
-    @classmethod
-    def addCleanupClass(cls, function, *args, **kwargs):
-        """Add a cleanp that will be called at class tear-down time"""
-        cls._class_cleanups.append((function, args, kwargs))
-
-    @classmethod
-    def doCleanupsClass(cls):
-        """Run class-level cleanups registered with `cls.addCleanupClass()`"""
-        results = []
-        while cls._class_cleanups:
-            function, args, kwargs = cls._class_cleanups.pop()
-            try:
-                function(*args, **kwargs)
-            except Exceptions:
-                LOGGER.exception('Exception calling class cleanup function')
-                results.append(sys.exc_info())
-
-        if results:
-            LOGGER.error('Exception(s) raised during class cleanup, re-raising '
-                         'first exception.')
-            raise results[0]
-
-
-    @classmethod
-    def setUpClass(cls):
-        """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
-
-        Any exceptions raised during `cls.setUpClassWithCleanup` will result in
-        the cleanups registered up to that point being called before re-raising
-        the exception.
-
-        """
-        try:
-            with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
-                cls_addCleanup.side_effect = cls.addCleanupClass
-                cls.setUpClassWithCleanup()
-        except Exception:
-            cls.doCleanupsClass()
-            raise
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.doCleanupsClass()
 
     def _test_attributes(self, attributes_data):
         # Check that the standard Tango sensors are there

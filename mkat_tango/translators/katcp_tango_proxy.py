@@ -12,8 +12,15 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 
 """
+
+import PyTango
+
 from katcp import Sensor
+from katcp import server as katcp_server
+
 from PyTango import CmdArgType, DevState, AttrDataFormat
+
+from tango_inspecting_client import TangoInspectingClient
 
 def tango_attr_descr2katcp_sensor(tango_attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
@@ -61,3 +68,31 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
     return Sensor(sensor_type, tango_attr_descr.name,
                   tango_attr_descr.description,
                   tango_attr_descr.unit, sensor_params)
+
+class TangoProxyDeviceServer(katcp_server.DeviceServer):
+    def setup_sensors(self):
+        pass
+
+class TangoDevice2KatcpProxy(object):
+    def __init__(self, katcp_server, inspecting_client):
+        self.katcp_server = katcp_server
+        self.inspecting_client = inspecting_client
+
+    def start(self, timeout=None):
+        self.katcp_server.start(timeout=timeout)
+        self.inspecting_client.inspect()
+
+    def stop(self):
+        self.katcp_server.stop()
+
+    def join(self, timeout=None):
+        self.katcp_server.join(timeout=timeout)
+
+    @classmethod
+    def from_addresses(cls, katcp_server_address, tango_device_address):
+        tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
+        tango_inspecting_client = TangoInspectingClient(tango_device_proxy)
+        katcp_host, katcp_port = katcp_server_address
+        katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
+        katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
+        return cls(katcp_server, tango_inspecting_client)
