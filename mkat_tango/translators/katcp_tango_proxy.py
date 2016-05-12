@@ -12,6 +12,7 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 
 """
+import logging
 
 import PyTango
 
@@ -21,6 +22,8 @@ from katcp import server as katcp_server
 from PyTango import CmdArgType, DevState, AttrDataFormat
 
 from tango_inspecting_client import TangoInspectingClient
+
+MODULE_LOGGER = logging.getLogger(__name__)
 
 def tango_attr_descr2katcp_sensor(tango_attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
@@ -79,8 +82,9 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client = inspecting_client
 
     def start(self, timeout=None):
-        self.katcp_server.start(timeout=timeout)
         self.inspecting_client.inspect()
+        self.update_katcp_server_sensor_list()
+        self.katcp_server.start(timeout=timeout)
 
     def stop(self):
         self.katcp_server.stop()
@@ -88,6 +92,15 @@ class TangoDevice2KatcpProxy(object):
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
 
+    def update_katcp_server_sensor_list(self):
+        tango_attr_descr = self.inspecting_client.device_attributes
+        for attr_descr_name in tango_attr_descr.keys():
+            try:
+                sensor = tango_attr_descr2katcp_sensor(tango_attr_descr[attr_descr_name])
+                self.katcp_server.add_sensor(sensor)
+            except NotImplementedError as nierr:
+                MODULE_LOGGER.debug(str(nierr))
+                
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
         tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
