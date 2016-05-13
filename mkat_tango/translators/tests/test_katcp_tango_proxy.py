@@ -50,4 +50,3 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
             " missing:\n%s\n\nFound these unexpected attributes:\n%s"
             % ("\n".join(sorted([str(t) for t in sensor_list - attribute_list])),
                "\n".join(sorted([str(t) for t in attribute_list - sensor_list]))))
-               
