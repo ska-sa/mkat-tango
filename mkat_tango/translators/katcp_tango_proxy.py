@@ -98,7 +98,9 @@ class TangoDevice2KatcpProxy(object):
 
     def start(self, timeout=None):
         self.inspecting_client.inspect()
+        self.inspecting_client.tango_event_handler = self.update_sensor_values
         self.update_katcp_server_sensor_list()
+        self.inspecting_client.setup_attribute_sampling()
         self.katcp_server.start(timeout=timeout)
 
     def stop(self):
@@ -116,6 +118,17 @@ class TangoDevice2KatcpProxy(object):
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
                 MODULE_LOGGER.debug(str(nierr))
+                
+    def update_sensor_values(self, tango_event_data):
+        attr_value = tango_event_data.attr_value
+        name = getattr(attr_value, 'name', None)
+        value = getattr(attr_value, 'value', None)
+        timestamp = (attr_value.time.totime()
+                     if hasattr(attr_value, 'time') else None)
+        sensor = self.katcp_server.get_sensor(name)
+        # TODO Might need to figure out how to map the AttrQuality values to the 
+        # Sensor status constants
+        sensor.set_value(value, timestamp=timestamp)
                 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
