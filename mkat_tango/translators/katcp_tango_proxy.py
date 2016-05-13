@@ -47,8 +47,10 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
     if (tango_attr_descr.data_type == CmdArgType.DevDouble or
         tango_attr_descr.data_type == CmdArgType.DevFloat):
         sensor_type = Sensor.FLOAT
-        sensor_params = [float(tango_attr_descr.min_value),
-                         float(tango_attr_descr.max_value)]
+        if (tango_attr_descr.min_value != 'Not specified' or
+            tango_attr_descr.max_value != 'Not specified'):
+                sensor_params = [float(tango_attr_descr.min_value),
+                                 float(tango_attr_descr.max_value)]
     elif (tango_attr_descr.data_type == CmdArgType.DevShort or
           tango_attr_descr.data_type == CmdArgType.DevLong or
           tango_attr_descr.data_type == CmdArgType.DevUShort or
@@ -56,8 +58,10 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
           tango_attr_descr.data_type == CmdArgType.DevLong64 or
           tango_attr_descr.data_type == CmdArgType.DevULong64):
               sensor_type = Sensor.INTEGER
-              sensor_params = [int(tango_attr_descr.min_value),
-                               int(tango_attr_descr.max_value)]
+              if (tango_attr_descr.min_value != 'Not specified' or
+                  tango_attr_descr.max_value != 'Not specified'):
+                  sensor_params = [int(tango_attr_descr.min_value),
+                                   int(tango_attr_descr.max_value)]
     elif tango_attr_descr.data_type == CmdArgType.DevBoolean:
         sensor_type = Sensor.BOOLEAN
     elif tango_attr_descr.data_type == CmdArgType.DevString:
@@ -71,8 +75,9 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
         # TODO Should be DevEnum in Tango9. For now don't create sensor object
         #sensor_type = Sensor.DISCRETE
         #sensor_params = attr_name.enum_labels
-        raise NotImplementedError("Cannot create DISCRETE sensors from the DevEnum"
-                                   "/DevString attributes yet! Tango9 feature issue")
+        raise NotImplementedError("Cannot create DISCRETE sensors from the "
+                                  "DevEnum attributes yet! Tango9 feature "
+                                  "issue")
     else:
         raise NotImplementedError("Unhandled attribute type {!r}"
                                   .format(tango_attr_descr.data_type))
@@ -87,9 +92,9 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
         pass
 
 class TangoDevice2KatcpProxy(object):
-    def __init__(self, katcp_server, inspecting_client):
+    def __init__(self, katcp_server, tango_inspecting_client):
         self.katcp_server = katcp_server
-        self.inspecting_client = inspecting_client
+        self.inspecting_client = tango_inspecting_client
 
     def start(self, timeout=None):
         self.inspecting_client.inspect()
@@ -109,6 +114,7 @@ class TangoDevice2KatcpProxy(object):
                 sensor = tango_attr_descr2katcp_sensor(tango_attr_descr[attr_descr_name])
                 self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
+                # Temporarily for unhandled attribute types
                 MODULE_LOGGER.debug(str(nierr))
                 
     @classmethod
