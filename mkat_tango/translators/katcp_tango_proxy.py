@@ -49,15 +49,25 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
         sensor_type = Sensor.FLOAT
         sensor_params = [float(tango_attr_descr.min_value),
                          float(tango_attr_descr.max_value)]
+    elif (tango_attr_descr.data_type == CmdArgType.DevShort or
+          tango_attr_descr.data_type == CmdArgType.DevLong or
+          tango_attr_descr.data_type == CmdArgType.DevUShort or
+          tango_attr_descr.data_type == CmdArgType.DevULong or
+          tango_attr_descr.data_type == CmdArgType.DevLong64 or
+          tango_attr_descr.data_type == CmdArgType.DevULong64):
+              sensor_type = Sensor.INTEGER
+              sensor_params = [int(tango_attr_descr.min_value),
+                               int(tango_attr_descr.max_value)]
     elif tango_attr_descr.data_type == CmdArgType.DevBoolean:
         sensor_type = Sensor.BOOLEAN
+    elif tango_attr_descr.data_type == CmdArgType.DevString:
+        sensor_type = Sensor.STRING
     elif tango_attr_descr.data_type == CmdArgType.DevState:
         sensor_type = Sensor.DISCRETE
         state_enums = DevState.names
         state_possible_vals = state_enums.keys()
         sensor_params = state_possible_vals
-    elif (tango_attr_descr.data_type == CmdArgType.DevString or
-        tango_attr_descr.data_type == CmdArgType.DevEnum):
+    elif tango_attr_descr.data_type == CmdArgType.DevEnum:
         # TODO Should be DevEnum in Tango9. For now don't create sensor object
         #sensor_type = Sensor.DISCRETE
         #sensor_params = attr_name.enum_labels

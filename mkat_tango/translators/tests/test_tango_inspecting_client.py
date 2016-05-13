@@ -100,12 +100,12 @@ class TangoTestDevice(TS.Device):
     def ScalarDevUChar(self): pass
 
     @TS.attribute(dtype='DevLong', doc='An example scalar Long attribute',
-                  polling_period=1000)
+                  polling_period=1000, min_value =-1000, max_value=1000)
     @_test_attr
     def ScalarDevLong(self): pass
 
     @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute',
-                  polling_period=1000)
+                  polling_period=1000, min_value =-1000, max_value=1000)
     @_test_attr
     def ScalarDevDouble(self): pass
 
