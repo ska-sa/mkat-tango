@@ -12,6 +12,7 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 
 """
+import logging
 
 import PyTango
 
@@ -21,6 +22,8 @@ from katcp import server as katcp_server
 from PyTango import CmdArgType, DevState, AttrDataFormat
 
 from tango_inspecting_client import TangoInspectingClient
+
+MODULE_LOGGER = logging.getLogger(__name__)
 
 def tango_attr_descr2katcp_sensor(tango_attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
@@ -44,22 +47,37 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
     if (tango_attr_descr.data_type == CmdArgType.DevDouble or
         tango_attr_descr.data_type == CmdArgType.DevFloat):
         sensor_type = Sensor.FLOAT
-        sensor_params = [float(tango_attr_descr.min_value),
-                         float(tango_attr_descr.max_value)]
+        if (tango_attr_descr.min_value != 'Not specified' or
+            tango_attr_descr.max_value != 'Not specified'):
+                sensor_params = [float(tango_attr_descr.min_value),
+                                 float(tango_attr_descr.max_value)]
+    elif (tango_attr_descr.data_type == CmdArgType.DevShort or
+          tango_attr_descr.data_type == CmdArgType.DevLong or
+          tango_attr_descr.data_type == CmdArgType.DevUShort or
+          tango_attr_descr.data_type == CmdArgType.DevULong or
+          tango_attr_descr.data_type == CmdArgType.DevLong64 or
+          tango_attr_descr.data_type == CmdArgType.DevULong64):
+              sensor_type = Sensor.INTEGER
+              if (tango_attr_descr.min_value != 'Not specified' or
+                  tango_attr_descr.max_value != 'Not specified'):
+                  sensor_params = [int(tango_attr_descr.min_value),
+                                   int(tango_attr_descr.max_value)]
     elif tango_attr_descr.data_type == CmdArgType.DevBoolean:
         sensor_type = Sensor.BOOLEAN
+    elif tango_attr_descr.data_type == CmdArgType.DevString:
+        sensor_type = Sensor.STRING
     elif tango_attr_descr.data_type == CmdArgType.DevState:
         sensor_type = Sensor.DISCRETE
         state_enums = DevState.names
         state_possible_vals = state_enums.keys()
         sensor_params = state_possible_vals
-    elif (tango_attr_descr.data_type == CmdArgType.DevString or
-        tango_attr_descr.data_type == CmdArgType.DevEnum):
+    elif tango_attr_descr.data_type == CmdArgType.DevEnum:
         # TODO Should be DevEnum in Tango9. For now don't create sensor object
         #sensor_type = Sensor.DISCRETE
         #sensor_params = attr_name.enum_labels
-        raise NotImplementedError("Cannot create DISCRETE sensors from the DevEnum"
-                                   "/DevString attributes yet! Tango9 feature issue")
+        raise NotImplementedError("Cannot create DISCRETE sensors from the "
+                                  "DevEnum attributes yet! Tango9 feature "
+                                  "issue")
     else:
         raise NotImplementedError("Unhandled attribute type {!r}"
                                   .format(tango_attr_descr.data_type))
@@ -74,13 +92,14 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
         pass
 
 class TangoDevice2KatcpProxy(object):
-    def __init__(self, katcp_server, inspecting_client):
+    def __init__(self, katcp_server, tango_inspecting_client):
         self.katcp_server = katcp_server
-        self.inspecting_client = inspecting_client
+        self.inspecting_client = tango_inspecting_client
 
     def start(self, timeout=None):
-        self.katcp_server.start(timeout=timeout)
         self.inspecting_client.inspect()
+        self.update_katcp_server_sensor_list()
+        self.katcp_server.start(timeout=timeout)
 
     def stop(self):
         self.katcp_server.stop()
@@ -88,6 +107,16 @@ class TangoDevice2KatcpProxy(object):
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
 
+    def update_katcp_server_sensor_list(self):
+        tango_attr_descr = self.inspecting_client.device_attributes
+        for attr_descr_name in tango_attr_descr.keys():
+            try:
+                sensor = tango_attr_descr2katcp_sensor(tango_attr_descr[attr_descr_name])
+                self.katcp_server.add_sensor(sensor)
+            except NotImplementedError as nierr:
+                # Temporarily for unhandled attribute types
+                MODULE_LOGGER.debug(str(nierr))
+                
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
         tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
