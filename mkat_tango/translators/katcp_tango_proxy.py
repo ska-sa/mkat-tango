@@ -118,6 +118,9 @@ class TangoDevice2KatcpProxy(object):
                 self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
+                # TODO NM 16-15-2016 Add exc_info=True so that we don't lose the
+                # traceback. Also, perhaps log this at info level rather than
+                # debug?
                 MODULE_LOGGER.debug(str(nierr))
                 
     def update_sensor_values(self, tango_event_data):
