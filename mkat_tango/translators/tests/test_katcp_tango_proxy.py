@@ -11,6 +11,7 @@ from katcore.testutils import cleanup_tempfile
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
     TangoTestDevice, ClassCleanupUnittest)
 
+from mkat_tango import testutils
 from mkat_tango.translators import katcp_tango_proxy
 
 LOGGER = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
 
     DUT = None
-    
+
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
@@ -26,19 +27,21 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
         devicetest.Patcher.unpatch_device_proxy()
-        cls.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
-            ("", 0), cls.tango_device_address)
-        start_thread_with_cleanup(cls, cls.DUT, start_timeout=1)
-        cls.katcp_address = cls.DUT.katcp_server.bind_address
-        cls.host, cls.port = cls.katcp_address
-        cls.client = BlockingTestClient(cls, cls.host, cls.port)
-        start_thread_with_cleanup(cls, cls.client, start_timeout=1)
+
+    def setUp(self):
+        self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
+            ("", 0), self.tango_device_address)
+        start_thread_with_cleanup(self, self.DUT, start_timeout=1)
+        self.katcp_address = self.DUT.katcp_server.bind_address
+        self.host, self.port = self.katcp_address
+        self.client = BlockingTestClient(self, self.host, self.port)
+        start_thread_with_cleanup(self, self.client, start_timeout=1)
 
     def test_from_address(self):
         self.assertEqual(self.client.is_connected(), True)
         reply, informs = self.client.blocking_request(Message.request('watchdog'))
         self.assertTrue(reply.reply_ok(), True)
-        
+
     def test_sensor_attribute_match(self):
         reply, informs = self.client.blocking_request(Message.request('sensor-list'))
         sensor_list = set([inform.arguments[0] for inform in informs])
