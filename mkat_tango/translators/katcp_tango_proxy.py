@@ -82,7 +82,6 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         raise NotImplementedError("Unhandled attribute type {!r}"
                                   .format(attr_descr.data_type))
 
-
     return Sensor(sensor_type, attr_descr.name,attr_descr.description,
                   attr_descr.unit, sensor_params)
 
