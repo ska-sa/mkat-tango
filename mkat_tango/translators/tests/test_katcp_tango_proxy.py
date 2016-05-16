@@ -1,10 +1,12 @@
 import time
 import logging
+import mock
 
 import devicetest
 
 from devicetest import TangoTestContext
 from katcp import Message
+from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
 from katcore.testutils import cleanup_tempfile
 
@@ -112,6 +114,22 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
             self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
+
+    def test_cmd2request_Reverse(self):
+        """Test request handler for the TangoTestServer Reverse command
+
+        """
+        device_proxy = self.tango_context.device
+        device_proxy_spy = mock.Mock(wraps=device_proxy)
+        cmd_name = 'Reverse'
+        cmd_info = device_proxy.command_query(cmd_name)
+        handler = katcp_tango_proxy.tango_cmd_descr2katcp_request(
+            cmd_info, device_proxy_spy)
+        mock_katcp_server = mock.Mock(spec_set=self.DUT.katcp_server)
+        req = mock_req(cmd_name, 'abcdef', server=mock_katcp_server)
+        result = handler(mock_katcp_server, req, req.msg)
+        # TODO Create the actual handler!
+
 
 class SensorObserver(object):
     def __init__(self):

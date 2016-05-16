@@ -88,6 +88,36 @@ def tango_attr_descr2katcp_sensor(attr_descr):
     return Sensor(sensor_type, attr_descr.name, attr_descr.description,
                   attr_descr.unit, sensor_params)
 
+def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
+    """Convert a tango attribute description into an equivalent KATCP Sensor object
+
+    Parameters
+    ==========
+    tango_command_descr : :class:`PyTango.CommandInfo` data structure
+    tango_device_proxy : :class:`PyTango.DeviceProxy` instance
+        When called, request_handler will use this tango device proxy to execute
+        the command.
+
+    Return Value
+    ============
+    request_handler: callable(katcp_server, katcp_req, katcp_msg)
+        Request handler suitable for installing on a
+        katcp.server.DeviceServer. Takes parameters
+            katcp_server : katcp.server.DeviceServer instance
+            katcp_req : katcp.server.ClientRequestConnection instance
+            katcp_msg : katcp.Message request message instance
+        returns katcp.Message reply message instance or a tornado Future that
+        resolves with the same.
+
+    Note
+    ====
+    The request_handler may do some type checking on the KATCP input arguments
+    to ensure compatiblity with the Tango command that it is proxying.
+
+    """
+
+
+
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
         pass

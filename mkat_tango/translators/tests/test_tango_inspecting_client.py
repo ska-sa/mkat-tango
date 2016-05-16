@@ -121,15 +121,23 @@ class TangoTestDevice(TS.Device):
     @_test_attr
     def ScalarDevEncoded(self): pass
 
-    static_commands = ('Mirror', 'MultiplyInts')
+    static_commands = ('Reverse', 'MultiplyInts')
     # Commands that come from the Tango library
     standard_commands = ('Init', 'State', 'Status')
 
-    @TS.command(dtype_in=str, dtype_out=str)
-    def Mirror(self, in_str):
+
+    Reverse_doc_in = 'A string to reverse'
+    Reverse_doc_out = 'The reversed string'
+    @TS.command(dtype_in=str, doc_in=Reverse_doc_in,
+                dtype_out=str, doc_out=Reverse_doc_out)
+    def Reverse(self, in_str):
+        """A scalar string -> scalar string command"""
         return in_str[::-1]
 
-    @TS.command(dtype_in=(int,), dtype_out=int)
+    MultiplyInts_doc_in = 'Array of integers to add'
+    MultiplyInts_doc_out = 'Sum of input integer array'
+    @TS.command(dtype_in=(int,), doc_in=MultiplyInts_doc_in,
+                dtype_out=int, doc_out=MultiplyInts_doc_out)
     def MultiplyInts(self, in_ints):
         return reduce(operator.mul, in_ints)
 
