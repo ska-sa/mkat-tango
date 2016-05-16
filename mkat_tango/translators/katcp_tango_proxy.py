@@ -13,6 +13,7 @@
 
 """
 import logging
+import sys
 
 import PyTango
 
@@ -50,7 +51,7 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         sensor_type = Sensor.FLOAT
         attr_min_val = attr_descr.min_value
         attr_max_val = attr_descr.max_value
-        min_value = float('inf') if attr_min_val == 'Not specified' else float(attr_min_val)
+        min_value = float('-inf') if attr_min_val == 'Not specified' else float(attr_min_val)
         max_value = float('inf') if attr_max_val == 'Not specified' else float(attr_max_val)
         sensor_params = [min_value, max_value]
     elif (attr_descr.data_type == DevShort or attr_descr.data_type == DevLong or
@@ -59,8 +60,8 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         sensor_type = Sensor.INTEGER
         attr_min_val = attr_descr.min_value
         attr_max_val = attr_descr.max_value
-        min_value = float('inf') if attr_min_val == 'Not specified' else int(attr_min_val)
-        max_value = float('inf') if attr_max_val == 'Not specified' else int(attr_max_val)
+        min_value = -sys.maxint if attr_min_val == 'Not specified' else int(attr_min_val)
+        max_value = sys.maxint if attr_max_val == 'Not specified' else int(attr_max_val)
         sensor_params = [min_value, max_value]
     elif attr_descr.data_type == DevBoolean:
         sensor_type = Sensor.BOOLEAN
