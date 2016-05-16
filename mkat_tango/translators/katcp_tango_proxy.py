@@ -60,6 +60,7 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
               sensor_type = Sensor.INTEGER
               if (tango_attr_descr.min_value != 'Not specified' or
                   tango_attr_descr.max_value != 'Not specified'):
+                  # TODO NM 16-05-2016: Should that not be 'and'?
                   sensor_params = [int(tango_attr_descr.min_value),
                                    int(tango_attr_descr.max_value)]
     elif tango_attr_descr.data_type == CmdArgType.DevBoolean:
