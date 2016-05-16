@@ -56,7 +56,7 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         sensor_params = [min_value, max_value]
     elif (attr_descr.data_type == DevShort or attr_descr.data_type == DevLong or
           attr_descr.data_type == DevUShort or attr_descr.data_type == DevULong or
-          attr_descr.data_type == DevLong64 or attr_descr.data_type == DevULong64):      
+          attr_descr.data_type == DevLong64 or attr_descr.data_type == DevULong64):
         sensor_type = Sensor.INTEGER
         attr_min_val = attr_descr.min_value
         attr_max_val = attr_descr.max_value
@@ -109,7 +109,7 @@ class TangoDevice2KatcpProxy(object):
         self.katcp_server.join(timeout=timeout)
 
     def update_katcp_server_sensor_list(self):
-        """ Populate the dictionary of sensors in the KATCP device server 
+        """ Populate the dictionary of sensors in the KATCP device server
             instance with the corresponding TANGO device server attributes
         """
         tango_attr_descr = self.inspecting_client.device_attributes
@@ -121,19 +121,18 @@ class TangoDevice2KatcpProxy(object):
                 # Temporarily for unhandled attribute types
                 MODULE_LOGGER.info(str(nierr), exc_info=True)
         
-    def update_sensor_values(
-            self, name, received_timestamp, timestamp, value, quality,
-            event_type):
+    def update_sensor_values(self, name, received_timestamp, timestamp, value, 
+                             quality, event_type):
         """Updates the KATCP sensor object's value accordingly with changes to
            its corresponding TANGO attribute's value.
 
         """
         if name != None:
             sensor = self.katcp_server.get_sensor(name)
-            # TODO Might need to figure out how to map the AttrQuality values to the 
+            # TODO Might need to figure out how to map the AttrQuality values to the
             # Sensor status constants
             sensor.set_value(value, timestamp=timestamp)
-                
+
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
         tango_device_proxy = PyTango.DeviceProxy(tango_device_address)

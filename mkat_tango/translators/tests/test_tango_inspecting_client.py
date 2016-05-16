@@ -79,7 +79,7 @@ class TangoTestDevice(TS.Device):
         # timestamp is None, self.attr_time is called to get the time
         self.attr_return_vals = dict(
             ScalarBool=(True, None, AttrQuality.ATTR_VALID),
-            ScalarDevUChar=('a', None, AttrQuality.ATTR_VALID),
+            ScalarDevUChar=(ord('a'), None, AttrQuality.ATTR_VALID),
             ScalarDevLong=(1234567890, None, AttrQuality.ATTR_VALID),
             ScalarDevDouble=(3.1415, None, AttrQuality.ATTR_VALID),
             ScalarDevString=('The quick brown fox.', None, AttrQuality.ATTR_VALID),
