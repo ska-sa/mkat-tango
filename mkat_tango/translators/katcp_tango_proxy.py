@@ -19,19 +19,21 @@ import PyTango
 from katcp import Sensor
 from katcp import server as katcp_server
 
-from PyTango import CmdArgType, DevState, AttrDataFormat
+from PyTango import DevState, AttrDataFormat
+from PyTango import (DevFloat, DevDouble, DevShort, DevLong, DevUShort, DevULong,
+                     DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
 from tango_inspecting_client import TangoInspectingClient
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
-def tango_attr_descr2katcp_sensor(tango_attr_descr):
+def tango_attr_descr2katcp_sensor(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
 
     Parameters
     ==========
 
-    tango_attribute_descr : PyTango.AttributeInfoEx data structure
+    attr_descr : PyTango.AttributeInfoEx data structure
 
     Return Value
     ============
@@ -41,37 +43,35 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
     sensor_type = None
     sensor_params = None
 
-    if tango_attr_descr.data_format != AttrDataFormat.SCALAR:
+    if attr_descr.data_format != AttrDataFormat.SCALAR:
         raise NotImplementedError("KATCP complexity with non-scalar data formats")
 
-    if (tango_attr_descr.data_type == CmdArgType.DevDouble or
-        tango_attr_descr.data_type == CmdArgType.DevFloat):
+    if (attr_descr.data_type == DevDouble or attr_descr.data_type == DevFloat):
         sensor_type = Sensor.FLOAT
-        if (tango_attr_descr.min_value != 'Not specified' or
-            tango_attr_descr.max_value != 'Not specified'):
-                sensor_params = [float(tango_attr_descr.min_value),
-                                 float(tango_attr_descr.max_value)]
-    elif (tango_attr_descr.data_type == CmdArgType.DevShort or
-          tango_attr_descr.data_type == CmdArgType.DevLong or
-          tango_attr_descr.data_type == CmdArgType.DevUShort or
-          tango_attr_descr.data_type == CmdArgType.DevULong or
-          tango_attr_descr.data_type == CmdArgType.DevLong64 or
-          tango_attr_descr.data_type == CmdArgType.DevULong64):
-              sensor_type = Sensor.INTEGER
-              if (tango_attr_descr.min_value != 'Not specified' or
-                  tango_attr_descr.max_value != 'Not specified'):
-                  sensor_params = [int(tango_attr_descr.min_value),
-                                   int(tango_attr_descr.max_value)]
-    elif tango_attr_descr.data_type == CmdArgType.DevBoolean:
+        attr_min_val = attr_descr.min_value
+        attr_max_val = attr_descr.max_value
+        min_value = float('inf') if attr_min_val == 'Not specified' else float(attr_min_val)
+        max_value = float('inf') if attr_max_val == 'Not specified' else float(attr_max_val)
+        sensor_params = [min_value, max_value]
+    elif (attr_descr.data_type == DevShort or attr_descr.data_type == DevLong or
+          attr_descr.data_type == DevUShort or attr_descr.data_type == DevULong or
+          attr_descr.data_type == DevLong64 or attr_descr.data_type == DevULong64):      
+        sensor_type = Sensor.INTEGER
+        attr_min_val = attr_descr.min_value
+        attr_max_val = attr_descr.max_value
+        min_value = float('inf') if attr_min_val == 'Not specified' else int(attr_min_val)
+        max_value = float('inf') if attr_max_val == 'Not specified' else int(attr_max_val)
+        sensor_params = [min_value, max_value]
+    elif attr_descr.data_type == DevBoolean:
         sensor_type = Sensor.BOOLEAN
-    elif tango_attr_descr.data_type == CmdArgType.DevString:
+    elif attr_descr.data_type == DevString:
         sensor_type = Sensor.STRING
-    elif tango_attr_descr.data_type == CmdArgType.DevState:
+    elif attr_descr.data_type == DevState:
         sensor_type = Sensor.DISCRETE
         state_enums = DevState.names
         state_possible_vals = state_enums.keys()
         sensor_params = state_possible_vals
-    elif tango_attr_descr.data_type == CmdArgType.DevEnum:
+    elif attr_descr.data_type == DevEnum:
         # TODO Should be DevEnum in Tango9. For now don't create sensor object
         #sensor_type = Sensor.DISCRETE
         #sensor_params = attr_name.enum_labels
@@ -80,12 +80,11 @@ def tango_attr_descr2katcp_sensor(tango_attr_descr):
                                   "issue")
     else:
         raise NotImplementedError("Unhandled attribute type {!r}"
-                                  .format(tango_attr_descr.data_type))
+                                  .format(attr_descr.data_type))
 
 
-    return Sensor(sensor_type, tango_attr_descr.name,
-                  tango_attr_descr.description,
-                  tango_attr_descr.unit, sensor_params)
+    return Sensor(sensor_type, attr_descr.name,attr_descr.description,
+                  attr_descr.unit, sensor_params)
 
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
@@ -98,7 +97,7 @@ class TangoDevice2KatcpProxy(object):
 
     def start(self, timeout=None):
         self.inspecting_client.inspect()
-        self.inspecting_client.tango_event_handler = self.update_sensor_values
+        self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.update_katcp_server_sensor_list()
         self.inspecting_client.setup_attribute_sampling()
         self.katcp_server.start(timeout=timeout)
@@ -110,6 +109,9 @@ class TangoDevice2KatcpProxy(object):
         self.katcp_server.join(timeout=timeout)
 
     def update_katcp_server_sensor_list(self):
+        """ Populate the dictionary of sensors in the KATCP device server 
+            instance with the corresponding TANGO device server attributes
+        """
         tango_attr_descr = self.inspecting_client.device_attributes
         for attr_descr_name in tango_attr_descr.keys():
             try:
@@ -117,18 +119,20 @@ class TangoDevice2KatcpProxy(object):
                 self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
-                MODULE_LOGGER.debug(str(nierr))
-                
-    def update_sensor_values(self, tango_event_data):
-        attr_value = tango_event_data.attr_value
-        name = getattr(attr_value, 'name', None)
-        value = getattr(attr_value, 'value', None)
-        timestamp = (attr_value.time.totime()
-                     if hasattr(attr_value, 'time') else None)
-        sensor = self.katcp_server.get_sensor(name)
-        # TODO Might need to figure out how to map the AttrQuality values to the 
-        # Sensor status constants
-        sensor.set_value(value, timestamp=timestamp)
+                MODULE_LOGGER.info(str(nierr), exc_info=True)
+        
+    def update_sensor_values(
+            self, name, received_timestamp, timestamp, value, quality,
+            event_type):
+        """Updates the KATCP sensor object's value accordingly with changes to
+           its corresponding TANGO attribute's value.
+
+        """
+        if name != None:
+            sensor = self.katcp_server.get_sensor(name)
+            # TODO Might need to figure out how to map the AttrQuality values to the 
+            # Sensor status constants
+            sensor.set_value(value, timestamp=timestamp)
                 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):

@@ -24,6 +24,7 @@ class TangoInspectingClient(object):
         self._event_ids = set()
         # True if the stored device attributes/commands are potentially outdated
         self._dirty = True
+        self.orig_attr_names_map = {}
 
     def inspect(self):
         """Inspect the tango device for available attributes / commands
@@ -34,7 +35,23 @@ class TangoInspectingClient(object):
         self.device_attributes = self.inspect_attributes()
         self.device_commands = self.inspect_commands()
         self._dirty = False     # TODO need to consider race conditions
+        self.orig_attr_names_map = self.nodb_event_test_patch()
 
+    def nodb_event_test_patch(self):
+        """ Maps the lowercase-converted attribute names to their original
+        attribute names.
+        
+        Return Value
+        ============
+
+        attributes : dict
+            lowercase attribute names as keys, value is the original attribute
+            name
+            
+        """
+        return {attr_name.lower(): attr_name 
+                for attr_name in self.tango_dp.get_attribute_list()}
+        
     def inspect_attributes(self):
         """Return data structure of tango device attributes
 
@@ -81,9 +98,22 @@ class TangoInspectingClient(object):
                      if hasattr(attr_value, 'time') else None)
 
         received_timestamp = tango_event_data.reception_date.totime()
-
-        self.sample_event_callback(name, received_timestamp, timestamp,
+      
+        # A work around to remove the suffix "#dbase=no" string and handle 
+        # the issue with the attribute name being converted to lowercase
+        # in subsequent callbacks when using a file as a database.
+        if self.tango_dp.get_device_db() == None:        
+            if attr_value != None:
+                name_trimmed = name.split('#')
+                name_trimmed = self.orig_attr_names_map[name_trimmed[0].lower()]
+                self.sample_event_callback(name_trimmed, received_timestamp,
+                                           timestamp, value, quality, event_type)
+            else:
+                MODULE_LOGGER.debug("Issues with Tango DevUChar data type")
+        else:
+            self.sample_event_callback(name, received_timestamp, timestamp,
                                    value, quality, event_type)
+        
 
     def sample_event_callback(
             self, name, received_timestamp, timestamp, value, quality,
