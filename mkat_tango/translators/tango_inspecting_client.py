@@ -101,13 +101,13 @@ class TangoInspectingClient(object):
 
         received_timestamp = tango_event_data.reception_date.totime()
 
-        # A work around to remove the suffix "#dbase=no" string and handle
-        # the issue with the attribute name being converted to lowercase
-        # in subsequent callbacks when using a file as a database.
+        # A work around to remove the suffix "#dbase=no" string when using a
+        # file as a database. Also handle the issue with the attribute name being
+        # converted to lowercase in subsequent callbacks.
         if tango_event_data.err != True:
-            name_trimmed = name.split('#')
-            name_trimmed = self.orig_attr_names_map[name_trimmed[0].lower()]
-            self.sample_event_callback(name_trimmed, received_timestamp,
+            name_trimmed = name.split('#')[0]
+            attr_name = self.orig_attr_names_map[name_trimmed.lower()]
+            self.sample_event_callback(attr_name, received_timestamp,
                                       timestamp, value, quality, event_type)
         else:
             # TODO KM needs to handle errors accordingly
