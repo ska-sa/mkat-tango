@@ -96,6 +96,14 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client = tango_inspecting_client
 
     def start(self, timeout=None):
+        """Start the translator
+
+        Starts the Tango client and the KATCP server with ioloop in another
+        thread and subscibes to all Tango attributes for updates.
+
+        For clean shutdown and thread cleanup, stop() needs to be called
+
+        """
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.update_katcp_server_sensor_list()
@@ -103,7 +111,15 @@ class TangoDevice2KatcpProxy(object):
         self.katcp_server.start(timeout=timeout)
 
     def stop(self):
+        """Stop the translator
+
+        At the moment only the KATCP component is stopped since we don't yet
+        know how to stop the Tango DeviceProxy. Some thread leakage therefore to
+        be expected :(
+
+        """
         self.katcp_server.stop()
+        # TODO NM 2016-05-17 Is it possible to stop a Tango DeviceProxy?
 
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
@@ -135,6 +151,16 @@ class TangoDevice2KatcpProxy(object):
 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
+        """Instantiate TangoDevice2KatcpProxy from network addresses
+
+        Parameters
+        ==========
+        katcp_server_address : tuple (hostname : str, port : int)
+            Address where the KATCP server interface should listen
+        tango_device_address : str
+            Tango address for the device to be translated
+
+        """
         tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
         tango_inspecting_client = TangoInspectingClient(tango_device_proxy)
         katcp_host, katcp_port = katcp_server_address
