@@ -51,7 +51,7 @@ class TangoInspectingClient(object):
             name
 
         """
-        return {attr_name.lower(): attr_name 
+        return {attr_name.lower(): attr_name
                 for attr_name in self.tango_dp.get_attribute_list()}
 
     def inspect_attributes(self):
@@ -101,14 +101,14 @@ class TangoInspectingClient(object):
 
         received_timestamp = tango_event_data.reception_date.totime()
 
-        # A work around to remove the suffix "#dbase=no" string and handle 
+        # A work around to remove the suffix "#dbase=no" string and handle
         # the issue with the attribute name being converted to lowercase
         # in subsequent callbacks when using a file as a database.
         if tango_event_data.err != True:
             name_trimmed = name.split('#')
             name_trimmed = self.orig_attr_names_map[name_trimmed[0].lower()]
             self.sample_event_callback(name_trimmed, received_timestamp,
-                                      timestamp, value, quality, event_type) 
+                                      timestamp, value, quality, event_type)
         else:
             # TODO KM needs to handle errors accordingly
             MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
