@@ -64,6 +64,7 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
                           for attr in tango_dp.get_attribute_list()})
         katcp_server = self.DUT.katcp_server
         tic = self.DUT.inspecting_client
+	sensors = []
         recorded_samples = dict()
         for attr_name in tango_dp.get_attribute_list():
             if attr_name != 'ScalarDevEncoded' and attr_name != 'ScalarDevUChar':
@@ -72,6 +73,7 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
                 katcp_server.get_sensor(attr_name).attach(
                              katcp_tango_proxy.TangoDevice2KatcpProxy)
                 recorded_samples[attr_name] = []
+                sensors.append(attr_name)
         with mock.patch.object(tic, 'sample_event_callback') as sec:
             # It allows replacement of tango inspecting client (sec) method under
             # test with mock object and make assertions about how it have been used.
@@ -99,3 +101,10 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
            # self.assertEqual(t1, t0)
             self.assertEqual(len(recorded_samples['ScalarDevString']), 10)
         tic.clear_attribute_sampling()
+
+class SensorObserver(object):
+   def __init__(self):
+       self.updates = []
+
+   def update(self, sensor, reading):
+       self.updates.append((sensor, reading))
