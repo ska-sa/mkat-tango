@@ -120,8 +120,8 @@ class TangoDevice2KatcpProxy(object):
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
                 MODULE_LOGGER.info(str(nierr), exc_info=True)
-        
-    def update_sensor_values(self, name, received_timestamp, timestamp, value, 
+
+    def update_sensor_values(self, name, received_timestamp, timestamp, value,
                              quality, event_type):
         """Updates the KATCP sensor object's value accordingly with changes to
            its corresponding TANGO attribute's value.
