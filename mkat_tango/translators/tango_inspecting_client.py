@@ -24,6 +24,7 @@ class TangoInspectingClient(object):
         self._event_ids = set()
         # True if the stored device attributes/commands are potentially outdated
         self._dirty = True
+        self.orig_attr_names_map = {}
 
     def inspect(self):
         """Inspect the tango device for available attributes / commands
@@ -34,6 +35,24 @@ class TangoInspectingClient(object):
         self.device_attributes = self.inspect_attributes()
         self.device_commands = self.inspect_commands()
         self._dirty = False     # TODO need to consider race conditions
+        self.orig_attr_names_map = self.attr_case_insenstive_patch()
+
+    def attr_case_insenstive_patch(self):
+        """ Maps the lowercase-converted attribute names to their original
+        attribute names.
+        Related to the bug reported on the TANGO forum:
+        http://www.tango-controls.org/community/forums/post/1468/
+
+        Return Value
+        ============
+
+        attributes : dict
+            lowercase attribute names as keys, value is the original attribute
+            name
+
+        """
+        return {attr_name.lower(): attr_name
+                for attr_name in self.tango_dp.get_attribute_list()}
 
     def inspect_attributes(self):
         """Return data structure of tango device attributes
@@ -82,8 +101,17 @@ class TangoInspectingClient(object):
 
         received_timestamp = tango_event_data.reception_date.totime()
 
-        self.sample_event_callback(name, received_timestamp, timestamp,
-                                   value, quality, event_type)
+        # A work around to remove the suffix "#dbase=no" string when using a
+        # file as a database. Also handle the issue with the attribute name being
+        # converted to lowercase in subsequent callbacks.
+        if tango_event_data.err != True:
+            name_trimmed = name.split('#')[0]
+            attr_name = self.orig_attr_names_map[name_trimmed.lower()]
+            self.sample_event_callback(attr_name, received_timestamp,
+                                      timestamp, value, quality, event_type)
+        else:
+            # TODO KM needs to handle errors accordingly
+            MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
 
     def sample_event_callback(
             self, name, received_timestamp, timestamp, value, quality,
