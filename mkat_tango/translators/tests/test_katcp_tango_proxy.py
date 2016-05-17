@@ -59,14 +59,11 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         tango_dp = self.tango_context.device
         test_device = TangoTestDevice.instances[tango_dp.name()]
         poll_period = 1000
-        testutils.set_attributes_polling(self, tango_dp, test_device,
-                         {attr: poll_period
-                          for attr in tango_dp.get_attribute_list()})
+        sleep_time = (poll_period/1000.)*10
         katcp_server = self.DUT.katcp_server
         tic = self.DUT.inspecting_client
-	sensors = []
+        sensors = []
         observers = {}
-        recorded_samples = dict()
         for attr_name in tango_dp.get_attribute_list():
             if attr_name != 'ScalarDevEncoded' and attr_name != 'ScalarDevUChar':
                 # Attaching a observers onto the katcp sensors to allowing
@@ -76,24 +73,25 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
                 sensors.append(attr_name)
             else:
                 LOGGER.debug('Found unexpected attributes')
-
-            #sec.side_effect = side_effect
-            self.addCleanup(tic.clear_attribute_sampling)
-            LOGGER.debug('Setting attribute sampling')
-            tic.setup_attribute_sampling()
-            sleep_time = (poll_period/1000.)*5.
-            # Waiting for the specified number (10) of polling periods 
-            time.sleep(sleep_time)
-
-        for sensor in sensors:
-            obs = observer[sensor]
-            self.assertEqual(len(obs.updates[sensor]), 10)
+        testutils.set_attributes_polling(self, tango_dp, test_device,
+                         {attr: poll_period
+                          for attr in tango_dp.get_attribute_list()})
+        self.addCleanup(tic.clear_attribute_sampling)
+        LOGGER.debug('Setting attribute sampling')
+        tic.setup_attribute_sampling(periodic=False)
+        self.addCleanup(tic.clear_attribute_sampling)
+        # Waiting for the specified number (5) of polling periods 
+        time.sleep(sleep_time)
         tic.clear_attribute_sampling()
+        for sensor in sensors:
+            obs = observers[sensor]
+            self.assertAlmostEqual(len(obs.updates), 10, delta=3)
+            katcp_server.get_sensor(attr_name).detach(obs)
 
 class SensorObserver(object):
    def __init__(self):
        self.updates = []
 
-   def update(self, sensor, reading):
+   def update(self, sensor, *reading):
        self.updates.append((sensor, reading))
        LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
