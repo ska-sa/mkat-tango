@@ -65,41 +65,29 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         katcp_server = self.DUT.katcp_server
         tic = self.DUT.inspecting_client
 	sensors = []
+        observers = {}
         recorded_samples = dict()
         for attr_name in tango_dp.get_attribute_list():
             if attr_name != 'ScalarDevEncoded' and attr_name != 'ScalarDevUChar':
                 # Attaching a observers onto the katcp sensors to allowing
                 # logging of updates into a dictionary with list values.
-                katcp_server.get_sensor(attr_name).attach(
-                             katcp_tango_proxy.TangoDevice2KatcpProxy)
-                recorded_samples[attr_name] = []
+                observers[attr_name] = observer = SensorObserver()
+                katcp_server.get_sensor(attr_name).attach(observer)
                 sensors.append(attr_name)
-        with mock.patch.object(tic, 'sample_event_callback') as sec:
-            # It allows replacement of tango inspecting client (sec) method under
-            # test with mock object and make assertions about how it have been used.
-            def side_effect(attr_name, *x):
-                # Method replacing the sample_event_callback
-                if (attr_name != 'ScalarDevEncoded' and attr_name != 'ScalarDevUChar'):
-                    # A work around to remove the suffix "#dbase=no" string and handle 
-                    # the issue with the attribute name being converted to lowercase
-                    # in subsequent callbacks when using a file as a database.
-                    attr_name = attr_name.split('#')[0].lower()
-                    attr_name = tic.orig_attr_names_map[attr_name]
-                    recorded_samples[attr_name].append(x)
-                    LOGGER.debug('Recieved {!r} for attr {!r}'.format(x, attr_name))
-                else:
-                    LOGGER.debug('Found unexpected attributes')
-            sec.side_effect = side_effect
+            else:
+                LOGGER.debug('Found unexpected attributes')
+
+            #sec.side_effect = side_effect
             self.addCleanup(tic.clear_attribute_sampling)
             LOGGER.debug('Setting attribute sampling')
             tic.setup_attribute_sampling()
-            t0 = time.time()
             sleep_time = (poll_period/1000.)*5.
             # Waiting for the specified number (10) of polling periods 
             time.sleep(sleep_time)
-            t1 = time.time()
-           # self.assertEqual(t1, t0)
-            self.assertEqual(len(recorded_samples['ScalarDevString']), 10)
+
+        for sensor in sensors:
+            obs = observer[sensor]
+            self.assertEqual(len(obs.updates[sensor]), 10)
         tic.clear_attribute_sampling()
 
 class SensorObserver(object):
@@ -108,3 +96,4 @@ class SensorObserver(object):
 
    def update(self, sensor, reading):
        self.updates.append((sensor, reading))
+       LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
