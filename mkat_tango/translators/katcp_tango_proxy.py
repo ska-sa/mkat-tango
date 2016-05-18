@@ -22,11 +22,14 @@ from katcp import server as katcp_server
 
 from PyTango import DevState, AttrDataFormat, CmdArgType
 from PyTango import (DevFloat, DevDouble, DevShort, DevLong, DevUShort, DevULong,
-                     DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
+                     DevLong64, DevULong64, DevBoolean, DevString, DevEnum, DevUChar)
 
 from tango_inspecting_client import TangoInspectingClient
 
 MODULE_LOGGER = logging.getLogger(__name__)
+
+_MIN_UCHAR_VALUE = 0
+_MAX_UCHAR_VALUE = 255
 
 def tango_attr_descr2katcp_sensor(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
@@ -63,6 +66,9 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         min_value = -sys.maxint if attr_min_val == 'Not specified' else int(attr_min_val)
         max_value = sys.maxint if attr_max_val == 'Not specified' else int(attr_max_val)
         sensor_params = [min_value, max_value]
+    elif attr_descr.data_type == DevUChar:
+        sensor_type = Sensor.INTEGER
+        sensor_params = [_MIN_UCHAR_VALUE, _MAX_UCHAR_VALUE]
     elif attr_descr.data_type == DevBoolean:
         sensor_type = Sensor.BOOLEAN
     elif attr_descr.data_type == DevString:
