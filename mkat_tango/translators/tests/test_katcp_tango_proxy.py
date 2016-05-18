@@ -61,41 +61,44 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         sensors = self.katcp_server.get_sensors()
         attributes = self.tango_test_device.attr_return_vals
         for sensor in sensors:
-            if sensor.name != 'Status' and sensor.name != 'State':
+            if sensor.name not in ['State', 'Status']:
                 sensor_value = sensor.value()
                 attribute_value = attributes[sensor.name][0]
                 self.assertEqual(sensor_value, attribute_value)
+            else:
+                LOGGER.debug('Found unexpected attribute {}'.format(sensor.name))
 
     def test_attribute_sensor_update(self):
-        poll_period = 1000
-        sleep_time = poll_period/1000.*10
+        sensors = []
+        observers = {}        
+        poll_period = 50
+        num_periods = 10
+        sleep_time = poll_period/1000. * (num_periods + 0.5)
         testutils.set_attributes_polling(self, self.tango_device_proxy,
                            self.tango_test_device, {attr: poll_period
                            for attr in self.tango_device_proxy.get_attribute_list()})
 
-        sensors = []
-        observers = {}
         for attr_name in self.tango_device_proxy.get_attribute_list():
-            if (attr_name != 'ScalarDevEncoded' and attr_name != 'ScalarDevUChar'
-                       and attr_name != 'State' and attr_name != 'Status'):
+            #Handling only scalar added attributes
+            if attr_name not in ['ScalarDevEncoded','Status', 'State']:
                 # Attaching a observers onto the katcp sensors to allowing
                 # logging of updates into a dictionary with list values
                 observers[attr_name] = observer = SensorObserver()
                 self.katcp_server.get_sensor(attr_name).attach(observer)
-                time.sleep(sleep_time)
-                self.katcp_server.get_sensor(attr_name).detach(observer)
                 sensors.append(attr_name)
             else:
                 LOGGER.debug('Found unexpected attributes')
+        time.sleep(sleep_time)
 
-	for sensor in sensors:
+        for sensor in sensors:
+            self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
-            self.assertAlmostEqual(len(obs.updates), 10, delta=1)
+            self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
 
 class SensorObserver(object):
    def __init__(self):
        self.updates = []
 
-   def update(self, sensor, *reading):
+   def update(self, sensor, reading):
        self.updates.append((sensor, reading))
        LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
