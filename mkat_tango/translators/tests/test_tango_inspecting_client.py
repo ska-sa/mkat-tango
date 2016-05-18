@@ -88,34 +88,34 @@ class TangoTestDevice(TS.Device):
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
-
     @TS.attribute(dtype='DevBoolean',
-                  doc='An example scalar boolean attribute', polling_period=1000)
+                  doc='An example scalar boolean attribute', polling_period=1000,
+                  event_period=25)
     @_test_attr
     def ScalarBool(self): pass
 
     @TS.attribute(dtype='DevUChar', doc='An example scalar UChar attribute',
-                  polling_period=1000)
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevUChar(self): pass
 
     @TS.attribute(dtype='DevLong', doc='An example scalar Long attribute',
-                  polling_period=1000)
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevLong(self): pass
 
     @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute',
-                  polling_period=1000)
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevDouble(self): pass
 
     @TS.attribute(dtype='DevString', doc='An example scalar String attribute',
-                  polling_period=1000)
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevString(self): pass
 
     @TS.attribute(dtype='DevEncoded', doc='An example scalar Encoded attribute',
-                  polling_period=1000)
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevEncoded(self): pass
 
