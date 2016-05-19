@@ -1,6 +1,7 @@
 enum
 numpy
 nose_xunitmp
+libboost-python-dev
 git+https://katpull:katpull4git@github.com/ska-sa/katcp-python#egg=katcp
 git+https://katpull:katpull4git@github.com/ska-sa/katcore#egg=katcore
 git+https://katpull:katpull4git@github.com/ska-sa/katproxy#egg=katproxy
