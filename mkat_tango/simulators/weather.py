@@ -53,6 +53,7 @@ class Weather(Device):
     @attribute(label="Current outside temperature", dtype=float,
                min_warning=-5, max_warning=45,
                max_alarm=50, min_alarm=-9,
+               min_value=-10, max_value=51,
                unit="Degrees Centigrade",
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def temperature(self):
@@ -61,6 +62,7 @@ class Weather(Device):
 
     @attribute(label="Wind speed", dtype=float,
                max_warning=15, max_alarm=25,
+               max_value=30, min_value=0,
                unit="m/s",
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_speed(self):
@@ -68,14 +70,14 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Wind direction", dtype=float,
-               unit="Degrees",
+               unit="Degrees", max_value=360, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
         value, update_time = self.model.quantity_state['wind_direction']
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Insolation", dtype=float,
-               unit="W/m^2",
+               unit="W/m^2", max_value=1200, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def insolation(self):
         value, update_time = self.model.quantity_state['insolation']
@@ -98,6 +100,7 @@ class WeatherSimControl(Device):
     def init_device(self):
         super(WeatherSimControl, self).init_device()
         name = self.get_name()
+        self.instances[name] = self
         # Get the name of the device
         self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
         self.device_instance = Weather.instances[self.device_name]
@@ -136,9 +139,14 @@ class WeatherSimControl(Device):
 
     def initialize_dynamic_attributes(self):
         '''The device method that sets up attributes during run time'''
-        # Get attributes to control the model
-        # from GuassianSlewLimited class variable
-        control_attributes = vars(quantities.GaussianSlewLimited(0, 0)).keys()
+        # Get attributes to control the device model quantities
+        # from class variables of the quantities included in the device model.
+        models = set([quant.__class__
+                      for quant in self.model.sim_quantities.values()])
+        control_attributes = []
+
+        for cls in models:
+            control_attributes += [attr for attr in cls.adjustable_attributes]
 
         # Add a list of float attributes from the list of Guassian variables
         for attribute_name in control_attributes:
@@ -148,9 +156,6 @@ class WeatherSimControl(Device):
             attr = Attr(attribute_name, DevDouble, AttrWriteType.READ_WRITE)
             attr.set_default_properties(attr_props)
             self.add_attribute(attr, self.read_attributes, self.write_attributes)
-
-# AR 2016-05-03 TODO Since only a Guassian quantities are assumed
-     # also to include other quantities
 
     def read_attributes(self, attr):
         '''Method reading an attribute value

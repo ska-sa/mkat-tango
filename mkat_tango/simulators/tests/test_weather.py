@@ -145,4 +145,3 @@ class test_Weather(DeviceTestCase):
                                 "attribute {!r} unchanged after update".format(attr_name))
             dt = updated_attr['time'] - initial_attr['time']
             self.assertGreaterEqual(dt, update_period)
-
