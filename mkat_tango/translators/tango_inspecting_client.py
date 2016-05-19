@@ -24,6 +24,7 @@ class TangoInspectingClient(object):
         self._event_ids = set()
         # True if the stored device attributes/commands are potentially outdated
         self._dirty = True
+        self.orig_attr_names_map = {}
 
     def inspect(self):
         """Inspect the tango device for available attributes / commands
@@ -34,6 +35,24 @@ class TangoInspectingClient(object):
         self.device_attributes = self.inspect_attributes()
         self.device_commands = self.inspect_commands()
         self._dirty = False     # TODO need to consider race conditions
+        self.orig_attr_names_map = self.attr_case_insenstive_patch()
+
+    def attr_case_insenstive_patch(self):
+        """ Maps the lowercase-converted attribute names to their original
+        attribute names.
+        Related to the bug reported on the TANGO forum:
+        http://www.tango-controls.org/community/forums/post/1468/
+
+        Return Value
+        ============
+
+        attributes : dict
+            lowercase attribute names as keys, value is the original attribute
+            name
+
+        """
+        return {attr_name.lower(): attr_name
+                for attr_name in self.tango_dp.get_attribute_list()}
 
     def inspect_attributes(self):
         """Return data structure of tango device attributes
@@ -70,17 +89,29 @@ class TangoInspectingClient(object):
         said data.
 
         """
+        # TODO NM 2016-04-06 Call a different callback for non-sample events,
+        # i.e. error callbacks etc.
         event_type = tango_event_data.event
         attr_value = tango_event_data.attr_value
-        name = attr_value.name
-        value = attr_value.value
-        quality = attr_value.quality
-        timestamp = attr_value.time.totime()
+        name = getattr(attr_value, 'name', None)
+        value = getattr(attr_value, 'value', None)
+        quality = getattr(attr_value, 'quality', None)
+        timestamp = (attr_value.time.totime()
+                     if hasattr(attr_value, 'time') else None)
+
         received_timestamp = tango_event_data.reception_date.totime()
 
-        self.sample_event_callback(name, received_timestamp, timestamp,
-                                   value, quality, event_type)
-
+        # A work around to remove the suffix "#dbase=no" string when using a
+        # file as a database. Also handle the issue with the attribute name being
+        # converted to lowercase in subsequent callbacks.
+        if tango_event_data.err != True:
+            name_trimmed = name.split('#')[0]
+            attr_name = self.orig_attr_names_map[name_trimmed.lower()]
+            self.sample_event_callback(attr_name, received_timestamp,
+                                      timestamp, value, quality, event_type)
+        else:
+            # TODO KM needs to handle errors accordingly
+            MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
 
     def sample_event_callback(
             self, name, received_timestamp, timestamp, value, quality,
@@ -88,31 +119,43 @@ class TangoInspectingClient(object):
         """Callback called for every sample event. NOP implementation.
 
         Intended for subclasses to override this method, or for the method to be
-        replace in instances
+        replaced in instances
+
+        Parameters
 
         """
         pass
 
     def setup_attribute_sampling(self, periodic=True, change=True, archive=True,
-                                 data_ready=True, quality=True, user=True):
+                                 data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
         for attr_name in self.device_attributes:
-            subs = lambda etype: dp.subscribe_event(
-                attr_name, etype, self.tango_event_handler)
-
-            if periodic:
-                self._event_ids.add(subs(PyTango.EventType.PERIODIC_EVENT))
-            if change:
-                self._event_ids.add(subs(PyTango.EventType.CHANGE_EVENT))
-            if archive:
-                self._event_ids.add(subs(PyTango.EventType.ARCHIVE_EVENT))
-            if data_ready:
-                self._event_ids.add(subs(PyTango.EventType.DATA_READY_EVENT))
-            if quality:
-                self._event_ids.add(subs(PyTango.EventType.QUALITY_EVENT))
-            if user:
-                self._event_ids.add(subs(PyTango.EventType.USER_EVENT))
+            try:
+                subs = lambda etype: dp.subscribe_event(
+                    attr_name, etype, self.tango_event_handler)
+                # TODO NM Need an individual try-except around each of these
+                if periodic:
+                    self._event_ids.add(subs(PyTango.EventType.PERIODIC_EVENT))
+                if change:
+                    self._event_ids.add(subs(PyTango.EventType.CHANGE_EVENT))
+                if archive:
+                    self._event_ids.add(subs(PyTango.EventType.ARCHIVE_EVENT))
+                if data_ready:
+                    self._event_ids.add(subs(PyTango.EventType.DATA_READY_EVENT))
+                if user:
+                    self._event_ids.add(subs(PyTango.EventType.USER_EVENT))
+            except PyTango.DevFailed, exc:
+                exc_reasons = set([arg.reason for arg in exc.args])
+                if 'API_AttributePollingNotStarted' in exc_reasons:
+                    MODULE_LOGGER.warn('TODO NM: Need to implement something for '
+                                       'attributes that are not polled, processing '
+                                       'attribute {}'.format(attr_name))
+                elif 'API_EventPropertiesNotSet' in exc_reasons:
+                    MODULE_LOGGER.info('Attribute {} has no event properties set'
+                                       .format(attr_name))
+                else:
+                    raise
 
     def clear_attribute_sampling(self):
         """Unsubscribe from all Tango events previously subscribed to

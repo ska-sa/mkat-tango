@@ -1,0 +1,17 @@
+PolledDS/polled/DEVICE/Polled: "test/nodb/polled"
+
+#############################################
+# CLASS Polled
+
+
+# CLASS Polled attribute properties
+
+
+
+# DEVICE test/nodb/polled properties 
+
+test/nodb/polled->polled_attr: scalarbool,\
+                              1000
+
+# DEVICE test/nodb/polled attribute properties
+

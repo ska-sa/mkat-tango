@@ -10,6 +10,7 @@ from functools import wraps
 
 from PyTango import server as TS
 from PyTango import AttrQuality
+from PyTango import DevState
 
 from devicetest import TangoTestContext
 from katcp.testutils import start_thread_with_cleanup
@@ -75,11 +76,12 @@ class TangoTestDevice(TS.Device):
         super(TangoTestDevice, self).init_device()
         name = self.get_name()
         self.instances[name] = self
+        self.set_state(DevState.ON)
         # Return values for attributes as (val, timestamp, attr_quality). If
         # timestamp is None, self.attr_time is called to get the time
         self.attr_return_vals = dict(
             ScalarBool=(True, None, AttrQuality.ATTR_VALID),
-            ScalarDevUChar=('a', None, AttrQuality.ATTR_VALID),
+            ScalarDevUChar=(ord('a'), None, AttrQuality.ATTR_VALID),
             ScalarDevLong=(1234567890, None, AttrQuality.ATTR_VALID),
             ScalarDevDouble=(3.1415, None, AttrQuality.ATTR_VALID),
             ScalarDevString=('The quick brown fox.', None, AttrQuality.ATTR_VALID),
@@ -88,29 +90,34 @@ class TangoTestDevice(TS.Device):
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
-
     @TS.attribute(dtype='DevBoolean',
-                  doc='An example scalar boolean attribute')
+                  doc='An example scalar boolean attribute', polling_period=1000,
+                  event_period=25)
     @_test_attr
     def ScalarBool(self): pass
 
-    @TS.attribute(dtype='DevUChar', doc='An example scalar UChar attribute')
+    @TS.attribute(dtype='DevUChar', doc='An example scalar UChar attribute',
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevUChar(self): pass
 
-    @TS.attribute(dtype='DevLong', doc='An example scalar Long attribute')
+    @TS.attribute(dtype='DevLong', doc='An example scalar Long attribute',
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevLong(self): pass
 
-    @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute')
+    @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute',
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevDouble(self): pass
 
-    @TS.attribute(dtype='DevString', doc='An example scalar String attribute')
+    @TS.attribute(dtype='DevString', doc='An example scalar String attribute',
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevString(self): pass
 
-    @TS.attribute(dtype='DevEncoded', doc='An example scalar Encoded attribute')
+    @TS.attribute(dtype='DevEncoded', doc='An example scalar Encoded attribute',
+                  polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevEncoded(self): pass
 
@@ -134,9 +141,51 @@ class TangoTestDevice(TS.Device):
 # DevVarULongArray, DevVarStringArray, DevVarLongStringArray, DevVarDoubleStringArray
 
 
-class test_TangoInspectingClient(unittest.TestCase):
-
+class ClassCleanupUnittest(unittest.TestCase):
     _class_cleanups = []
+
+    @classmethod
+    def addCleanupClass(cls, function, *args, **kwargs):
+        """Add a cleanup that will be called at class tear-down time"""
+        cls._class_cleanups.append((function, args, kwargs))
+
+    @classmethod
+    def doCleanupsClass(cls):
+        """Run class-level cleanups registered with `cls.addCleanupClass()`"""
+        results = []
+        while cls._class_cleanups:
+            function, args, kwargs = cls._class_cleanups.pop()
+            try:
+                function(*args, **kwargs)
+            except Exception:
+                LOGGER.exception('Exception calling class cleanup function')
+                results.append(sys.exc_info())
+
+        if results:
+            LOGGER.exception('Exception(s) raised during class cleanup')
+
+    @classmethod
+    def setUpClass(cls):
+        """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
+
+        Any exceptions raised during `cls.setUpClassWithCleanup` will result in
+        the cleanups registered up to that point being called before re-raising
+        the exception.
+
+        """
+        try:
+            with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
+                cls_addCleanup.side_effect = cls.addCleanupClass
+                cls.setUpClassWithCleanup()
+        except Exception:
+            LOGGER.exception('Exception during setUpClass')
+            cls.doCleanupsClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.doCleanupsClass()
+
+class test_TangoInspectingClient(ClassCleanupUnittest):
 
     @classmethod
     def setUpClassWithCleanup(cls):
@@ -157,50 +206,6 @@ class test_TangoInspectingClient(unittest.TestCase):
         cls.test_device.log_attribute_reads = True
         cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
 
-    @classmethod
-    def addCleanupClass(cls, function, *args, **kwargs):
-        """Add a cleanp that will be called at class tear-down time"""
-        cls._class_cleanups.append((function, args, kwargs))
-
-    @classmethod
-    def doCleanupsClass(cls):
-        """Run class-level cleanups registered with `cls.addCleanupClass()`"""
-        results = []
-        while cls._class_cleanups:
-            function, args, kwargs = cls._class_cleanups.pop()
-            try:
-                function(*args, **kwargs)
-            except Exceptions:
-                LOGGER.exception('Exception calling class cleanup function')
-                results.append(sys.exc_info())
-
-        if results:
-            LOGGER.error('Exception(s) raised during class cleanup, re-raising '
-                         'first exception.')
-            raise results[0]
-
-
-    @classmethod
-    def setUpClass(cls):
-        """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
-
-        Any exceptions raised during `cls.setUpClassWithCleanup` will result in
-        the cleanups registered up to that point being called before re-raising
-        the exception.
-
-        """
-        try:
-            with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
-                cls_addCleanup.side_effect = cls.addCleanupClass
-                cls.setUpClassWithCleanup()
-        except Exception:
-            cls.doCleanupsClass()
-            raise
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.doCleanupsClass()
-
     def _test_attributes(self, attributes_data):
         # Check that the standard Tango sensors are there
         self.assertIn('State', attributes_data)
@@ -217,7 +222,6 @@ class test_TangoInspectingClient(unittest.TestCase):
             td_props = getattr(
                 self.test_device, attr_name).get_properties()
             self.assertEqual(attr_data.description, td_props.description)
-
 
     def test_inspect_attributes(self):
         attributes_data = self.DUT.inspect_attributes()
@@ -244,26 +248,28 @@ class test_TangoInspectingClient(unittest.TestCase):
         self._test_attributes(self.DUT.device_attributes)
         self._test_commands(self.DUT.device_commands)
 
-
-    @unittest.skip('Seems to cause a segfault as soon as setup_attribute_sampling() '
-                   'is called as of 2016-04-20, might be resolved by Tango upgrade')
     def test_setup_attribute_sampling(self):
         poll_period = 1000        # in milliseconds
         test_attributes = self.test_device.static_attributes
         set_attributes_polling(self, self.tango_dp, self.test_device,
                                {attr: poll_period
-                                for attr in test_attributes})
+                                for attr in ['ScalarBool']})# test_attributes})
         recorded_samples = {attr:[] for attr in test_attributes}
+        recorded_samples[None] = []
         self.DUT.inspect()
+        #import IPython ; IPython.embed()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
-            sec.side_effect = lambda attr, *x: recorded_samples[attr].append(x)
+            def side_effect(attr, *x):
+                recorded_samples[attr].append(x)
+                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+            sec.side_effect = side_effect
             self.addCleanup(self.DUT.clear_attribute_sampling)
             LOGGER.debug('Setting attribute sampling')
             self.DUT.setup_attribute_sampling()
             t0 = time.time()
-            LOGGER.debug('sleeping 5')
-            # Wait 5 polling periods plus a little
-            time.sleep(poll_period*5.25)
+            sleep_time = poll_period/1000.*5.25 # Wait 5 polling periods plus a little
+            LOGGER.debug('sleeping {}s'.format(sleep_time))
+            time.sleep(sleep_time)
             t1 = time.time()
 
     # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
