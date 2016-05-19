@@ -39,6 +39,7 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         self.host, self.port = self.katcp_address
         self.client = BlockingTestClient(self, self.host, self.port)
         start_thread_with_cleanup(self, self.client, start_timeout=1)
+        self.client.wait_protocol(timeout=1)
 
     def test_from_address(self):
         self.assertEqual(self.client.is_connected(), True)
@@ -66,7 +67,7 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
                 if sensor.name in ['State']:
                     state = str(self.tango_device_proxy.state())
                     # PyTango._PyTango.DevState.ON is device state object
-                    self.assertEqual(sensor_value, state.split('.', 4)[-1])
+                    self.assertEqual(sensor_value, state)
                 else:
                     status = self.tango_device_proxy.status()
                     self.assertEqual(sensor_value, status)
