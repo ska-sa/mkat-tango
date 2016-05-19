@@ -79,12 +79,8 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         state_possible_vals = state_enums.keys()
         sensor_params = state_possible_vals
     elif attr_descr.data_type == DevEnum:
-        # TODO Should be DevEnum in Tango9. For now don't create sensor object
-        #sensor_type = Sensor.DISCRETE
-        #sensor_params = attr_name.enum_labels
-        raise NotImplementedError("Cannot create DISCRETE sensors from the "
-                                  "DevEnum attributes yet! Tango9 feature "
-                                  "issue")
+        sensor_type = Sensor.DISCRETE
+        sensor_params = attr_descr.enum_labels
     else:
         raise NotImplementedError("Unhandled attribute type {!r}"
                                   .format(attr_descr.data_type))
@@ -151,11 +147,14 @@ class TangoDevice2KatcpProxy(object):
         """
         try:
             sensor = self.katcp_server.get_sensor(name)
-            # TODO Might need to figure out how to map the AttrQuality values to the
-            # Sensor status constants
-            sensor.set_value(value, timestamp=timestamp)
         except ValueError as verr:
+            # AR 2016-05-19 TODO Need a robust way of dealing
+            # with not implemented sensors
             MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
+        else:
+            # KM 2016-05-18 TODO Might need to figure out how to map the
+            # AttrQuality values to the sensor status constants
+            sensor.set_value(value, timestamp=timestamp)
 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
