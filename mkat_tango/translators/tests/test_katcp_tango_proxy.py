@@ -80,6 +80,9 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
     def test_attribute_sensor_update(self):
         sensors = []
         observers = {}
+        # when polling at a period of less than 50 ms, tango becomes
+        # inconsistent with the updates generated  i.e. the observed
+        # time difference between updates fluctuates (50+-20 ms)
         poll_period = 50
         num_periods = 10
         # sleep time is 10 poll periods plus a little
