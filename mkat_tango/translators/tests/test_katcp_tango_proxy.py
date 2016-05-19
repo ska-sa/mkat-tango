@@ -1,7 +1,10 @@
 import time
 import logging
-import mock
+import unittest
+import textwrap
 
+import tornado.testing
+import tornado.gen
 import devicetest
 
 from devicetest import TangoTestContext
@@ -11,19 +14,19 @@ from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
 from katcore.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
-    TangoTestDevice, ClassCleanupUnittest)
+    TangoTestDevice, ClassCleanupUnittestMixin)
 
 from mkat_tango import testutils
 from mkat_tango.translators import katcp_tango_proxy
 
 LOGGER = logging.getLogger(__name__)
 
-class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
-
+class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     DUT = None
 
     @classmethod
     def setUpClassWithCleanup(cls):
+        cls.addCleanup(LOGGER.info, "TangoDevice2KatcpProxy_BaseMixin class  teardown done?")
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.tango_context = TangoTestContext(TangoTestDevice, db=cls.tango_db)
         start_thread_with_cleanup(cls, cls.tango_context)
@@ -31,14 +34,27 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         devicetest.Patcher.unpatch_device_proxy()
 
     def setUp(self):
+        super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
             ("", 0), self.tango_device_address)
-        start_thread_with_cleanup(self, self.DUT, start_timeout=1)
+        if hasattr(self, 'io_loop'):
+            self.DUT.set_ioloop(self.io_loop)
+            self.io_loop.add_callback(self.DUT.start)
+            self.addCleanup(self.DUT.stop, timeout=None)
+        else:
+            start_thread_with_cleanup(self, self.DUT, start_timeout=1)
         self.katcp_server = self.DUT.katcp_server
         self.tango_device_proxy = self.tango_context.device
         self.tango_test_device = TangoTestDevice.instances[self.tango_device_proxy.name()]
         self.katcp_address = self.katcp_server.bind_address
         self.host, self.port = self.katcp_address
+        LOGGER.info("Leaving TangoDevice2KatcpProxy_BaseMixin setup")
+
+class test_TangoDevice2KatcpProxy(
+        TangoDevice2KatcpProxy_BaseMixin, unittest.TestCase):
+
+    def setUp(self):
+        super(test_TangoDevice2KatcpProxy, self).setUp()
         self.client = BlockingTestClient(self, self.host, self.port)
         start_thread_with_cleanup(self, self.client, start_timeout=1)
         self.client.wait_protocol(timeout=1)
@@ -115,21 +131,96 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
             obs = observers[sensor]
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
 
-    def test_cmd2request_Reverse(self):
-        """Test request handler for the TangoTestServer Reverse command
 
+class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
+                                       tornado.testing.AsyncTestCase):
+
+    KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
         """
+        ?{cmd_name} {dtype_in} -> {dtype_out}
+
+        Input Parameter
+        ---------------
+
+        {doc_in}
+
+        Returns
+        -------
+
+        {doc_out}
+        """).lstrip()
+
+    @tornado.gen.coroutine
+    def _test_cmd_handler(self, cmd_name, request_args, expected_reply_args):
         device_proxy = self.tango_context.device
         device_proxy_spy = mock.Mock(wraps=device_proxy)
-        cmd_name = 'Reverse'
         cmd_info = device_proxy.command_query(cmd_name)
         handler = katcp_tango_proxy.tango_cmd_descr2katcp_request(
             cmd_info, device_proxy_spy)
-        mock_katcp_server = mock.Mock(spec_set=self.DUT.katcp_server)
-        req = mock_req(cmd_name, 'abcdef', server=mock_katcp_server)
-        result = handler(mock_katcp_server, req, req.msg)
-        # TODO Create the actual handler!
 
+        ## Check that the docstring is correct
+        # Do dict(...) to make a copy so that we don't mess with the original
+        command_kwargs = dict(getattr(self.tango_test_device,
+                                 cmd_name+'_command_kwargs'))
+        if 'dtype_in' not in command_kwargs:
+            command_kwargs['dtype_in'] = 'DevVoid'
+            command_kwargs['doc_in'] = 'Void'
+        if 'dtype_out' not in command_kwargs:
+            command_kwargs['dtype_out'] = 'DevVoid'
+            command_kwargs['doc_out'] = 'Void'
+
+        expected_docstring = self.KATCP_REQUEST_DOC_TEMPLATE.format(
+            cmd_name=cmd_name, **command_kwargs)
+        self.assertEqual(handler.__doc__, expected_docstring)
+
+        ## To a test request
+        mock_katcp_server = mock.Mock(spec_set=self.DUT.katcp_server)
+        req = mock_req(cmd_name, *request_args, server=mock_katcp_server)
+        result = yield handler(mock_katcp_server, req, req.msg)
+        # if cmd_name == 'MultiplyDoubleBy2':
+        #     import IPython ; IPython.embed()
+        # check if expected reply is recieved
+        expected_msg = Message.reply(cmd_name, *expected_reply_args)
+        self.assertEqual(str(result), str(expected_msg))
+        # check that tango device proxy is called once and only once.
+        self.assertEqual(device_proxy_spy.command_inout.call_count, 1)
+
+    @tornado.testing.gen_test
+    def test_cmd2request_ReverseString(self):
+        """Test request handler for the TangoTestServer ReverseString command
+
+        """
+        yield self._test_cmd_handler(cmd_name='ReverseString',
+                                     request_args=['abcdef'],
+                                     expected_reply_args=['ok', 'fedcba'])
+
+    @unittest.skip("We don't yet implement array parameters")
+    @tornado.testing.gen_test
+    def test_cmd2request_MultiplyInts(self):
+        """Test request handler for the TangoTestServer ReverseString command
+
+        """
+        yield self._test_cmd_handler(cmd_name='MultiplyInts',
+                                     request_args=[1, 3, 7, 9],
+                                     expected_reply_args=['ok', 1*3*7*9])
+
+    @tornado.testing.gen_test
+    def test_cmd2request_MultiplyDoubleBy3(self):
+        """Test request handler for the TangoTestServer MultiplyDoubleBy2MultiplyInts command
+
+        """
+        yield self._test_cmd_handler(cmd_name='MultiplyDoubleBy3',
+                                     request_args=[0.5],
+                                     expected_reply_args=['ok', 0.5*3.0])
+
+    @tornado.testing.gen_test
+    def test_cmd2request_Void(self):
+        """Test request handler for the TangoTestServer ReverseString command
+
+        """
+        yield self._test_cmd_handler(cmd_name='Void',
+                                     request_args=[],
+                                     expected_reply_args=['ok'])
 
 class SensorObserver(object):
     def __init__(self):

@@ -121,26 +121,44 @@ class TangoTestDevice(TS.Device):
     @_test_attr
     def ScalarDevEncoded(self): pass
 
-    static_commands = ('Reverse', 'MultiplyInts')
+    static_commands = ('Reverse', 'MultiplyInts', 'Void')
     # Commands that come from the Tango library
     standard_commands = ('Init', 'State', 'Status')
 
 
-    Reverse_doc_in = 'A string to reverse'
-    Reverse_doc_out = 'The reversed string'
-    @TS.command(dtype_in=str, doc_in=Reverse_doc_in,
-                dtype_out=str, doc_out=Reverse_doc_out)
-    def Reverse(self, in_str):
+    ReverseString_command_kwargs = dict(
+        doc_in='A string to reverse',
+        dtype_in='DevString',
+        doc_out='The reversed string',
+        dtype_out='DevString')
+    @TS.command(**ReverseString_command_kwargs)
+    def ReverseString(self, in_str):
         """A scalar string -> scalar string command"""
         return in_str[::-1]
 
-    MultiplyInts_doc_in = 'Array of integers to add'
-    MultiplyInts_doc_out = 'Sum of input integer array'
-    @TS.command(dtype_in=(int,), doc_in=MultiplyInts_doc_in,
-                dtype_out=int, doc_out=MultiplyInts_doc_out)
+    MultiplyInts_command_kwargs = dict(
+        doc_in='Array of integers to add',
+        dtype_in='DevVarLong64Array',
+        doc_out='Sum of input integer array',
+        dtype_out='DevLong64')
+    @TS.command(**MultiplyInts_command_kwargs)
     def MultiplyInts(self, in_ints):
         return reduce(operator.mul, in_ints)
 
+    # Need empty dict for tests to work
+    Void_command_kwargs = {}
+    @TS.command(**Void_command_kwargs)
+    def Void(self):
+        pass
+
+    MultiplyDoubleBy3_command_kwargs = dict(
+        doc_in='A Double to multiply by 3',
+        dtype_in='DevDouble',
+        doc_out='Input multiplied by 3',
+        dtype_out='DevDouble')
+    @TS.command(**MultiplyDoubleBy3_command_kwargs)
+    def MultiplyDoubleBy3(self, a_double):
+        return a_double * 3.0
 
 # DevVoid, DevBoolean, DevUChar, DevShort, DevUShort, DevLong, DevULong, DevLong64,
 # DevULong64, DevDouble, DevString, DevEncoded, DevVarBooleanArray,
@@ -149,7 +167,7 @@ class TangoTestDevice(TS.Device):
 # DevVarULongArray, DevVarStringArray, DevVarLongStringArray, DevVarDoubleStringArray
 
 
-class ClassCleanupUnittest(unittest.TestCase):
+class ClassCleanupUnittestMixin(object):
     _class_cleanups = []
 
     @classmethod
@@ -193,7 +211,7 @@ class ClassCleanupUnittest(unittest.TestCase):
     def tearDownClass(cls):
         cls.doCleanupsClass()
 
-class test_TangoInspectingClient(ClassCleanupUnittest):
+class test_TangoInspectingClient(unittest.TestCase, ClassCleanupUnittestMixin):
 
     @classmethod
     def setUpClassWithCleanup(cls):
@@ -265,7 +283,6 @@ class test_TangoInspectingClient(ClassCleanupUnittest):
         recorded_samples = {attr:[] for attr in test_attributes}
         recorded_samples[None] = []
         self.DUT.inspect()
-        #import IPython ; IPython.embed()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
             def side_effect(attr, *x):
                 recorded_samples[attr].append(x)
