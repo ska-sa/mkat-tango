@@ -64,6 +64,8 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         for sensor in sensors:
             sensor_value = sensor.value()
             if sensor.name in ['State', 'Status']:
+                # This sensors are handled specially since they are tango library
+                # Attributes with State returning a device state object
                 if sensor.name in ['State']:
                     state = str(self.tango_device_proxy.state())
                     # PyTango._PyTango.DevState.ON is device state object
