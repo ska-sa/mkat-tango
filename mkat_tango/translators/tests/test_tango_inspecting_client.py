@@ -10,6 +10,7 @@ from functools import wraps
 
 from PyTango import server as TS
 from PyTango import AttrQuality
+from PyTango import DevState
 
 from devicetest import TangoTestContext
 from katcp.testutils import start_thread_with_cleanup
@@ -75,6 +76,7 @@ class TangoTestDevice(TS.Device):
         super(TangoTestDevice, self).init_device()
         name = self.get_name()
         self.instances[name] = self
+        self.set_state(DevState.ON)
         # Return values for attributes as (val, timestamp, attr_quality). If
         # timestamp is None, self.attr_time is called to get the time
         self.attr_return_vals = dict(
