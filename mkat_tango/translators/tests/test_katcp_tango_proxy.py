@@ -1,5 +1,4 @@
 import time
-import mock
 import logging
 
 import devicetest
@@ -50,7 +49,8 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         reply, informs = self.client.blocking_request(Message.request('sensor-list'))
         sensor_list = set([inform.arguments[0] for inform in informs])
         attribute_list = set(self.tango_device_proxy.get_attribute_list())
-        self.assertEqual(attribute_list, sensor_list,
+        NOT_IMPLEMENTED_SENSORS = set(['ScalarDevEncoded'])
+        self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
             "attribute list!\n\nThese sensors are"
             " missing:\n%s\n\nFound these unexpected attributes:\n%s"
@@ -61,28 +61,40 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
         sensors = self.katcp_server.get_sensors()
         attributes = self.tango_test_device.attr_return_vals
         for sensor in sensors:
-            if sensor.name not in ['State', 'Status']:
-                sensor_value = sensor.value()
+            sensor_value = sensor.value()
+            if sensor.name in ['State', 'Status']:
+                if sensor.name in ['State']:
+                    state = str(self.tango_device_proxy.state())
+                    # PyTango._PyTango.DevState.ON is device state object
+                    self.assertEqual(sensor_value, state.split('.', 4)[-1])
+                else:
+                    status = self.tango_device_proxy.status()
+                    self.assertEqual(sensor_value, status)
+            else:
                 attribute_value = attributes[sensor.name][0]
                 self.assertEqual(sensor_value, attribute_value)
-            else:
-                LOGGER.debug('Found unexpected attribute {}'.format(sensor.name))
 
     def test_attribute_sensor_update(self):
         sensors = []
-        observers = {}        
+        observers = {}
         poll_period = 50
         num_periods = 10
+        # sleep time is 10 poll periods plus a little
         sleep_time = poll_period/1000. * (num_periods + 0.5)
         testutils.set_attributes_polling(self, self.tango_device_proxy,
                            self.tango_test_device, {attr: poll_period
                            for attr in self.tango_device_proxy.get_attribute_list()})
+        EXCLUDED_ATTRS = set([
+                'State',    # Tango library attribute, Cannot change event_period
+                'Status',   # Tango library attribute, Cannot change event_period
+                'ScalarDevEncoded'   # Not implemented sensor, to be removed once
+                # attribute type DevEncoded is handled as katcp server sensor types
+                ])
 
         for attr_name in self.tango_device_proxy.get_attribute_list():
-            #Handling only scalar added attributes
-            if attr_name not in ['ScalarDevEncoded','Status', 'State']:
-                # Attaching a observers onto the katcp sensors to allowing
-                # logging of updates into a dictionary with list values
+            if attr_name not in EXCLUDED_ATTRS:
+                # Instantiating observers and attaching them onto the katcp
+                # sensors to allow logging of periodic event updates into a list
                 observers[attr_name] = observer = SensorObserver()
                 self.katcp_server.get_sensor(attr_name).attach(observer)
                 sensors.append(attr_name)
@@ -96,9 +108,9 @@ class test_TangoDevice2KatcpProxy(ClassCleanupUnittest):
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
 
 class SensorObserver(object):
-   def __init__(self):
-       self.updates = []
+    def __init__(self):
+        self.updates = []
 
-   def update(self, sensor, reading):
-       self.updates.append((sensor, reading))
-       LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
+    def update(self, sensor, reading):
+        self.updates.append((sensor, reading))
+        LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
