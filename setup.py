@@ -16,7 +16,7 @@ setup (
         "Topic :: Scientific/Engineering :: Astronomy",
     ],
     platforms = [ "OS Independent" ],
-    install_requires = ["PyTango>=9", "numpy"],
+    install_requires = ["PyTango>=8.1.5", "numpy"],
     zip_safe = False,
     entry_points={
     'console_scripts': [
