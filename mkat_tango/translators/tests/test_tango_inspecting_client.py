@@ -121,7 +121,8 @@ class TangoTestDevice(TS.Device):
     @_test_attr
     def ScalarDevEncoded(self): pass
 
-    static_commands = ('Reverse', 'MultiplyInts', 'Void')
+    static_commands = ('ReverseString', 'MultiplyInts', 'Void',
+                       'MultiplyDoubleBy3')
     # Commands that come from the Tango library
     standard_commands = ('Init', 'State', 'Status')
 
@@ -211,7 +212,7 @@ class ClassCleanupUnittestMixin(object):
     def tearDownClass(cls):
         cls.doCleanupsClass()
 
-class test_TangoInspectingClient(unittest.TestCase, ClassCleanupUnittestMixin):
+class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
 
     @classmethod
     def setUpClassWithCleanup(cls):
