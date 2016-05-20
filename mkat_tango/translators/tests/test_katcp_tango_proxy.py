@@ -2,6 +2,7 @@ import time
 import logging
 import unittest
 import textwrap
+import mock
 
 import tornado.testing
 import tornado.gen
