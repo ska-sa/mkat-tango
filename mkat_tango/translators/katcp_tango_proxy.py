@@ -392,3 +392,41 @@ class TangoDevice2KatcpProxy(object):
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
         return cls(katcp_server, tango_inspecting_client)
+
+def tango2katcp_main(args=None, start_ioloop=True):
+    from argparse import ArgumentParser
+    from katcore.utils import address
+
+    parser = ArgumentParser(
+        description="Launch Tango device -> KATCP translator")
+    parser.add_argument('-l', '--loglevel', default='INFO',
+                        help='Level for logging as per Python loglevel names, '
+                        '"NO" for no log config. Default: %(default)s')
+    parser.add_argument("--katcp-server-address", type=address,
+                        help="HOST:PORT for the device to listen on", required=True)
+    parser.add_argument('tango_device_address', type=str, help=
+                        'Address of the tango device to connect to '
+                        '(in tango format)')
+
+    opts = parser.parse_args(args=args)
+
+    loglevel = opts.loglevel.upper()
+    if loglevel != 'NO':
+        python_loglevel = getattr(logging, loglevel)
+        logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
+        '%(pathname)s : %(lineno)d - %(message)s',
+            level=python_loglevel)
+
+    ioloop = tornado.ioloop.IOLoop.current()
+    proxy = TangoDevice2KatcpProxy.from_addresses(
+        opts.katcp_server_address, opts.tango_device_address)
+    ioloop.add_callback(proxy.start)
+    if start_ioloop:
+        try:
+            ioloop.start()
+        except KeyboardInterrupt:
+            proxy.stop()
+
+if __name__ == '__main__':
+    tango2katcp_main()

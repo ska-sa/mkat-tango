@@ -21,5 +21,6 @@ setup (
     entry_points={
     'console_scripts': [
         'mkat-tango-weather-DS = mkat_tango.simulators.weather:weather_main',
+        'mkat-tango-tangodevice2katcp = mkat_tango.translators.katcp_tango_proxy:tango2katcp_main',
     ]},
 )
