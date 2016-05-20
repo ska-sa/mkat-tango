@@ -21,6 +21,22 @@ from mkat_tango.translators import katcp_tango_proxy
 
 LOGGER = logging.getLogger(__name__)
 
+KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
+    """
+    ?{cmd_name} {dtype_in} -> {dtype_out}
+
+    Input Parameter
+    ---------------
+
+    {doc_in}
+
+    Returns
+    -------
+
+    {doc_out}
+    """).lstrip()
+
+
 class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     DUT = None
 
@@ -72,7 +88,7 @@ class test_TangoDevice2KatcpProxy(
         self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
             "attribute list!\n\nThese sensors are"
-            " missing:\n%s\n\nFound these unexpected attributes:\n%s"
+            " extra:\n%s\n\nFound these attributes with no correspondding sensors:\n%s"
             % ("\n".join(sorted([str(t) for t in sensor_list - attribute_list])),
                "\n".join(sorted([str(t) for t in attribute_list - sensor_list]))))
 
@@ -131,24 +147,35 @@ class test_TangoDevice2KatcpProxy(
             obs = observers[sensor]
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
 
+    def test_requests_list(self):
+        ttt = self.tango_test_device
+        self.client.test_help((
+            ('Init', '?Init DevVoid -> DevVoid'),
+            ('Status', '?Status DevVoid -> DevString'),
+            # TODO NM 2016-05-20 Need to check what State should actually be and implement
+            ('State', '?State Untranslated tango command.'),
+            ('ReverseString', KATCP_REQUEST_DOC_TEMPLATE.format(
+                cmd_name='ReverseString',  **ttt.ReverseString_command_kwargs)),
+            ('MultiplyInts', '?MultiplyInts Untranslated tango command.'),
+            ## TODO NM 2016-05-20 MultiplyInts should be as below, but unimplemented
+            # ('MultiplyInts', KATCP_REQUEST_DOC_TEMPLATE.format(
+            #     cmd_name='MultiplyInts', **ttt.MultiplyInts_command_kwargs)),
+            ('Void', KATCP_REQUEST_DOC_TEMPLATE.format(
+                cmd_name='Void', dtype_in='DevVoid', doc_in='Void',
+                dtype_out='DevVoid', doc_out='Void')),
+            ('MultiplyDoubleBy3', KATCP_REQUEST_DOC_TEMPLATE.format(
+                cmd_name='MultiplyDoubleBy3', **ttt.MultiplyDoubleBy3_command_kwargs)),
+        ))
+
+    def test_request(self):
+        mid=5
+        reply, _ = self.client.blocking_request(Message.request(
+            'ReverseString', 'polony', mid=mid))
+        self.assertEqual(str(reply),
+                         "!ReverseString[{}] ok ynolop".format(mid))
 
 class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                        tornado.testing.AsyncTestCase):
-
-    KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
-        """
-        ?{cmd_name} {dtype_in} -> {dtype_out}
-
-        Input Parameter
-        ---------------
-
-        {doc_in}
-
-        Returns
-        -------
-
-        {doc_out}
-        """).lstrip()
 
     @tornado.gen.coroutine
     def _test_cmd_handler(self, cmd_name, request_args, expected_reply_args):
@@ -169,7 +196,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
             command_kwargs['dtype_out'] = 'DevVoid'
             command_kwargs['doc_out'] = 'Void'
 
-        expected_docstring = self.KATCP_REQUEST_DOC_TEMPLATE.format(
+        expected_docstring = KATCP_REQUEST_DOC_TEMPLATE.format(
             cmd_name=cmd_name, **command_kwargs)
         self.assertEqual(handler.__doc__, expected_docstring)
 

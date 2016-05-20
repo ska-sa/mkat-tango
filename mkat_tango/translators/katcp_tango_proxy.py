@@ -14,6 +14,7 @@
 """
 import logging
 import sys
+import textwrap
 
 import numpy as np
 import tornado
@@ -249,7 +250,13 @@ def tango_type2kattype_object(tango_type):
 
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
-        pass
+        """Need a no-op setup_sensors() to satisfy superclass"""
+
+    def add_request(self, request_name, handler):
+        """Add a request handler to the internal list."""
+        assert(handler.__doc__ is not None)
+        self._request_handlers[request_name] = handler
+
 
 class TangoDevice2KatcpProxy(object):
     def __init__(self, katcp_server, tango_inspecting_client):
@@ -284,6 +291,7 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.update_katcp_server_sensor_list()
         self.inspecting_client.setup_attribute_sampling()
+        self.update_katcp_server_request_list()
         return self.katcp_server.start(timeout=timeout)
 
     def stop(self, timeout=1.0):
@@ -314,6 +322,37 @@ class TangoDevice2KatcpProxy(object):
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
                 MODULE_LOGGER.info(str(nierr), exc_info=True)
+
+    def update_katcp_server_request_list(self):
+        """ Populate the request handlers in  the KATCP device server
+            instance with the corresponding TANGO device server commands
+        """
+        for cmd_name, cmd_info in self.inspecting_client.device_commands.items():
+            try:
+                req_handler = tango_cmd_descr2katcp_request(
+                    cmd_info, self.inspecting_client.tango_dp)
+            except NotImplementedError as exc:
+                req_handler = self._dummy_request_handler_factory(
+                    cmd_name, str(exc))
+
+            self.katcp_server.add_request(cmd_name, req_handler)
+
+
+    def _dummy_request_handler_factory(self, request_name, entrails):
+        # Make a dummy request handler for tango commands that could not be
+        # translated
+        def request_dummy(self, req, msg):
+            return ('fail', 'Untranslated command {}'.format(request_name))
+        request_dummy = kattypes.return_reply(request_dummy)
+        request_dummy.__doc__ = textwrap.dedent("""
+        ?{} Untranslated tango command.
+
+        Entrails below might provide some hint as to why this tango command
+        could not be tanslated.
+
+        {}""".lstrip()).format(request_name, entrails)
+
+        return request_dummy
 
     def update_sensor_values(self, name, received_timestamp, timestamp, value,
                              quality, event_type):
