@@ -64,7 +64,7 @@ def dtype_params(dtype):
 KatcpTypeInfo = namedtuple('KatcpTypeInfo', ('KatcpType', 'sensor_type', 'params'))
 
 TANGO_FLOAT_TYPES = set([DevFloat, DevDouble])
-TANGO_INT_TYPES = set([DevUChar,DevShort, DevUShort, DevLong,
+TANGO_INT_TYPES = set([DevUChar, DevShort, DevUShort, DevLong,
                        DevULong, DevLong64, DevULong64])
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
@@ -157,7 +157,7 @@ def tango_attr_descr2katcp_sensor(attr_descr):
                   attr_descr.unit, sensor_params)
 
 def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
-    """Convert a tango attribute description into an equivalent KATCP Sensor object
+    """Convert tango command description to equivalent KATCP reply handler
 
     Parameters
     ==========
@@ -232,6 +232,23 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
 
 
 def tango_type2kattype_object(tango_type):
+    """Convert Tango type object to corresponding kattype type object
+
+    Input Parameters
+    ----------------
+
+    tango_type : `Pytango.CmdArgType` enum
+        Tango type to translate, e.g. PyTango.CmdArgType.DevFloat
+
+    Returns
+    -------
+
+    kattype_object : `katcp.kattypes.KatcpType` subclass
+        KATCP type object equivalent to the input tango type. E.g. input of
+        DevUChar will return a kattypes.Int object with min=0 and max=255,
+        matching the min/max values of the corresponing tango type.
+
+    """
     if tango_type == PyTango.DevVoid:
         return None
     try:
@@ -244,7 +261,7 @@ def tango_type2kattype_object(tango_type):
         kattype_kwargs['min'], kattype_kwargs['max'] = katcp_type_info.params
     # TODO NM We should be able to handle the DevVar* variants by checking if
     # in_type.name starts with DevVar, and then lookup the 'scalar' type. The we
-    # can just just multiple=True on the KATCP type
+    # can just use multiple=True on the KATCP type
     return katcp_type_info.KatcpType(**kattype_kwargs)
 
 

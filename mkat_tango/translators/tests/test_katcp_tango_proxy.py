@@ -149,23 +149,24 @@ class test_TangoDevice2KatcpProxy(
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
 
     def test_requests_list(self):
-        ttt = self.tango_test_device
+        tango_td = self.tango_test_device
         self.client.test_help((
             ('Init', '?Init DevVoid -> DevVoid'),
             ('Status', '?Status DevVoid -> DevString'),
             # TODO NM 2016-05-20 Need to check what State should actually be and implement
             ('State', '?State Untranslated tango command.'),
             ('ReverseString', KATCP_REQUEST_DOC_TEMPLATE.format(
-                cmd_name='ReverseString',  **ttt.ReverseString_command_kwargs)),
+                cmd_name='ReverseString',  **tango_td.ReverseString_command_kwargs)),
             ('MultiplyInts', '?MultiplyInts Untranslated tango command.'),
             ## TODO NM 2016-05-20 MultiplyInts should be as below, but unimplemented
             # ('MultiplyInts', KATCP_REQUEST_DOC_TEMPLATE.format(
-            #     cmd_name='MultiplyInts', **ttt.MultiplyInts_command_kwargs)),
+            #     cmd_name='MultiplyInts', **tango_td.MultiplyInts_command_kwargs)),
             ('Void', KATCP_REQUEST_DOC_TEMPLATE.format(
                 cmd_name='Void', dtype_in='DevVoid', doc_in='Void',
                 dtype_out='DevVoid', doc_out='Void')),
             ('MultiplyDoubleBy3', KATCP_REQUEST_DOC_TEMPLATE.format(
-                cmd_name='MultiplyDoubleBy3', **ttt.MultiplyDoubleBy3_command_kwargs)),
+                cmd_name='MultiplyDoubleBy3',
+                **tango_td.MultiplyDoubleBy3_command_kwargs)),
         ))
 
     def test_request(self):
@@ -205,8 +206,6 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         mock_katcp_server = mock.Mock(spec_set=self.DUT.katcp_server)
         req = mock_req(cmd_name, *request_args, server=mock_katcp_server)
         result = yield handler(mock_katcp_server, req, req.msg)
-        # if cmd_name == 'MultiplyDoubleBy2':
-        #     import IPython ; IPython.embed()
         # check if expected reply is recieved
         expected_msg = Message.reply(cmd_name, *expected_reply_args)
         self.assertEqual(str(result), str(expected_msg))
