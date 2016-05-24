@@ -74,9 +74,10 @@ class TangoInspectingClient(object):
         Return Value
         ============
 
-        attributes : dict
-            Command name as keys, value is the return value of
-            :meth:`PyTango.DeviceProxy.command_list_query` for each command.
+        commands : dict
+            Command name as keys, value is instance of :class:`PyTango.CommandInfo`
+            (the return value of :meth:`PyTango.DeviceProxy.command_list_query`)
+            for each command.
 
         """
         return {cmd_info.cmd_name: cmd_info
