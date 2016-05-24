@@ -43,7 +43,6 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
 
     @classmethod
     def setUpClassWithCleanup(cls):
-        cls.addCleanup(LOGGER.info, "TangoDevice2KatcpProxy_BaseMixin class  teardown done?")
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.tango_context = TangoTestContext(TangoTestDevice, db=cls.tango_db)
         start_thread_with_cleanup(cls, cls.tango_context)
@@ -65,7 +64,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         self.tango_test_device = TangoTestDevice.instances[self.tango_device_proxy.name()]
         self.katcp_address = self.katcp_server.bind_address
         self.host, self.port = self.katcp_address
-        LOGGER.info("Leaving TangoDevice2KatcpProxy_BaseMixin setup")
+
 
 class test_TangoDevice2KatcpProxy(
         TangoDevice2KatcpProxy_BaseMixin, unittest.TestCase):
@@ -89,7 +88,7 @@ class test_TangoDevice2KatcpProxy(
         self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
             "attribute list!\n\nThese sensors are"
-            " extra:\n%s\n\nFound these attributes with no correspondding sensors:\n%s"
+            " extra:\n%s\n\nFound these attributes with no corresponding sensors:\n%s"
             % ("\n".join(sorted([str(t) for t in sensor_list - attribute_list])),
                "\n".join(sorted([str(t) for t in attribute_list - sensor_list]))))
 
