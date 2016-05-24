@@ -193,6 +193,9 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     request_args = [in_kattype] if in_kattype else []
     return_reply_args = [out_kattype] if out_kattype else []
 
+    # We need to create handlers with different signatures depending on whether
+    # the tango command takes an input parameter or not
+
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
     def request_handler_with_input(server, req, input_param):
@@ -217,14 +220,20 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         in_type_desc = tango_command_descr.in_type_desc
     else:
         handler = request_handler_without_input
+        # Fill in 'Void' as input description for commands that do not tak
+        # an input value so that the KATCP docstring makes sense
         in_type_desc = 'Void'
 
     if out_kattype:
         out_type_desc = tango_command_descr.out_type_desc
     else:
+        # Fill in 'Void' as output description for commands that do not produce
+        # an output value so that the KATCP docstring makes sense
         out_type_desc = 'Void'
 
     handler.__name__ = 'request_{}'.format(cmd_name)
+    # Format the KATCP docstring template with the info of this particular
+    # command
     handler.__doc__ = KATCP_REQUEST_DOC_TEMPLATE.format(
         desc=tango_command_descr,
         in_type_desc=in_type_desc, out_type_desc=out_type_desc)
