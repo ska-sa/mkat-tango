@@ -7,6 +7,7 @@ import sys
 import mock
 
 from functools import wraps
+from collections import defaultdict
 
 from PyTango import server as TS
 from PyTango import AttrQuality
@@ -169,7 +170,28 @@ class TangoTestDevice(TS.Device):
 
 
 class ClassCleanupUnittestMixin(object):
+    """Implement class-level setup/deardown semantics that emulate addCleanup()
+
+    Subclasses can define a setUpClassWithCleanup() method that wraps addCleanup
+    such that cls.addCleanup() can be used to add cleanup methods that will be
+    called at class tear-down time.
+
+    """
+
     _class_cleanups = []
+
+    @classmethod
+    def setUpClassWithCleanup(cls):
+        """Do class-level setup  and ensure that cleanup functions are called
+
+        It is inteded that subclasses override this class method
+
+        In this method calls to `cls.addCleanup` is forwarded to
+        `cls.addCleanupClass`, which means callables registered with
+        `cls.addCleanup()` is added to the class-level cleanup function stack.
+
+        """
+        super(ClassCleanupUnittestMixin, cls).setUpClassWithCleanup()
 
     @classmethod
     def addCleanupClass(cls, function, *args, **kwargs):
@@ -189,15 +211,15 @@ class ClassCleanupUnittestMixin(object):
                 results.append(sys.exc_info())
 
         if results:
-            LOGGER.exception('Exception(s) raised during class cleanup')
+            LOGGER.error('Exception(s) raised during class cleanup')
 
     @classmethod
     def setUpClass(cls):
         """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
 
         Any exceptions raised during `cls.setUpClassWithCleanup` will result in
-        the cleanups registered up to that point being called before re-raising
-        the exception.
+        the cleanups registered up to that point being called before logging
+        the exception with traceback.
 
         """
         try:
@@ -212,7 +234,9 @@ class ClassCleanupUnittestMixin(object):
     def tearDownClass(cls):
         cls.doCleanupsClass()
 
+
 class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
+    longMessage=True
 
     @classmethod
     def setUpClassWithCleanup(cls):
@@ -276,13 +300,12 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
         self._test_commands(self.DUT.device_commands)
 
     def test_setup_attribute_sampling(self):
-        poll_period = 1000        # in milliseconds
+        poll_period = 10000        # in milliseconds
         test_attributes = self.test_device.static_attributes
         set_attributes_polling(self, self.tango_dp, self.test_device,
                                {attr: poll_period
-                                for attr in ['ScalarBool']})# test_attributes})
+                                for attr in test_attributes})
         recorded_samples = {attr:[] for attr in test_attributes}
-        recorded_samples[None] = []
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
             def side_effect(attr, *x):
@@ -292,11 +315,25 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
             self.addCleanup(self.DUT.clear_attribute_sampling)
             LOGGER.debug('Setting attribute sampling')
             self.DUT.setup_attribute_sampling()
-            t0 = time.time()
-            sleep_time = poll_period/1000.*5.25 # Wait 5 polling periods plus a little
-            LOGGER.debug('sleeping {}s'.format(sleep_time))
-            time.sleep(sleep_time)
-            t1 = time.time()
+            self.DUT.clear_attribute_sampling()
+
+        # Check that the initial updates were received for each attribute for
+        # at least the periodic event
+        attr_event_type_events = {}
+        for attr, events in recorded_samples.items():
+            attr_event_type_events[attr] = defaultdict(list)
+            for event in events:
+                event_type = event[4]
+                attr_event_type_events[attr][event_type].append(event)
+
+        periodic_updates_per_attr = {
+            attr: len(attr_event_type_events[attr]['periodic'])
+            for attr in test_attributes}
+        self.assertEqual(
+            periodic_updates_per_attr,
+            {attr: 1 for attr in test_attributes},
+            "Exactly one periodic update not received for each test attribute.")
+
 
     # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
     # is only implemented in tango 9, so we can't really do this properly till we
