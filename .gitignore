@@ -66,3 +66,6 @@ target/
 
 # backup files
 *~
+
+# vagrant droppings
+.vagrant
