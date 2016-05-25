@@ -71,6 +71,7 @@ class Weather(Device):
 
     @attribute(label="Wind direction", dtype=float,
                unit="Degrees", max_value=360, min_value=0,
+               max_alarm=359, min_alarm=1,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
         value, update_time = self.model.quantity_state['wind_direction']
@@ -78,6 +79,7 @@ class Weather(Device):
 
     @attribute(label="Insolation", dtype=float,
                unit="W/m^2", max_value=1200, min_value=0,
+               max_alarm=1100,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def insolation(self):
         value, update_time = self.model.quantity_state['insolation']
@@ -85,6 +87,7 @@ class Weather(Device):
 
     @attribute(label="Barometric pressure", dtype=float,
                unit="mbar", max_value=1100, min_value=500,
+               max_alarm=1000,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def pressure(self):
         value, update_time = self.model.quantity_state['pressure']
@@ -92,6 +95,7 @@ class Weather(Device):
 
     @attribute(label="Air humidity", dtype=float,
                unit="percent", max_value=100, min_value=0,
+               max_alarm=99,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def relative_humidity(self):
         value, update_time = self.model.quantity_state['relative_humidity']
@@ -99,6 +103,7 @@ class Weather(Device):
 
     @attribute(label="Rainfall", dtype=float,
                unit="mm", max_value=3.2, min_value=0,
+               max_alarm=3.1,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def rainfall(self):
         value, update_time = self.model.quantity_state['rainfall']
