@@ -71,7 +71,6 @@ class Weather(Device):
 
     @attribute(label="Wind direction", dtype=float,
                unit="Degrees", max_value=360, min_value=0,
-               max_alarm=359, min_alarm=1,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
         value, update_time = self.model.quantity_state['wind_direction']
