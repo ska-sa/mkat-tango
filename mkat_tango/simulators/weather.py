@@ -78,9 +78,34 @@ class Weather(Device):
 
     @attribute(label="Insolation", dtype=float,
                unit="W/m^2", max_value=1200, min_value=0,
+               max_alarm=1100,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def insolation(self):
         value, update_time = self.model.quantity_state['insolation']
+        return value, update_time, AttrQuality.ATTR_VALID
+
+    @attribute(label="Barometric pressure", dtype=float,
+               unit="mbar", max_value=1100, min_value=500,
+               max_alarm=1000,
+               polling_period=DEFAULT_POLLING_PERIOD_MS)
+    def pressure(self):
+        value, update_time = self.model.quantity_state['pressure']
+        return value, update_time, AttrQuality.ATTR_VALID
+
+    @attribute(label="Air humidity", dtype=float,
+               unit="percent", max_value=100, min_value=0,
+               max_alarm=99,
+               polling_period=DEFAULT_POLLING_PERIOD_MS)
+    def relative_humidity(self):
+        value, update_time = self.model.quantity_state['relative_humidity']
+        return value, update_time, AttrQuality.ATTR_VALID
+
+    @attribute(label="Rainfall", dtype=float,
+               unit="mm", max_value=3.2, min_value=0,
+               max_alarm=3.1,
+               polling_period=DEFAULT_POLLING_PERIOD_MS)
+    def rainfall(self):
+        value, update_time = self.model.quantity_state['rainfall']
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="station_ok", dtype=bool,
@@ -206,8 +231,16 @@ class WeatherModel(model.Model):
             insolation=GaussianSlewLimited(
                 mean=500, std_dev=1000, max_slew_rate=100,
                 min_bound=0, max_bound=1100),
+            pressure=GaussianSlewLimited(
+                mean=650, std_dev=100, max_slew_rate=50,
+                min_bound=350, max_bound=1500),
+            relative_humidity=GaussianSlewLimited(
+                mean=65, std_dev=10, max_slew_rate=10,
+                min_bound=0, max_bound=150),
+            rainfall=GaussianSlewLimited(
+                mean=1.5, std_dev=0.5, max_slew_rate=0.1,
+                min_bound=0, max_bound=5),
             station_ok=ConstantQuantity(start_value=True)
-
         ))
         super(WeatherModel, self).setup_sim_quantities()
 
