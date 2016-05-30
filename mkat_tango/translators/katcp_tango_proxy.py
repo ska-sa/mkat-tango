@@ -277,7 +277,6 @@ def tango_type2kattype_object(tango_type):
         return None
     try:
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
-        #print katcp_type_info
     except KeyError as ke:
         raise NotImplementedError("Tango wrapping not implemented for tango type {}"
                                   .format(tango_type))
