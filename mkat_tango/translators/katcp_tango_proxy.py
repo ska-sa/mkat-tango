@@ -214,9 +214,8 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name)
-#        if cmd_name == 'State':
-#            print 19*"#"
-#            print tango_retval
+        if isinstance(tango_retval, PyTango._PyTango.DevState):
+            tango_retval = str(tango_retval)
         raise Return(
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
@@ -263,7 +262,6 @@ def tango_type2kattype_object(tango_type):
         matching the min/max values of the corresponing tango type.
 
     """
-    #print tango_type
     if tango_type == PyTango.DevVoid:
         return None
     try:
@@ -275,13 +273,12 @@ def tango_type2kattype_object(tango_type):
     kattype_kwargs = {}
     if tango_type in TANGO_NUMERIC_TYPES:
         kattype_kwargs['min'], kattype_kwargs['max'] = katcp_type_info.params
+    elif tango_type == CmdArgType.DevState:
+         kattype_kwargs = [name for name in katcp_type_info.params]
+         return katcp_type_info.KatcpType(kattype_kwargs)
     # TODO NM We should be able to handle the DevVar* variants by checking if
     # in_type.name starts with DevVar, and then lookup the 'scalar' type. The we
     # can just use multiple=True on the KATCP type
-    elif tango_type == CmdArgType.DevState:
-         kattype_kwargs = [ name for name in katcp_type_info.params]
-         return katcp_type_info.KatcpType(kattype_kwargs)
-
     return katcp_type_info.KatcpType(**kattype_kwargs)
 
 

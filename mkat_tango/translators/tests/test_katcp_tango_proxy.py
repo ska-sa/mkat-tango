@@ -205,7 +205,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         mock_katcp_server = mock.Mock(spec_set=self.DUT.katcp_server)
         req = mock_req(cmd_name, *request_args, server=mock_katcp_server)
         result = yield handler(mock_katcp_server, req, req.msg)
-        # check if expected reply is recieved
+#        # check if expected reply is recieved
         expected_msg = Message.reply(cmd_name, *expected_reply_args)
         self.assertEqual(str(result), str(expected_msg))
 #         check that tango device proxy is called once and only once.
@@ -255,7 +255,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         """
         yield self._test_cmd_handler(cmd_name='State',
                                      request_args=[],
-                                     expected_reply_args=['ok', 'OFF'])
+                                     expected_reply_args=['ok', 'ON'])
 
 class SensorObserver(object):
     def __init__(self):
