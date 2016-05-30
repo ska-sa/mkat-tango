@@ -153,7 +153,7 @@ class test_TangoDevice2KatcpProxy(
             ('Init', '?Init DevVoid -> DevVoid'),
             ('Status', '?Status DevVoid -> DevString'),
             # TODO NM 2016-05-20 Need to check what State should actually be and implement
-            ('State', '?State Untranslated tango command.'),
+            ('State', '?State DevVoid -> DevState'),
             ('ReverseString', KATCP_REQUEST_DOC_TEMPLATE.format(
                 cmd_name='ReverseString',  **tango_td.ReverseString_command_kwargs)),
             ('MultiplyInts', '?MultiplyInts Untranslated tango command.'),
@@ -208,7 +208,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         # check if expected reply is recieved
         expected_msg = Message.reply(cmd_name, *expected_reply_args)
         self.assertEqual(str(result), str(expected_msg))
-        # check that tango device proxy is called once and only once.
+#         check that tango device proxy is called once and only once.
         self.assertEqual(device_proxy_spy.command_inout.call_count, 1)
 
     @tornado.testing.gen_test
@@ -247,6 +247,15 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         yield self._test_cmd_handler(cmd_name='Void',
                                      request_args=[],
                                      expected_reply_args=['ok'])
+
+    @tornado.testing.gen_test
+    def test_cmd2request_State(self):
+        """Test request handler for the TangoTestServer State command
+
+        """
+        yield self._test_cmd_handler(cmd_name='State',
+                                     request_args=[],
+                                     expected_reply_args=['ok', 'OFF'])
 
 class SensorObserver(object):
     def __init__(self):

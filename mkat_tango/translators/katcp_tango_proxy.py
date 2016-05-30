@@ -94,7 +94,9 @@ TANGO2KATCP_TYPE_INFO = {
     DevString: KatcpTypeInfo(KatcpType=kattypes.Str, sensor_type=Sensor.STRING,
                              params=()),
     DevEnum: KatcpTypeInfo(KatcpType=kattypes.Discrete, sensor_type=Sensor.DISCRETE,
-                           params=())
+                           params=()),
+    CmdArgType.DevState: KatcpTypeInfo(KatcpType=kattypes.Discrete, sensor_type=Sensor.DISCRETE,
+                           params=(DevState.names.keys()))
 }
 
 
@@ -212,6 +214,9 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name)
+#        if cmd_name == 'State':
+#            print 19*"#"
+#            print tango_retval
         raise Return(
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
@@ -258,10 +263,12 @@ def tango_type2kattype_object(tango_type):
         matching the min/max values of the corresponing tango type.
 
     """
+    #print tango_type
     if tango_type == PyTango.DevVoid:
         return None
     try:
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
+        #print katcp_type_info
     except KeyError as ke:
         raise NotImplementedError("Tango wrapping not implemented for tango type {}"
                                   .format(tango_type))
@@ -271,6 +278,10 @@ def tango_type2kattype_object(tango_type):
     # TODO NM We should be able to handle the DevVar* variants by checking if
     # in_type.name starts with DevVar, and then lookup the 'scalar' type. The we
     # can just use multiple=True on the KATCP type
+    elif tango_type == CmdArgType.DevState:
+         kattype_kwargs = [ name for name in katcp_type_info.params]
+         return katcp_type_info.KatcpType(kattype_kwargs)
+
     return katcp_type_info.KatcpType(**kattype_kwargs)
 
 
