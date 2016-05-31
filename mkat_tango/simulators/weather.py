@@ -60,20 +60,20 @@ class Weather(Device):
         value, update_time = self.model.quantity_state['temperature']
         return value, update_time, AttrQuality.ATTR_VALID
 
-    @attribute(label="Wind speed", dtype=float,
+    @attribute(name='wind-speed', label="Wind speed", dtype=float,
                max_warning=15, max_alarm=25,
                max_value=30, min_value=0,
                unit="m/s",
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_speed(self):
-        value, update_time = self.model.quantity_state['wind_speed']
+        value, update_time = self.model.quantity_state['wind-speed']
         return value, update_time, AttrQuality.ATTR_VALID
 
-    @attribute(label="Wind direction", dtype=float,
+    @attribute(name='wind-direction', label="Wind direction", dtype=float,
                unit="Degrees", max_value=360, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
-        value, update_time = self.model.quantity_state['wind_direction']
+        value, update_time = self.model.quantity_state['wind-direction']
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Insolation", dtype=float,
@@ -92,12 +92,12 @@ class Weather(Device):
         value, update_time = self.model.quantity_state['pressure']
         return value, update_time, AttrQuality.ATTR_VALID
 
-    @attribute(label="Air humidity", dtype=float,
+    @attribute(name='relative-humidity', label="Air humidity", dtype=float,
                unit="percent", max_value=100, min_value=0,
                max_alarm=99,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def relative_humidity(self):
-        value, update_time = self.model.quantity_state['relative_humidity']
+        value, update_time = self.model.quantity_state['relative-humidity']
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Rainfall", dtype=float,
@@ -222,26 +222,27 @@ class WeatherModel(model.Model):
             temperature=GaussianSlewLimited(
                 mean=20, std_dev=20, max_slew_rate=5,
                 min_bound=-10, max_bound=55),
-            wind_speed=GaussianSlewLimited(
-                mean=1, std_dev=20, max_slew_rate=3,
-                min_bound=0, max_bound=100),
-            wind_direction=GaussianSlewLimited(
-                mean=0, std_dev=150, max_slew_rate=60,
-                min_bound=0, max_bound=359.9999),
             insolation=GaussianSlewLimited(
                 mean=500, std_dev=1000, max_slew_rate=100,
                 min_bound=0, max_bound=1100),
             pressure=GaussianSlewLimited(
                 mean=650, std_dev=100, max_slew_rate=50,
                 min_bound=350, max_bound=1500),
-            relative_humidity=GaussianSlewLimited(
-                mean=65, std_dev=10, max_slew_rate=10,
-                min_bound=0, max_bound=150),
             rainfall=GaussianSlewLimited(
                 mean=1.5, std_dev=0.5, max_slew_rate=0.1,
                 min_bound=0, max_bound=5),
             station_ok=ConstantQuantity(start_value=True)
         ))
+        self.sim_quantities['relative-humidity'] = GaussianSlewLimited(
+            mean=65, std_dev=10, max_slew_rate=10,
+            min_bound=0, max_bound=150)
+        self.sim_quantities['wind-speed'] = GaussianSlewLimited(
+                mean=1, std_dev=20, max_slew_rate=3,
+                min_bound=0, max_bound=100)
+        self.sim_quantities['wind-direction'] = GaussianSlewLimited(
+                mean=0, std_dev=150, max_slew_rate=60,
+                min_bound=0, max_bound=359.9999)
+
         super(WeatherModel, self).setup_sim_quantities()
 
 
