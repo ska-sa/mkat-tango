@@ -70,6 +70,18 @@ TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
                              for name, num in PyTango.CmdArgType.names.items()}
 
+class TangoStateDiscrete(kattypes.Discrete):
+    """A kattype that is compatible with the PyTango.DevState enumeration"""
+
+    def check(self, value, major):
+        return super(TangoStateDiscrete, self).check(str(value), major)
+
+    def encode(self, value, major):
+        return super(TangoStateDiscrete, self).encode(str(value), major)
+
+    def decode(self, value, major):
+        return getattr(PyTango.DevState, value)
+
 TANGO2KATCP_TYPE_INFO = {
     DevFloat: KatcpTypeInfo(KatcpType=kattypes.Float, sensor_type=Sensor.FLOAT,
                             params=dtype_params(np.float32)),
@@ -94,7 +106,10 @@ TANGO2KATCP_TYPE_INFO = {
     DevString: KatcpTypeInfo(KatcpType=kattypes.Str, sensor_type=Sensor.STRING,
                              params=()),
     DevEnum: KatcpTypeInfo(KatcpType=kattypes.Discrete, sensor_type=Sensor.DISCRETE,
-                           params=())
+                           params=()),
+    CmdArgType.DevState: KatcpTypeInfo(
+        KatcpType=TangoStateDiscrete, sensor_type=Sensor.DISCRETE,
+        params=(DevState.names.keys()))
 }
 
 
@@ -268,6 +283,11 @@ def tango_type2kattype_object(tango_type):
     kattype_kwargs = {}
     if tango_type in TANGO_NUMERIC_TYPES:
         kattype_kwargs['min'], kattype_kwargs['max'] = katcp_type_info.params
+    elif tango_type == CmdArgType.DevState:
+        # TODO (NM, KM) 2016-05-30 can we get rid of this if statement by using
+        # TANGO2KATCP_TYPE_INFO better?
+        kattype_kwargs = [name for name in katcp_type_info.params]
+        return katcp_type_info.KatcpType(kattype_kwargs)
     # TODO NM We should be able to handle the DevVar* variants by checking if
     # in_type.name starts with DevVar, and then lookup the 'scalar' type. The we
     # can just use multiple=True on the KATCP type

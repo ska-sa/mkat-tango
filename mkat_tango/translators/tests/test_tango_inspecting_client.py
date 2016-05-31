@@ -162,6 +162,14 @@ class TangoTestDevice(TS.Device):
     def MultiplyDoubleBy3(self, a_double):
         return a_double * 3.0
 
+    # the State command is implemented by the tango library, but include the
+    # information structure so that tests can use it to compare docstrings, etc.
+    State_command_kwargs = dict(
+        doc_in='Void',
+        dtype_in='DevVoid',
+        doc_out='Device state',
+        dtype_out='DevState')
+
 # DevVoid, DevBoolean, DevUChar, DevShort, DevUShort, DevLong, DevULong, DevLong64,
 # DevULong64, DevDouble, DevString, DevEncoded, DevVarBooleanArray,
 # DevVarCharArray, DevVarShortArray, DevVarLongArray, DevVarLong64Array,
