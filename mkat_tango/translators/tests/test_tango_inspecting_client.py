@@ -342,11 +342,13 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
     def test_tango_standard_attributes(self):
         standard_tango_attributes = ('State', 'Status',)
         is_polled = self.tango_dp.is_attribute_polled
+        get_poll_period = self.tango_dp.get_attribute_poll_period
 
-        # Check whether polling is set on the attributes
+        # Confirm that polling is not set on the attributes
         for attr in standard_tango_attributes:
             self.assertEqual(is_polled(attr), False)
 
+        #self.tango_dp.poll_attribute('State', 1000)
         recorded_samples = {attr: [] for attr in standard_tango_attributes}
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
@@ -359,11 +361,27 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
             LOGGER.debug('Setting attribute sampling')
             self.DUT.setup_attribute_sampling()
 
-            for attr in standard_tango_attributes:
-                self.assertEqual(is_polled(attr), True)
+        # Confirm that polling is set to expected period of 1000 ms
+        for attr in standard_tango_attributes:
+            self.assertEqual(is_polled(attr), True)
+            self.assertEqual(get_poll_period(attr), 1000)
 
-            self.DUT.clear_attribute_sampling()
+        attr_event_type_events = {}
+        for attr, events in recorded_samples.items():
+            attr_event_type_events[attr] = defaultdict(list)
+            for event in events:
+                event_type = event[4]
+                attr_event_type_events[attr][event_type].append(event)
 
+        periodic_updates_per_attr = {
+            attr: len(attr_event_type_events[attr]['periodic'])
+            for attr in standard_tango_attributes}
+        self.assertEqual(
+            periodic_updates_per_attr,
+            {attr: 1 for attr in standard_tango_attributes},
+            "Exactly one periodic update not received for each test attribute.")
+
+        self.DUT.clear_attribute_sampling()
     # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
     # is only implemented in tango 9, so we can't really do this properly till we
     # upgrade. https://sourceforge.net/p/tango-cs/feature-requests/90/?limit=25

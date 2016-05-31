@@ -106,7 +106,7 @@ class TangoInspectingClient(object):
         # A work around to remove the suffix "#dbase=no" string when using a
         # file as a database. Also handle the issue with the attribute name being
         # converted to lowercase in subsequent callbacks.
-        if tango_event_data.err != True:
+        if tango_event_data.err is not True:
             name_trimmed = name.split('#')[0]
             attr_name = self.orig_attr_names_map[name_trimmed.lower()]
             self.sample_event_callback(attr_name, received_timestamp,
@@ -134,9 +134,19 @@ class TangoInspectingClient(object):
         dp = self.tango_dp
         poll_period = 1000      # in milliseconds
         retry_time = 0.5        # in seconds
-        attr_query = dp.attribute_query
+        attribute_list = dp.get_attribute_list()
 
-        for attr_name in self.device_attributes:
+        for attr_name in attribute_list:
+            if attr_name in ['State', 'Status']:
+                try:
+                    dp.poll_attribute(attr_name, poll_period)
+                except Exception:
+                    retry = True
+                else:
+                    retry = False
+                if retry:
+                    time.sleep(retry_time)
+                    dp.poll_attribute(attr_name, poll_period)
             try:
                 subs = lambda etype: dp.subscribe_event(
                     attr_name, etype, self.tango_event_handler)
@@ -154,24 +164,10 @@ class TangoInspectingClient(object):
             except PyTango.DevFailed, exc:
                 exc_reasons = set([arg.reason for arg in exc.args])
                 if 'API_AttributePollingNotStarted' in exc_reasons:
-                    try:
-                        dp.poll_attribute(attr_name, poll_period)
-                        time.sleep(0.05)
-                    except Exception:
-                        retry = True
-                    else:
-                        retry = False
-                    if retry:
-                        time.sleep(retry_time)
-                        dp.poll_attribute(attr_name, poll_period)
-
                     MODULE_LOGGER.warn('TODO NM: Need to implement something for '
                                        'attributes that are not polled, processing '
                                        'attribute {}'.format(attr_name))
                 elif 'API_EventPropertiesNotSet' in exc_reasons:
-                    attr_conf = attr_query(attr_name)
-                    attr_conf.events.per_event.period = '0.025'   # in seconds
-                    dp.set_attribute_config(attr_conf)
                     MODULE_LOGGER.info('Attribute {} has no event properties set'
                                        .format(attr_name))
                 else:
