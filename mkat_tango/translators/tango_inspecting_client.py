@@ -134,9 +134,8 @@ class TangoInspectingClient(object):
         dp = self.tango_dp
         poll_period = 1000      # in milliseconds
         retry_time = 0.5        # in seconds
-        attribute_list = dp.get_attribute_list()
 
-        for attr_name in attribute_list:
+        for attr_name in self.device_attributes:
             if attr_name in ['State', 'Status']:
                 try:
                     dp.poll_attribute(attr_name, poll_period)

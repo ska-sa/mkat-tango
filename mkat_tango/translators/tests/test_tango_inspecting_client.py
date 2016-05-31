@@ -311,8 +311,9 @@ class test_TangoInspectingClient(TangoSetUpClass):
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
             def side_effect(attr, *x):
-                recorded_samples[attr].append(x)
-                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+                if attr in test_attributes:
+                    recorded_samples[attr].append(x)
+                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
             sec.side_effect = side_effect
             self.addCleanup(self.DUT.clear_attribute_sampling)
             LOGGER.debug('Setting attribute sampling')
