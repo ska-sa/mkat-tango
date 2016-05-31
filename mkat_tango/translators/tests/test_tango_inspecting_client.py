@@ -349,7 +349,6 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
         for attr in standard_tango_attributes:
             self.assertEqual(is_polled(attr), False)
 
-        #self.tango_dp.poll_attribute('State', 1000)
         recorded_samples = {attr: [] for attr in standard_tango_attributes}
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
