@@ -242,8 +242,7 @@ class ClassCleanupUnittestMixin(object):
     def tearDownClass(cls):
         cls.doCleanupsClass()
 
-
-class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
+class TangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
     longMessage=True
 
     @classmethod
@@ -264,6 +263,9 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
         cls.test_device = TangoTestDevice.instances[cls.tango_dp.name()]
         cls.test_device.log_attribute_reads = True
         cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
+
+
+class test_TangoInspectingClient(TangoSetUpClass):
 
     def _test_attributes(self, attributes_data):
         # Check that the standard Tango sensors are there
@@ -313,12 +315,13 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
         set_attributes_polling(self, self.tango_dp, self.test_device,
                                {attr: poll_period
                                 for attr in test_attributes})
-        recorded_samples = {attr:[] for attr in test_attributes}
+        recorded_samples = {attr: [] for attr in test_attributes}
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
             def side_effect(attr, *x):
-                recorded_samples[attr].append(x)
-                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+                if attr in test_attributes:
+                    recorded_samples[attr].append(x)
+                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
             sec.side_effect = side_effect
             self.addCleanup(self.DUT.clear_attribute_sampling)
             LOGGER.debug('Setting attribute sampling')
@@ -343,6 +346,50 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
             "Exactly one periodic update not received for each test attribute.")
 
 
+class test_TangoInspectingClientStandard(TangoSetUpClass):
+
+    def test_tango_standard_attributes(self):
+        standard_tango_attributes = ('State', 'Status',)
+        is_polled = self.tango_dp.is_attribute_polled
+        get_poll_period = self.tango_dp.get_attribute_poll_period
+
+        # Confirm that polling is not set on the attributes
+        for attr in standard_tango_attributes:
+            self.assertEqual(is_polled(attr), False)
+
+        recorded_samples = {attr: [] for attr in standard_tango_attributes}
+        self.DUT.inspect()
+        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
+            def side_effect(attr, *x):
+                if attr in standard_tango_attributes:
+                    recorded_samples[attr].append(x)
+                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+            sec.side_effect = side_effect
+            self.addCleanup(self.DUT.clear_attribute_sampling)
+            LOGGER.debug('Setting attribute sampling')
+            self.DUT.setup_attribute_sampling()
+
+        # Confirm that polling is set to expected period of 1000 ms
+        for attr in standard_tango_attributes:
+            self.assertEqual(is_polled(attr), True)
+            self.assertEqual(get_poll_period(attr), 1000)
+
+        attr_event_type_events = {}
+        for attr, events in recorded_samples.items():
+            attr_event_type_events[attr] = defaultdict(list)
+            for event in events:
+                event_type = event[4]
+                attr_event_type_events[attr][event_type].append(event)
+
+        periodic_updates_per_attr = {
+            attr: len(attr_event_type_events[attr]['periodic'])
+            for attr in standard_tango_attributes}
+        self.assertEqual(
+            periodic_updates_per_attr,
+            {attr: 1 for attr in standard_tango_attributes},
+            "Exactly one periodic update not received for each test attribute.")
+
+        self.DUT.clear_attribute_sampling()
     # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
     # is only implemented in tango 9, so we can't really do this properly till we
     # upgrade. https://sourceforge.net/p/tango-cs/feature-requests/90/?limit=25

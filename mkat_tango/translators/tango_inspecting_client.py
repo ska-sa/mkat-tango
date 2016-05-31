@@ -1,3 +1,4 @@
+import time
 import logging
 
 import PyTango
@@ -105,7 +106,7 @@ class TangoInspectingClient(object):
         # A work around to remove the suffix "#dbase=no" string when using a
         # file as a database. Also handle the issue with the attribute name being
         # converted to lowercase in subsequent callbacks.
-        if tango_event_data.err != True:
+        if not tango_event_data.err:
             name_trimmed = name.split('#')[0]
             attr_name = self.orig_attr_names_map[name_trimmed.lower()]
             self.sample_event_callback(attr_name, received_timestamp,
@@ -131,7 +132,20 @@ class TangoInspectingClient(object):
                                  data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
+        poll_period = 1000      # in milliseconds
+        retry_time = 0.5        # in seconds
+
         for attr_name in self.device_attributes:
+            if not dp.is_attribute_polled(attr_name):
+                try:
+                    dp.poll_attribute(attr_name, poll_period)
+                except Exception:
+                    retry = True
+                else:
+                    retry = False
+                if retry:
+                    time.sleep(retry_time)
+                    dp.poll_attribute(attr_name, poll_period)
             try:
                 subs = lambda etype: dp.subscribe_event(
                     attr_name, etype, self.tango_event_handler)
