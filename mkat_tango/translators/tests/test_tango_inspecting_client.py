@@ -234,7 +234,7 @@ class ClassCleanupUnittestMixin(object):
     def tearDownClass(cls):
         cls.doCleanupsClass()
 
-class tangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
+class TangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
     longMessage=True
 
     @classmethod
@@ -257,7 +257,7 @@ class tangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
         cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
 
 
-class test_TangoInspectingClient(tangoSetUpClass):
+class test_TangoInspectingClient(TangoSetUpClass):
 
     def _test_attributes(self, attributes_data):
         # Check that the standard Tango sensors are there
@@ -337,7 +337,7 @@ class test_TangoInspectingClient(tangoSetUpClass):
             "Exactly one periodic update not received for each test attribute.")
 
 
-class test_TangoInspectingClientStandard(tangoSetUpClass):
+class test_TangoInspectingClientStandard(TangoSetUpClass):
 
     def test_tango_standard_attributes(self):
         standard_tango_attributes = ('State', 'Status',)
