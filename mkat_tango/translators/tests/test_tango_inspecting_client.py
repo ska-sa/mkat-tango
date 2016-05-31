@@ -305,7 +305,7 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
         set_attributes_polling(self, self.tango_dp, self.test_device,
                                {attr: poll_period
                                 for attr in test_attributes})
-        recorded_samples = {attr:[] for attr in test_attributes}
+        recorded_samples = {attr: [] for attr in test_attributes}
         self.DUT.inspect()
         with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
             def side_effect(attr, *x):
@@ -334,6 +334,47 @@ class test_TangoInspectingClient(ClassCleanupUnittestMixin, unittest.TestCase):
             {attr: 1 for attr in test_attributes},
             "Exactly one periodic update not received for each test attribute.")
 
+    def test_standard_tango_attributes(self):
+        standard_tango_attributes = ('State', 'Status',)
+        is_polled = self.tango_dp.is_attribute_polled
+        poll_period = 10000       # in milliseconds
+
+        # Check whether polling is set on the attributes
+        for attr in standard_tango_attributes:
+            self.assertEqual(is_polled(attr), False)
+
+        set_attributes_polling(self, self.tango_dp, self.test_device,
+                               {attr: poll_period
+                                for attr in standard_tango_attributes})
+        recorded_samples = {attr: [] for attr in standard_tango_attributes}
+        #self.DUT.inspect()
+        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
+            def side_effect(attr, *x):
+                if attr in standard_tango_attributes:
+                    recorded_samples[attr].append(x)
+                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+            sec.side_effect = side_effect
+            self.addCleanup(self.DUT.clear_attribute_sampling)
+            LOGGER.debug('Setting attribute sampling')
+            self.DUT.setup_attribute_sampling()
+            self.DUT.clear_attribute_sampling()
+
+        # Check that the initial updates were received for each attribute for
+        # at least the periodic event
+        attr_event_type_events = {}
+        for attr, events in recorded_samples.items():
+            attr_event_type_events[attr] = defaultdict(list)
+            for event in events:
+                event_type = event[4]
+                attr_event_type_events[attr][event_type].append(event)
+
+        periodic_updates_per_attr = {
+            attr: len(attr_event_type_events[attr]['periodic'])
+            for attr in standard_tango_attributes}
+        self.assertEqual(
+            periodic_updates_per_attr,
+            {attr: 1 for attr in standard_tango_attributes},
+            "Exactly one periodic update not received for each test attribute.")
 
     # NM 2016-04-13 TODO Test for when dynamic attributes are added/removed It seems this
     # is only implemented in tango 9, so we can't really do this properly till we
