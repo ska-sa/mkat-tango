@@ -62,13 +62,13 @@ class test_Weather(DeviceTestCase):
     longMessage = True
 
     expected_attributes = frozenset([
-        'wind_speed', 'wind_direction', 'station_ok',
+        'wind-speed', 'wind-direction', 'input-comms-ok',
         'temperature', 'insolation', 'State', 'Status',
-        'rainfall', 'relative_humidity', 'pressure'])
+        'rainfall', 'relative-humidity', 'pressure'])
 
     varying_attributes = frozenset([
-        'wind_speed', 'wind_direction', 'temperature', 'insolation',
-        'rainfall', 'relative_humidity', 'pressure'])
+        'wind-speed', 'wind-direction', 'temperature', 'insolation',
+        'rainfall', 'relative-humidity', 'pressure'])
 
 
     def setUp(self):
