@@ -108,10 +108,10 @@ class Weather(Device):
         value, update_time = self.model.quantity_state['rainfall']
         return value, update_time, AttrQuality.ATTR_VALID
 
-    @attribute(label="station_ok", dtype=bool,
+    @attribute(name='input-comms-ok', label="Input communication OK", dtype=bool,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def station_ok(self):
-        value, update_time = self.model.quantity_state['station_ok']
+    def input_comms_ok(self):
+        value, update_time = self.model.quantity_state['input-comms-ok']
         return value, update_time, AttrQuality.ATTR_VALID
 
     def always_executed_hook(self):
@@ -231,7 +231,6 @@ class WeatherModel(model.Model):
             rainfall=GaussianSlewLimited(
                 mean=1.5, std_dev=0.5, max_slew_rate=0.1,
                 min_bound=0, max_bound=5),
-            station_ok=ConstantQuantity(start_value=True)
         ))
         self.sim_quantities['relative-humidity'] = GaussianSlewLimited(
             mean=65, std_dev=10, max_slew_rate=10,
@@ -242,7 +241,7 @@ class WeatherModel(model.Model):
         self.sim_quantities['wind-direction'] = GaussianSlewLimited(
                 mean=0, std_dev=150, max_slew_rate=60,
                 min_bound=0, max_bound=359.9999)
-
+        self.sim_quantities['input-comms-ok'] = ConstantQuantity(start_value=True)
         super(WeatherModel, self).setup_sim_quantities()
 
 
