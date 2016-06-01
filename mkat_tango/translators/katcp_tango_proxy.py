@@ -436,7 +436,8 @@ class TangoDevice2KatcpProxy(object):
         try:
             tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
         except PyTango.DevFailed as dferr:
-            MODULE_LOGGER.error("Database may not be running : {}".format(dferr.args[1].reason))
+            MODULE_LOGGER.error("Database may not be running : {}"
+                                "".format(dferr.args[1].reason))
 
         db = PyTango.Database()
         device_running = bool(len(db.get_device_exported(tango_device_address).value_string))
@@ -449,14 +450,15 @@ class TangoDevice2KatcpProxy(object):
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
         return cls(katcp_server, tango_inspecting_client)
 
-    @classmethod
-    def wait_for_device(cls, tango_device_proxy):
+    @staticmethod
+    def wait_for_device(tango_device_proxy):
         device_connected = False
         while not device_connected:
             try:
                 tango_device_proxy.reconnect(True)
             except PyTango.ConnectionFailed as conerr:
-                MODULE_LOGGER.error("Trying to connect to the device server : {}".format(conerr.args[0].reason))
+                MODULE_LOGGER.error("Trying to connect to the device server : {}"
+                                    "".format(conerr.args[0].reason))
                 time.sleep(2)
             else:
                 device_connected = True
