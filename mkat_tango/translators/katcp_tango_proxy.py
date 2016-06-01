@@ -15,6 +15,7 @@
 import logging
 import sys
 import textwrap
+import time
 
 import numpy as np
 import tornado
@@ -432,12 +433,33 @@ class TangoDevice2KatcpProxy(object):
             Tango address for the device to be translated
 
         """
-        tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
+        try:
+            tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
+        except PyTango.DevFailed as dferr:
+            MODULE_LOGGER.error("Database may not be running : {}".format(dferr.args[1].reason))
+
+        db = PyTango.Database()
+        device_running = bool(len(db.get_device_exported(tango_device_address).value_string))
+        if not device_running:
+            cls.wait_for_device(tango_device_proxy)
+        MODULE_LOGGER.info("Connection to the device server established")
         tango_inspecting_client = TangoInspectingClient(tango_device_proxy)
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
         return cls(katcp_server, tango_inspecting_client)
+
+    @classmethod
+    def wait_for_device(cls, tango_device_proxy):
+        device_connected = False
+        while not device_connected:
+            try:
+                tango_device_proxy.reconnect(True)
+            except PyTango.ConnectionFailed as conerr:
+                MODULE_LOGGER.error("Trying to connect to the device server : {}".format(conerr.args[0].reason))
+                time.sleep(2)
+            else:
+                device_connected = True
 
 def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
