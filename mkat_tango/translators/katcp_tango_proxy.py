@@ -475,7 +475,9 @@ class TangoDevice2KatcpProxy(object):
 
     @staticmethod
     def wait_for_device(tango_device_proxy):
-        """Get the translator to wait for the tango device to be up and running"""
+        """Get the translator to wait until it has established a connection with the
+           device server and/or for the device server to be up and running.
+        """
         device_connected = False
         retry_time = 2
         while not device_connected:
