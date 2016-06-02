@@ -294,6 +294,33 @@ def tango_type2kattype_object(tango_type):
     # can just use multiple=True on the KATCP type
     return katcp_type_info.KatcpType(**kattype_kwargs)
 
+def is_tango_device_running(tango_device_proxy):
+    """Checks if the TANGO device server is running.
+
+    Input Parameters
+    ----------------
+
+    tango_device_proxy : PyTango.DeviceProxy instance
+
+    Returns
+    -------
+
+    is_device_running : boolean
+
+    """
+    try:
+        tango_device_proxy.ping()
+    except PyTango.DevFailed as deverr:
+        deverr_reasons = set([arg.reason for arg in deverr.args])
+        deverr_desc = set([arg.desc for arg in deverr.args])
+        for reason, description in zip(deverr_reasons, deverr_desc):
+            MODULE_LOGGER.error("{} : {}".format(reason, description))
+        is_device_running = False
+    else:
+        is_device_running = True
+
+    return is_device_running
+
 
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
@@ -334,6 +361,10 @@ class TangoDevice2KatcpProxy(object):
         For clean shutdown and thread cleanup, stop() needs to be called
 
         """
+        tango_device_proxy = self.inspecting_client.tango_dp
+        if not is_tango_device_running(tango_device_proxy):
+            self.wait_for_device(tango_device_proxy)
+        MODULE_LOGGER.info("Connection to the device server established")
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.update_katcp_server_sensor_list()
@@ -418,7 +449,6 @@ class TangoDevice2KatcpProxy(object):
             # AttrQuality values to the sensor status constants
             if sensor.type == 'discrete':
                 value = str(value)
-
             sensor.set_value(value, timestamp=timestamp)
 
     @classmethod
@@ -433,40 +463,7 @@ class TangoDevice2KatcpProxy(object):
             Tango address for the device to be translated
 
         """
-        tango_device_proxy = None
-        retry_time = 2
-        while not tango_device_proxy:
-            try:
-                tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
-            except PyTango.DevFailed as dferr:
-                dferr_reasons = set([arg.reason for arg in dferr.args])
-                if 'DB_DeviceNotDefined' in dferr_reasons:
-                    MODULE_LOGGER.error("Device {} is not defined int the database"
-                                        "".format(tango_device_address))
-                if 'API_CommandFailed' in dferr_reasons:
-                    MODULE_LOGGER.error("Cannot import the device {} to the database"
-                                        "".format(tango_device_address))
-                if 'API_DeviceNotDefined' in dferr_reasons:
-                    MODULE_LOGGER.error("Can't connect to device {}"
-                                        "".format(tango_device_address))
-                if 'API_CantConnectToDatabase' in dferr_reasons:
-                    MODULE_LOGGER.error("The database is not running")
-                if 'API_CantConnectToDevice' in dferr_reasons:
-                    MODULE_LOGGER.error("Proxy failed to connect to device {}"
-                                        "".format(tango_device_address))
-                time.sleep(retry_time)
-
-        try:
-            tango_device_proxy.ping()
-        except PyTango.DevFailed:
-            MODULE_LOGGER.error("The device is not running!!")
-            device_running = False
-        else:
-            device_running = True
-
-        if not device_running:
-            cls.wait_for_device(tango_device_proxy)
-        MODULE_LOGGER.info("Connection to the device server established")
+        tango_device_proxy = cls.get_tango_device_proxy(tango_device_address)
         tango_inspecting_client = TangoInspectingClient(tango_device_proxy)
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
@@ -474,25 +471,37 @@ class TangoDevice2KatcpProxy(object):
         return cls(katcp_server, tango_inspecting_client)
 
     @staticmethod
-    def wait_for_device(tango_device_proxy):
+    def get_tango_device_proxy(device_name):
+        tango_dp = None
+        retry_time = 2
+        while not tango_dp:
+            try:
+                tango_dp = PyTango.DeviceProxy(device_name)
+            except PyTango.DevFailed as dferr:
+                dferr_reasons = set([arg.reason for arg in dferr.args])
+                dferr_desc = set([arg.desc for arg in dferr.args])
+                for reason, description in zip(dferr_reasons, dferr_desc):
+                    MODULE_LOGGER.error("{} : {}".format(reason, description))
+                time.sleep(retry_time)
+        return tango_dp
+
+    def wait_for_device(self, tango_device_proxy):
         """Get the translator to wait until it has established a connection with the
            device server and/or for the device server to be up and running.
         """
-        device_connected = False
+        is_device_connected = False
         retry_time = 2
-        while not device_connected:
+        while not is_device_connected:
             try:
                 tango_device_proxy.reconnect(True)
             except PyTango.DevFailed as conerr:
                 conerr_reasons = set([arg.reason for arg in conerr.args])
-                if 'API_CantConnectToDevice' in conerr_reasons:
-                    MODULE_LOGGER.error("Failed to connect to device."
-                                        "The connection request was delayed.")
-                if 'API_DeviceNotExported' in conerr_reasons:
-                    MODULE_LOGGER.error("The device is not running!!")
+                conerr_desc = set([arg.desc for arg in conerr.args])
+                for reason, description in zip(conerr_reasons, conerr_desc):
+                    MODULE_LOGGER.error("{} : {}".format(reason, description))
                 time.sleep(retry_time)
             else:
-                device_connected = True
+                is_device_connected = True
 
 def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
