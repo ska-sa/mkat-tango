@@ -433,14 +433,34 @@ class TangoDevice2KatcpProxy(object):
             Tango address for the device to be translated
 
         """
+        tango_device_proxy = None
+        while not tango_device_proxy:
+            try:
+                tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
+            except PyTango.ConnectionFailed as dferr:
+                dferr_reasons = set([arg.reason for arg in dferr.args])
+                if 'DB_DeviceNotDefined' in dferr_reasons:
+                    MODULE_LOGGER.error("Device {} is not defined int the database"
+                                        "".format(tango_device_address))
+                if 'API_CommandFailed' in dferr_reasons:
+                    MODULE_LOGGER.error("Cannot import the device {} to the database"
+                                        "".format(tango_device_address))
+                if 'API_DeviceNotDefined' in dferr_reasons:
+                    MODULE_LOGGER.error("Can't connect to device {}"
+                                        "".format(tango_device_address))
+                if 'API_CantConnectToDatabase' in dferr_reasons:
+                    MODULE_LOGGER.error("The database is not running")
+                if 'API_CantConnectToDevice' in dferr_reasons:
+                    MODULE_LOGGER.error("Proxy failed to connect to device {}"
+                                        "".format(tango_device_address))
         try:
-            tango_device_proxy = PyTango.DeviceProxy(tango_device_address)
-        except PyTango.DevFailed as dferr:
-            MODULE_LOGGER.error("Database may not be running : {}"
-                                "".format(dferr.args[1].reason))
+            tango_device_proxy.ping()
+        except PyTango.ConnectionFailed as pingerr:
+            MODULE_LOGGER.error("The device is not running!!")
+            device_running = False
+        else:
+            device_running = True
 
-        db = PyTango.Database()
-        device_running = bool(len(db.get_device_exported(tango_device_address).value_string))
         if not device_running:
             cls.wait_for_device(tango_device_proxy)
         MODULE_LOGGER.info("Connection to the device server established")
@@ -458,10 +478,13 @@ class TangoDevice2KatcpProxy(object):
         while not device_connected:
             try:
                 tango_device_proxy.reconnect(True)
-            except PyTango.ConnectionFailed as conerr:
-                MODULE_LOGGER.error("Trying to connect to the device server : ")
-                                   # "".format(str(conerr)))
-                MODULE_LOGGER.error(str(conerr))
+            except PyTango.DevFailed as conerr:
+                conerr_reasons = set([arg.reason for arg in conerr.args])
+                if 'API_CantConnectToDevice' in conerr_reasons:
+                    MODULE_LOGGER.error("Failed to connect to device."
+                                        "The connection request was delayed.")
+                if 'API_DeviceNotExported' in conerr_reasons:
+                    MODULE_LOGGER.error("The device is not running!!")
                 time.sleep(retry_time)
             else:
                 device_connected = True
