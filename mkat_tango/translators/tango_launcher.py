@@ -17,14 +17,11 @@ parser = argparse.ArgumentParser(
 
 required_argument = partial(parser.add_argument, required=True)
 
-# TODO NM 2106-05-26 We could accept multiple --name and --class parameters to
-# start multiple devices in a single server process?
-
 required_argument('--name', action='append',
                   help="TANGO name(s) for the devices i.e.specified multiple times",)
 required_argument('--class', dest='device_class', action='append',
-                  help="TANGO class name(s) for the device(s) i.e. specified the same
-                  number of times and the names and classes are matched in order")
+                  help="TANGO class name(s) for the device(s) i.e. specified the " +
+                  "same number of times and the names and classes are matched in order")
 required_argument('--server-command', help="TANGO server executable command")
 required_argument('--server-instance', help="TANGO server instance name")
 required_argument('--port', help="TCP port where TANGO server should listen")
