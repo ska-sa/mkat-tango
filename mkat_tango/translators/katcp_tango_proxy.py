@@ -459,8 +459,9 @@ class TangoDevice2KatcpProxy(object):
             try:
                 tango_device_proxy.reconnect(True)
             except PyTango.ConnectionFailed as conerr:
-                MODULE_LOGGER.error("Trying to connect to the device server : {}"
-                                    "".format(conerr.args[0].reason))
+                MODULE_LOGGER.error("Trying to connect to the device server : ")
+                                   # "".format(str(conerr)))
+                MODULE_LOGGER.error(str(conerr))
                 time.sleep(retry_time)
             else:
                 device_connected = True
