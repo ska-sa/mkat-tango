@@ -471,9 +471,8 @@ class TangoDevice2KatcpProxy(object):
         return cls(katcp_server, tango_inspecting_client)
 
     @staticmethod
-    def get_tango_device_proxy(device_name):
+    def get_tango_device_proxy(device_name, retry_time=2):
         tango_dp = None
-        retry_time = 2
         while not tango_dp:
             try:
                 tango_dp = PyTango.DeviceProxy(device_name)
@@ -485,12 +484,11 @@ class TangoDevice2KatcpProxy(object):
                 time.sleep(retry_time)
         return tango_dp
 
-    def wait_for_device(self, tango_device_proxy):
+    def wait_for_device(self, tango_device_proxy, retry_time=2):
         """Get the translator to wait until it has established a connection with the
            device server and/or for the device server to be up and running.
         """
         is_device_connected = False
-        retry_time = 2
         while not is_device_connected:
             try:
                 tango_device_proxy.reconnect(True)
