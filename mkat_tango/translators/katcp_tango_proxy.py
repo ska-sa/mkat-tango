@@ -136,9 +136,13 @@ def tango_attr_descr2katcp_sensor(attr_descr):
                                   .format(data_type_name))
 
     sensor_type = katcp_type_info.sensor_type
-    if attr_descr.data_type in TANGO_NUMERIC_TYPES:
-        attr_min_val = attr_descr.min_value
-        attr_max_val = attr_descr.max_value
+    attr_min_val = attr_descr.min_value
+    attr_max_val = attr_descr.max_value
+    if attr_descr.data_type in TANGO_INT_TYPES:
+        min_value = katcp_type_info.params[0] if attr_min_val == 'Not specified' else int(attr_min_val)
+        max_value = katcp_type_info.params[1] if attr_max_val == 'Not specified' else int(attr_max_val)
+        sensor_params = [min_value, max_value]
+    elif attr_descr.data_type in TANGO_FLOAT_TYPES:
         min_value = katcp_type_info.params[0] if attr_min_val == 'Not specified' else float(attr_min_val)
         max_value = katcp_type_info.params[1] if attr_max_val == 'Not specified' else float(attr_max_val)
         sensor_params = [min_value, max_value]
