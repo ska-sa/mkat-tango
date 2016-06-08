@@ -28,10 +28,10 @@ from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-import sim_test_interface
-import quantities
-import model
-import main
+from mkat_tango.simlib import sim_test_interface
+from mkat_tango.simlib import quantities
+from mkat_tango.simlib import model
+from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
