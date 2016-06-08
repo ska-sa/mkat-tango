@@ -1,13 +1,18 @@
 import logging
 import time
 import numpy
+import weakref
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
+model_registry = weakref.WeakValueDictionary()
+
 class Model(object):
+
     def __init__(self, name, start_time=None, min_update_period=0.99,
                  time_func=time.time):
         self.name = name
+        model_registry[self.name] = self
         self.min_update_period = min_update_period
         self.time_func = time_func
         self.start_time = start_time or time_func()
@@ -15,11 +20,10 @@ class Model(object):
         self.sim_quantities = {}
         self._sim_state = {}
         self.setup_sim_quantities()
-        self.paused = False # Flag to pause updates
+        self.paused = False  # Flag to pause updates
         # Making a public reference to _sim_state. Allows us to hook read-only views
         # or updates or whatever the future requires of this humble public attribute.
         self.quantity_state = self._sim_state
-
 
     def setup_sim_quantities(self):
         """Set up self.sim_quantities with simulated quantities
