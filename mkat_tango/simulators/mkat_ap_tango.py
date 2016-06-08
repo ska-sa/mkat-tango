@@ -104,11 +104,11 @@ class MkatAntennaPositioner(Device):
         None.
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote.
         """
         command_name = "Stop()"
@@ -129,11 +129,11 @@ class MkatAntennaPositioner(Device):
         None.
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If control mode is not remote or if operating mode is
                                    'gtm' or 'maint' or if operating mode is not 'stop'.
         """
@@ -164,11 +164,11 @@ class MkatAntennaPositioner(Device):
         None.
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote or ACU operating mode is
                                    not any one of; shutdown, stowing, stowed, or estop.
         """
@@ -203,11 +203,11 @@ class MkatAntennaPositioner(Device):
             Elevation coordinate (degrees)
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote or ACU operating mode is not
                                    any one of ['stop', 'slew', 'track'].
         """
@@ -237,7 +237,7 @@ class MkatAntennaPositioner(Device):
         None.
 
         Returns
-        ==========
+        =======
         None.
         """
         self.ap_model.azim_drive.clear_pointing_samples()
@@ -256,11 +256,11 @@ class MkatAntennaPositioner(Device):
             enabled.
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote.
         """
         command_name = "Enable_Point_Error_Refraction()"
@@ -285,11 +285,11 @@ class MkatAntennaPositioner(Device):
                           Elevation velocity (degrees/sec)
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote or ACU operating mode is not
                                    stop.
         """
@@ -316,11 +316,11 @@ class MkatAntennaPositioner(Device):
         to clear/acknowledge the existing failures.
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote.
         """
         command_name = "Reset_Failures()"
@@ -342,11 +342,11 @@ class MkatAntennaPositioner(Device):
             The receiver indexer position to select
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote or an invalid indexer
                                    position is given.
         """
@@ -374,11 +374,11 @@ class MkatAntennaPositioner(Device):
             (degrees)
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote.
         """
         command_name = "Set_On_Source_Threshold()"
@@ -399,11 +399,11 @@ class MkatAntennaPositioner(Device):
         the specified right ascension and declination coordinates.
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote or ACU operating mode is not
                                    any of ['stop', 'slew', track'].
         """
@@ -441,11 +441,11 @@ class MkatAntennaPositioner(Device):
                           Elevation coordinate (degrees)
 
         Returns
-        ==========
+        =======
         None.
 
         Throws
-        ==========
+        ======
         PyTango.DevFailed: If ACU control mode is not remote.
         """
         command_name = "Track_Az_El()"
