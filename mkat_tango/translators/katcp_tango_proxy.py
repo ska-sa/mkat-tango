@@ -13,7 +13,6 @@
 
 """
 import logging
-import sys
 import textwrap
 import time
 
@@ -36,9 +35,6 @@ from tango_inspecting_client import TangoInspectingClient
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
-_MIN_UCHAR_VALUE = 0
-_MAX_UCHAR_VALUE = 255
-
 KATCP_REQUEST_DOC_TEMPLATE = (
 """?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
 
@@ -60,7 +56,6 @@ def dtype_params(dtype):
     except ValueError:
         info = np.finfo(dtype)
     return (info.min, info.max)
-
 
 KatcpTypeInfo = namedtuple('KatcpTypeInfo', ('KatcpType', 'sensor_type', 'params'))
 
@@ -133,41 +128,32 @@ def tango_attr_descr2katcp_sensor(attr_descr):
     if attr_descr.data_format != AttrDataFormat.SCALAR:
         raise NotImplementedError("KATCP complexity with non-scalar data formats")
 
-    if (attr_descr.data_type == DevDouble or attr_descr.data_type == DevFloat):
-        sensor_type = Sensor.FLOAT
-        attr_min_val = attr_descr.min_value
-        attr_max_val = attr_descr.max_value
-        min_value = float('-inf') if attr_min_val == 'Not specified' else float(attr_min_val)
-        max_value = float('inf') if attr_max_val == 'Not specified' else float(attr_max_val)
-        sensor_params = [min_value, max_value]
-    elif (attr_descr.data_type == DevShort or attr_descr.data_type == DevLong or
-          attr_descr.data_type == DevUShort or attr_descr.data_type == DevULong or
-          attr_descr.data_type == DevLong64 or attr_descr.data_type == DevULong64):
-        sensor_type = Sensor.INTEGER
-        attr_min_val = attr_descr.min_value
-        attr_max_val = attr_descr.max_value
-        min_value = -sys.maxint if attr_min_val == 'Not specified' else int(attr_min_val)
-        max_value = sys.maxint if attr_max_val == 'Not specified' else int(attr_max_val)
-        sensor_params = [min_value, max_value]
-    elif attr_descr.data_type == DevUChar:
-        sensor_type = Sensor.INTEGER
-        sensor_params = [_MIN_UCHAR_VALUE, _MAX_UCHAR_VALUE]
-    elif attr_descr.data_type == DevBoolean:
-        sensor_type = Sensor.BOOLEAN
-    elif attr_descr.data_type == DevString:
-        sensor_type = Sensor.STRING
-    elif attr_descr.data_type == CmdArgType.DevState:
-        sensor_type = Sensor.DISCRETE
-        state_enums = DevState.names
-        state_possible_vals = state_enums.keys()
-        sensor_params = state_possible_vals
-    elif attr_descr.data_type == DevEnum:
-        sensor_type = Sensor.DISCRETE
-        sensor_params = attr_descr.enum_labels
-    else:
+    try:
+        katcp_type_info = TANGO2KATCP_TYPE_INFO[attr_descr.data_type]
+    except KeyError:
         data_type_name = TANGO_CMDARGTYPE_NUM2NAME[attr_descr.data_type]
         raise NotImplementedError("Unhandled attribute type {!r}"
                                   .format(data_type_name))
+
+    sensor_type = katcp_type_info.sensor_type
+    attr_min_val = attr_descr.min_value
+    attr_max_val = attr_descr.max_value
+    if attr_descr.data_type in TANGO_INT_TYPES:
+        min_value = (katcp_type_info.params[0]
+                     if attr_min_val == 'Not specified' else int(attr_min_val))
+        max_value = (katcp_type_info.params[1]
+                     if attr_max_val == 'Not specified' else  int(attr_max_val))
+        sensor_params = [min_value, max_value]
+    elif attr_descr.data_type in TANGO_FLOAT_TYPES:
+        min_value = (katcp_type_info.params[0]
+                     if attr_min_val == 'Not specified' else float(attr_min_val))
+        max_value = (katcp_type_info.params[1]
+                     if attr_max_val == 'Not specified' else float(attr_max_val))
+        sensor_params = [min_value, max_value]
+    elif attr_descr.data_type == DevEnum:
+        sensor_params = attr_descr.enum_labels
+    elif attr_descr.data_type == CmdArgType.DevState:
+        sensor_params = katcp_type_info.params
 
     return Sensor(sensor_type, attr_descr.name, attr_descr.description,
                   attr_descr.unit, sensor_params)
