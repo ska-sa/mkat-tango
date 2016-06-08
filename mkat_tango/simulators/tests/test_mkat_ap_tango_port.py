@@ -17,9 +17,9 @@ import unittest2 as unittest
 import time
 import logging
 
-from devicetest import DeviceTestCase 
+from devicetest import DeviceTestCase
 from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner, unformatter
-from PyTango import CmdArgType, DevState
+from PyTango import CmdArgType, DevState, DevFailed
 
 logger = logging.getLogger(__name__)
 
@@ -214,71 +214,76 @@ EXPECTED_REQUEST_LIST =  [
     ('init'),
     ('state'),
     ('status'),
-    ('turnoff'),
-    ('turnon'),
 ]
 
 class TestProxyWrapper(object):
     def __init__(self, test_instance, device_proxy):
         self.device_proxy = device_proxy
         self.test_inst = test_instance
-        
+
     def assertCommandSucceeds(self, command_name, *params, **kwargs):
         """Assert that given command succeeds when called with given parameters.
 
         Parameters
         ----------
-        requestname : str
+        command_name : str
             The name of the request.
         params : list of objects
             The parameters with which to call the request.
         """
         if params == ():
-            reply = self.device_proxy.command_inout(command_name)
+            try:
+                reply = self.device_proxy.command_inout(command_name)
+            except DevFailed as derr:
+                reply =  derr[0].desc
         else:
-            reply = self.device_proxy.command_inout(command_name, params)
-            
-        reply_name = self.device_proxy.command_query(command_name).cmd_name
+            try:
+                reply = self.device_proxy.command_inout(command_name, params if len(params)>1
+                                                                             else params[0])
+            except DevFailed as derr:
+                reply =  derr[0].desc
 
+        reply_name = self.device_proxy.command_query(command_name).cmd_name
         self.test_inst.assertEqual(reply_name, command_name, "Reply to request '%s'"
                               "has name '%s'." % (command_name, reply_name))
+        msg = ("Expected command '%s' called with parameters %r to succeed, "
+               "but it failed %s."% (command_name, params, ("with error '%s'" % reply[1]
+                                                             if reply else
+                                                            "(with no error message)")))
+
+        self.test_inst.assertTrue(reply==None, msg)
 
 
-        msg = ("Expected request '%s' called with parameters %r to succeed, "
-               "but it failed %s."
-               % (command_name, params, ("with error '%s'" % reply[1]
-                                         if len(reply) >= 2 else
-                                         "(with no error message)")))
-                                         
-        self.test_inst.assertTrue(reply[0]=='ok', msg)
-        
-    
     def assertCommandFails(self, command_name, *params, **kwargs):
         """Assert that given command fails when called with given parameters.
 
         Parameters
         ----------
-        requestname : str
+        command_name : str
             The name of the request.
         params : list of objects
             The parameters with which to call the request.
-        """                                                    
+        """
         if params == ():
-            reply = self.device_proxy.command_inout(command_name)
+            try:
+                reply = self.device_proxy.command_inout(command_name)
+            except DevFailed as derr:
+                reply = derr[0].desc
         else:
-            reply = self.device_proxy.command_inout(command_name, params)
-            
+            try:
+                reply = self.device_proxy.command_inout(command_name, params if len(params)>1
+                                                                             else params[0])
+            except DevFailed as derr:
+                reply =  derr[0].desc
+
         reply_name = self.device_proxy.command_query(command_name).cmd_name
-        
-        #print reply
         msg = "Reply to command '%s' has name '%s'." % (command_name, reply_name)
         self.test_inst.assertEqual(reply_name, command_name, msg)
-
-        msg = ("Expected request '%s' called with parameters %r to fail, "
+        msg = ("Expected command '%s' called with parameters %r to fail, "
                "but it was successful." % (command_name, params))
-        self.test_inst.assertFalse(reply[0]=='ok', msg)
-        
-    def wait_until_sensor_equals(self, timeout, attr_name, value,
+        self.test_inst.assertFalse(reply==None, msg)
+
+    def wait_until_attribute_equals(self, timeout, attr_name, value,
                                  attr_data_type=CmdArgType.DevString, places=7, pollfreq=0.02):
         """Wait until a attribute's value equals the given value, or times out.
 
@@ -322,13 +327,13 @@ class TestProxyWrapper(object):
                            " become %s. Last value was %s." %
                            (timeout, attr_name, value, lastval))
 
-        
-        
+
+
 class MkatApTangoTests(DeviceTestCase):
-    
+
     external = False
     device = MkatAntennaPositioner
-    
+
     def test_attribute_list_basic(self):
         """
         Test attribute list but only check the attribute names.
@@ -360,7 +365,7 @@ class MkatApTangoTests(DeviceTestCase):
                "\n".join(sorted([str(t) for t in actual_set - expected_set]))))
 
     def test_command_list(self):
-        
+
         def get_actual_command_list():
             """Return the list of actual requests of the connected server"""
             command_list = self.device.command_list_query()
@@ -381,27 +386,24 @@ class TestMkatAp(DeviceTestCase):
 
     external = False
     device = MkatAntennaPositioner
-    
+
     def setUp(self):
         super(TestMkatAp, self).setUp()
         self.instance = MkatAntennaPositioner.instances[self.device.name()]
         self.client = TestProxyWrapper(self, self.device)
-       #TODO Need to get the command to turn on the device invoked here, may need to change
-        # the code in my device commands
         if not self.external:
             # MkatApModel with faster azim and elev max rates to allow tests to execute
             # quicker.
             self.instance.ap_model.azim_drive.set_max_rate(20.0)
             self.instance.ap_model.elev_drive.set_max_rate(10.0)
-         
+
         def cleanup_refs(): del self.instance
         self.addCleanup(cleanup_refs)
-        
+
     def test_rate(self):
         AZ_REQ_RATE = 1.9
         EL_REQ_RATE = 0.9
         self.client.assertCommandFails("Rate", AZ_REQ_RATE, EL_REQ_RATE)
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandSucceeds("Stop")
         self.client.assertCommandSucceeds("Rate", AZ_REQ_RATE, EL_REQ_RATE)
         self.assertEqual(self.device.mode, "rate")
@@ -435,12 +437,11 @@ class TestMkatAp(DeviceTestCase):
         el_pos2 = self.device.actual_elev
         self.assertTrue(az_pos2 == az_pos1)
         self.assertTrue(el_pos2 == el_pos1)
-        
-        
+
+
     def test_slew(self):
         AZ_REQ_POS = -140
         EL_REQ_POS = 30
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandFails("Slew", AZ_REQ_POS, EL_REQ_POS)
         self.client.assertCommandSucceeds("Stop")
         self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
@@ -449,8 +450,10 @@ class TestMkatAp(DeviceTestCase):
         el_req_pos = self.device.requested_elev
         self.assertEqual(az_req_pos, AZ_REQ_POS)
         self.assertEqual(el_req_pos, EL_REQ_POS)
-        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
-        self.client.wait_until_sensor_equals(10, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(2, 'on_target', 0,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(10, 'on_target', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
         azim = self.device.actual_azim
         elev = self.device.actual_elev
         self.assertAlmostEqual(az_req_pos, azim, 2)
@@ -459,27 +462,25 @@ class TestMkatAp(DeviceTestCase):
         self.assertEqual(self.device.mode, "stop")
 
     def test_switch_between_track_and_slew(self):
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(1, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(1, 'mode', 'stop')
         self.client.assertCommandSucceeds("Track")
-        self.client.wait_until_sensor_equals(1, 'mode', 'track')
+        self.client.wait_until_attribute_equals(1, 'mode', 'track')
         self.client.assertCommandSucceeds("Slew", 210, 65)
-        self.client.wait_until_sensor_equals(1, 'mode', 'slew')
+        self.client.wait_until_attribute_equals(1, 'mode', 'slew')
         self.client.assertCommandSucceeds("Slew", 220, 75)
-        self.client.wait_until_sensor_equals(1, 'mode', 'slew')
+        self.client.wait_until_attribute_equals(1, 'mode', 'slew')
         self.client.assertCommandSucceeds("Track")
-        self.client.wait_until_sensor_equals(1, 'mode', 'track')
+        self.client.wait_until_attribute_equals(1, 'mode', 'track')
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(1, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(1, 'mode', 'stop')
 
     def test_track(self):
         MAX_AZIM_FOR_TEST = 250
         MAX_ELEV_FOR_TEST = 70
         MAX_TRACK_WAIT_TIME = 40 # 5s + 50samples*0.5s/sample = 30
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         azim = round(self.device.actual_azim, 3)
         elev = round(self.device.actual_elev, 3)
         if azim > MAX_AZIM_FOR_TEST:
@@ -490,16 +491,15 @@ class TestMkatAp(DeviceTestCase):
         t0 = time.time() + 5
         for i in xrange(0, 50):
             # New sample every 500ms with 0.1deg movement
-            self.client.assertCommandSucceeds("Track_Az_El",
-                    t0+(i*0.5),
-                    (azim+5)+(i*0.1),
-                    (elev+5)+(i*0.1))
+            self.client.assertCommandSucceeds("Track_Az_El", t0+(i*0.5),
+                                              (azim+5)+(i*0.1), (elev+5)+(i*0.1))
         # Start tracking
         self.client.assertCommandSucceeds("Track")
-        self.client.wait_until_sensor_equals(2, 'mode', 'track')
-        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
-        self.client.wait_until_sensor_equals(MAX_TRACK_WAIT_TIME,
-            'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(2, 'mode', 'track')
+        self.client.wait_until_attribute_equals(2, 'on_target', 0,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(MAX_TRACK_WAIT_TIME, 'on_target', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
         # Check requested vs actual after target reached
         az_req_pos = round(self.device.requested_azim, 3)
         el_req_pos = round(self.device.requested_elev, 3)
@@ -508,14 +508,15 @@ class TestMkatAp(DeviceTestCase):
         self.assertAlmostEqual(az_req_pos, azim, 2)
         self.assertAlmostEqual(el_req_pos, elev, 2)
         # Mode should still be track
-        self.client.wait_until_sensor_equals(2, 'mode', 'track')
+        self.client.wait_until_attribute_equals(2, 'mode', 'track')
         # Add a few samples in the past (these should be ignored)
         t1 = time.time() - 200
         self.client.assertCommandSucceeds("Track_Az_El", t1, azim+2, elev+2)
         self.client.assertCommandSucceeds("Track_Az_El", t1+0.5, azim+2.5, elev+2.5)
         self.client.assertCommandSucceeds("Track_Az_El", t1+1, azim+3, elev+3)
         self.client.assertCommandSucceeds("Track_Az_El", t1+1.5, azim+3.5, elev+3.5)
-        self.client.wait_until_sensor_equals(2, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(2, 'on_target', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
         self.assertAlmostEqual(az_req_pos, azim, 2)
         self.assertAlmostEqual(el_req_pos, elev, 2)
         # Add a few more samples, and check that tracking continues
@@ -524,66 +525,54 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Track_Az_El", t2+0.5, azim+2.5, elev+2.5)
         self.client.assertCommandSucceeds("Track_Az_El", t2+1, azim+3, elev+3)
         self.client.assertCommandSucceeds("Track_Az_El", t2+1.5, azim+3.5, elev+3.5)
-        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(2, 'on_target', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
         # Stop the drive
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stop')
 
     def test_stow(self):
         # Make test start nice and close to the actual stow position
-        self.client.assertCommandSucceeds("TurnOn")
         ELEV_FOR_TEST = self.instance.ap_model.STOW_ELEV - 2 #MkatApModel.STOW_ELEV - 2
         MAX_STOW_WAIT_TIME = 5
-#        self.testclient.assertCommandSucceeds("set-elev-drive-position",
-#            ELEV_FOR_TEST)
         self.instance.ap_model.elev_drive.set_position(ELEV_FOR_TEST)
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         self.client.assertCommandSucceeds("Stow")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stowing')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stowing')
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         self.client.assertCommandSucceeds("Stow")
-        self.client.wait_until_sensor_equals(MAX_STOW_WAIT_TIME, 'mode', 'stowed')
+        self.client.wait_until_attribute_equals(MAX_STOW_WAIT_TIME, 'mode', 'stowed')
 
     def test_maintenance(self):
         # Make test start nice and close to the actual maint position
-        self.client.assertCommandSucceeds("TurnOn")
         AZIM_FOR_TEST = self.instance.ap_model.MAINT_AZIM - 5
         ELEV_FOR_TEST = self.instance.ap_model.MAINT_ELEV - 2
         MAX_MAINT_WAIT_TIME = 5
-#        self.testclient.assert_request_succeeds("set-azim-drive-position",
-#            AZIM_FOR_TEST)
         self.instance.ap_model.azim_drive.set_position(AZIM_FOR_TEST)
-#        self.testclient.assert_request_succeeds("set-elev-drive-position",
-#            ELEV_FOR_TEST)
         self.instance.ap_model.elev_drive.set_position(ELEV_FOR_TEST)
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         self.client.assertCommandSucceeds("Maintenance")
-        self.client.wait_until_sensor_equals(2, 'mode', 'going-to-maintenance')
+        self.client.wait_until_attribute_equals(2, 'mode', 'going-to-maintenance')
         self.client.assertCommandSucceeds("Stop")
-        self.client.wait_until_sensor_equals(2, 'mode', 'stop')
+        self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         self.client.assertCommandSucceeds("Maintenance")
-        self.client.wait_until_sensor_equals(MAX_MAINT_WAIT_TIME, 'mode',
-            'maintenance')
+        self.client.wait_until_attribute_equals(MAX_MAINT_WAIT_TIME, 'mode', 'maintenance')
 
     def test_set_indexer_position(self):
         # Test for 'l'
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandSucceeds("Set_Indexer_Position", "l")
         while self.device.indexer_position == "moving":
-            print ("ridx-pos=%.4f" %
-                self.device.indexer_position_raw)
+            print ("ridx-pos=%.4f" %self.device.indexer_position_raw)
             time.sleep(0.5)
         self.assertEqual(self.device.indexer_position, "l")
-        self.assertAlmostEqual(self.device.indexer_position_raw,
-                4.0, 2)
+        self.assertAlmostEqual(self.device.indexer_position_raw, 4.0, 2)
         # Test for 'u'
         self.client.assertCommandSucceeds("Set_Indexer_Position", "u")
         while self.device.indexer_position == "moving":
-            print ("ridx-pos=%.4f" %
-                self.device.indexer_position_raw)
+            print ("ridx-pos=%.4f" %self.device.indexer_position_raw)
             time.sleep(0.5)
         self.assertEqual(self.device.indexer_position, "u")
         self.assertAlmostEqual(self.device.indexer_position_raw,
@@ -591,21 +580,17 @@ class TestMkatAp(DeviceTestCase):
         # Test for 'x'
         self.client.assertCommandSucceeds("Set_Indexer_Position", "x")
         while self.device.indexer_position == "moving":
-            print ("ridx-pos=%.4f" %
-                self.device.indexer_position_raw)
+            print ("ridx-pos=%.4f" %self.device.indexer_position_raw)
             time.sleep(0.5)
         self.assertEqual(self.device.indexer_position, "x")
-        self.assertAlmostEqual(self.device.indexer_position_raw,
-                2.0, 2)
+        self.assertAlmostEqual(self.device.indexer_position_raw, 2.0, 2)
         # Test for 's'
         self.client.assertCommandSucceeds("Set_Indexer_Position", "s")
         while self.device.indexer_position == "moving":
-            print ("ridx-pos=%.4f" %
-                self.device.indexer_position_raw)
+            print ("ridx-pos=%.4f" %self.device.indexer_position_raw)
             time.sleep(0.5)
         self.assertEqual(self.device.indexer_position, "s")
-        self.assertAlmostEqual(self.device.indexer_position_raw,
-                8.0, 2)
+        self.assertAlmostEqual(self.device.indexer_position_raw, 8.0, 2)
         # Test some invalid ridx positions
         self.client.assertCommandFails("Set_Indexer_Position", "k")
         self.assertEqual(self.device.indexer_position, "s")
@@ -613,38 +598,34 @@ class TestMkatAp(DeviceTestCase):
         self.assertEqual(self.device.indexer_position, "s")
 
     def test_set_on_source_threshold(self):
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandSucceeds("Stop")
         # Slew to a position and check that threshold is the default 1e-6
         AZ_REQ_POS = -170
         EL_REQ_POS = 20
         self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
-        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
-        self.client.wait_until_sensor_equals(30, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
-        self.assertAlmostEqual(self.device.actual_azim,
-                AZ_REQ_POS, 2)
-        self.assertAlmostEqual(self.device.actual_elev,
-                EL_REQ_POS, 2)
+        self.client.wait_until_attribute_equals(2, 'on_target', 0,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(30, 'on_target', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.assertAlmostEqual(self.device.actual_azim, AZ_REQ_POS, 2)
+        self.assertAlmostEqual(self.device.actual_elev, EL_REQ_POS, 2)
         self.client.assertCommandSucceeds("Stop")
         # Set new threshold and slew to a position and check that the new threshold has
         # been applied
         self.client.assertCommandSucceeds("Set_On_Source_Threshold", 1e-1)
-        self.assertEqual(self.device.on_source_threshold,
-                1e-1)
+        self.assertEqual(self.device.on_source_threshold, 1e-1)
         AZ_REQ_POS = -160
         EL_REQ_POS = 30
         self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
-        self.client.wait_until_sensor_equals(2, 'on_target', 0, attr_data_type=CmdArgType.DevBoolean)
-        self.client.wait_until_sensor_equals(30, 'on_target', 1, attr_data_type=CmdArgType.DevBoolean)
-        self.assertAlmostEqual(self.device.actual_azim,
-                AZ_REQ_POS, 0)
-        self.assertAlmostEqual(self.device.actual_elev,
-                EL_REQ_POS, 0)
-        self.assertNotAlmostEqual(self.device.actual_azim,
-                AZ_REQ_POS, 2)
-        self.assertNotAlmostEqual(self.device.actual_elev,
-                EL_REQ_POS, 2)
-                
+        self.client.wait_until_attribute_equals(2, 'on_target', 0,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(30, 'on_target', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.assertAlmostEqual(self.device.actual_azim, AZ_REQ_POS, 0)
+        self.assertAlmostEqual(self.device.actual_elev, EL_REQ_POS, 0)
+        self.assertNotAlmostEqual(self.device.actual_azim, AZ_REQ_POS, 2)
+        self.assertNotAlmostEqual(self.device.actual_elev, EL_REQ_POS, 2)
+
     def test_attribute_values(self):
         self.assertEqual(self.device.mode, 'shutdown')
         self.assertEqual(self.device.requested_azim, -185.0)
@@ -656,12 +637,11 @@ class TestMkatAp(DeviceTestCase):
         self.assertEqual(self.device.requested_elev_rate, 0.0)
         self.assertEqual(self.device.actual_azim_rate, 0.0)
         self.assertEqual(self.device.actual_elev_rate, 0.0)
-        self.assertEqual(self.device.State(), DevState.OFF)
-        self.assertEqual(self.device.Status(), 'The device is in OFF state.')
-        
+        self.assertEqual(self.device.State(), DevState.ON)
+        self.assertEqual(self.device.Status(), 'The device is in ON state.')
+
     def test_stop(self):
         self.assertEqual(self.device.mode, 'shutdown')
-        self.client.assertCommandSucceeds("TurnOn")
         self.client.assertCommandFails("Slew", 78, 23)
         self.assertNotEqual(self.device.mode, 'stop')
         self.assertEqual(self.device.mode, 'shutdown')
@@ -670,11 +650,12 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Slew", 89, 89)
         self.assertNotEqual(self.device.mode, 'stop')
         self.client.assertCommandSucceeds("Stow")
-        self.client.wait_until_sensor_equals(11, 'mode', 'stowed', attr_data_type=CmdArgType.DevString)
+        self.client.wait_until_attribute_equals(11, 'mode', 'stowed',
+                                             attr_data_type=CmdArgType.DevString)
         self.assertNotEqual(self.device.mode, 'stop')
         self.client.assertCommandSucceeds("Stop")
         self.assertEqual(self.device.mode, 'stop')
-        
+
 
 if __name__ == '__main__':
 
