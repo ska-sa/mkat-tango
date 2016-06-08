@@ -18,7 +18,7 @@ import weakref
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
 from PyTango.server import Device, DeviceMeta, command, server_run
-from PyTango import AttrWriteType,  DevState
+from PyTango import AttrWriteType, DevState
 from PyTango import Attr, DevString, DevBoolean, DevDouble, DevVarDoubleArray, DevULong
 from PyTango import UserDefaultAttrProp, Except, ErrSeverity
 
