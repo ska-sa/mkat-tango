@@ -26,9 +26,8 @@ class SimControl(Device):
         self.instances[name] = self
         # Get the name of the device
         self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
-        self.model_instance = Model.model_registry[self.device_name]
         # Get the device instance model to be controlled
-        self.model = Model.model_registry[self.device_name]
+        self.model = model.model_registry[self.device_name]
         # Get a list of attributes a device contains from the model
         self.device_sensors = self.model.sim_quantities.keys()
         self.set_state(DevState.ON)

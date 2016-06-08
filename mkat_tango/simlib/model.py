@@ -5,15 +5,14 @@ import weakref
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
+model_registry = weakref.WeakValueDictionary()
 
 class Model(object):
-
-    model_registry = weakref.WeakValueDictionary()
 
     def __init__(self, name, start_time=None, min_update_period=0.99,
                  time_func=time.time):
         self.name = name
-        self.model_registry[self.name] = self
+        model_registry[self.name] = self
         self.min_update_period = min_update_period
         self.time_func = time_func
         self.start_time = start_time or time_func()
