@@ -11,8 +11,7 @@ from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-import model
-from model import Model
+from mkat_tango.simlib import model
 
 class SimControl(Device):
     __metaclass__ = DeviceMeta
