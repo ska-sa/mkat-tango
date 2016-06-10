@@ -3,8 +3,6 @@ import mock
 
 from functools import partial
 
-from addict import Dict
-
 from devicetest import DeviceTestCase
 
 from mkat_tango.simlib import sim_test_interface, model, quantities
@@ -98,20 +96,20 @@ class test_SimControl(DeviceTestCase):
 
     def test_model_attribute_change(self):
         desired_sensor_name = 'relative-humidity'
-        control_attr_dict = Dict()
-        control_attr_dict.desired_mean = 60
-        control_attr_dict.desired_min_bound = 5
-        control_attr_dict.desired_max_bound = 100
-        control_attr_dict.desired_std_dev = 2
-        control_attr_dict.desired_max_slew_rate = 2
-        control_attr_dict.desired_last_val = 62
-        control_attr_dict.desired_last_update_time = time.time()
+        control_attr_dict = {}
+        control_attr_dict['desired_mean'] = 60
+        control_attr_dict['desired_min_bound'] = 5
+        control_attr_dict['desired_max_bound'] = 100
+        control_attr_dict['desired_std_dev'] = 2
+        control_attr_dict['desired_max_slew_rate'] = 2
+        control_attr_dict['desired_last_val'] = 62
+        control_attr_dict['desired_last_update_time'] = time.time()
         self.device.sensor_name = desired_sensor_name
         # setting the desired attribute values for the device's attributes
         # that can be controlled
         for attr in self.device.get_attribute_list():
             if attr in self.control_attributes:
-                val = getattr(control_attr_dict, 'desired_' + attr)
+                val = control_attr_dict['desired_' + attr]
                 setattr(self.device, attr, val)
         # Here the test_model_defaults is called to quanify the changes on the model
         self.test_model_defaults()
