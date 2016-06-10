@@ -35,10 +35,11 @@ class FixtureModel(model.Model):
 
 class test_SimControl(DeviceTestCase):
     device = sim_test_interface.SimControl
+    properties = dict(model_key='the_test_model')
 
     @classmethod
     def setUpClass(cls):
-        cls.test_model = FixtureModel('mkat_sim/nodb/simcontrol')
+        cls.test_model = FixtureModel('the_test_model')
         super(test_SimControl, cls).setUpClass()
 
     def setUp(self):

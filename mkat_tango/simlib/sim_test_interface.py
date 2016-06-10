@@ -9,7 +9,7 @@ from PyTango import AttrQuality, DevState
 from PyTango import Attr, AttrWriteType, WAttribute
 from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
-from PyTango.server import attribute, command
+from PyTango.server import attribute, command, device_property
 
 from mkat_tango.simlib import model
 
@@ -23,16 +23,23 @@ class SimControl(Device):
 
         name = self.get_name()
         self.instances[name] = self
-        # Get the name of the device
-        self.device_name = 'mkat_sim/' + name.split('/', 1)[1]
         # Get the device instance model to be controlled
-        self.model = model.model_registry[self.device_name]
+        try:
+            self.model = model.model_registry[self.model_key]
+        except KeyError:
+            raise RuntimeError('Could not find model with device name or key '
+                               '{}. Set the "model_key" device property to the '
+                               'correct value.'.format(self.model_key))
         # Get a list of attributes a device contains from the model
         self.device_sensors = self.model.sim_quantities.keys()
         self.set_state(DevState.ON)
         self.model_quantities = None
         self._sensor_name = ''
         self._pause_active = False
+
+    model_key = device_property(
+        dtype=str, doc=
+        'Simulator model key, usually the TANGO name of the simulated device.')
 
     # Static attributes of the device
 
