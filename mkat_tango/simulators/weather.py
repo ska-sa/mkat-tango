@@ -51,7 +51,8 @@ class Weather(Device):
         self.model = WeatherModel(name)
         self.set_state(DevState.ON)
 
-    @attribute(label="Current outside temperature", dtype=float,
+    @attribute(label="Outside Temperature", dtype=float,
+               doc="Current temperature outside near the telescope",
                min_warning=-5, max_warning=45,
                max_alarm=50, min_alarm=-9,
                min_value=-10, max_value=51,
@@ -62,6 +63,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(name='wind-speed', label="Wind speed", dtype=float,
+               doc="Wind speed in central telescope area",
                max_warning=15, max_alarm=25,
                max_value=30, min_value=0,
                unit="m/s",
@@ -71,6 +73,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(name='wind-direction', label="Wind direction", dtype=float,
+               doc="Wind speed in central telescope area",
                unit="Degrees", max_value=360, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
@@ -78,6 +81,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Insolation", dtype=float,
+               doc="Sun intensity in central telescope area",
                unit="W/m^2", max_value=1200, min_value=0,
                max_alarm=1100,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
@@ -86,6 +90,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Barometric pressure", dtype=float,
+               doc="Barometric pressure in central telescope area",
                unit="mbar", max_value=1100, min_value=500,
                max_alarm=1000,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
@@ -94,6 +99,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(name='relative-humidity', label="Air humidity", dtype=float,
+               doc="Relative humidity in central telescope area",
                unit="percent", max_value=100, min_value=0,
                max_alarm=99,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
@@ -102,6 +108,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(label="Rainfall", dtype=float,
+               doc="Rainfall in central telescope area",
                unit="mm", max_value=3.2, min_value=0,
                max_alarm=3.1,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
@@ -110,6 +117,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(name='input-comms-ok', label="Input communication OK", dtype=bool,
+               doc="Communations with all weather sensors are nominal.",
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def input_comms_ok(self):
         value, update_time = self.model.quantity_state['input-comms-ok']
