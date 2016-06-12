@@ -94,22 +94,47 @@ class test_SimControl(DeviceTestCase):
                     if model_attr_value:
                         self.assertEqual(attribute_value, model_attr_value)
 
-    def test_model_attribute_change(self):
-        desired_sensor_name = 'relative-humidity'
+    def _control_attr_dict(self, sensor_name):
+        desired_sensor_name = sensor_name
         control_attr_dict = {}
-        control_attr_dict['desired_mean'] = 60
-        control_attr_dict['desired_min_bound'] = 5
-        control_attr_dict['desired_max_bound'] = 100
-        control_attr_dict['desired_std_dev'] = 2
-        control_attr_dict['desired_max_slew_rate'] = 2
-        control_attr_dict['desired_last_val'] = 62
+        control_attr_dict['desired_mean'] = 600
+        control_attr_dict['desired_min_bound'] = 50
+        control_attr_dict['desired_max_bound'] = 1000
+        control_attr_dict['desired_std_dev'] = 200
+        control_attr_dict['desired_max_slew_rate'] = 200
+        control_attr_dict['desired_last_val'] = 620
         control_attr_dict['desired_last_update_time'] = time.time()
         self.device.sensor_name = desired_sensor_name
+        return control_attr_dict
+
+    def test_model_attribute_change(self):
         # setting the desired attribute values for the device's attributes
-        # that can be controlled
+        # that can be controlled and checking if new values are actually
+        # different to from the defualt.
         for attr in self.device.get_attribute_list():
             if attr in self.control_attributes:
-                val = control_attr_dict['desired_' + attr]
-                setattr(self.device, attr, val)
+                new_val = self._control_attr_dict('relative-humidity')[
+                        'desired_' + attr]
+                # default values of the model quantities before the attributes change
+                default_val = getattr(self.device, attr)
+                setattr(self.device, attr, new_val)
+                self.assertNotEqual(getattr(self.device, attr), default_val)
+        # Here the test_model_defaults is called to quanify the changes on the model
+        self.test_model_defaults()
+
+        # Changing the second quantity to see modification and making sure the other 
+        # quantities are not modified
+        self.test_model.reset_model()
+        # setting the desired attribute values for the device's attributes
+        # that can be controlled and checking if new values are actually
+        # different to from the defualt.
+        for attr in self.device.get_attribute_list():
+            if attr in self.control_attributes:
+                new_val = self._control_attr_dict('wind-speed')[
+                        'desired_' + attr]
+                # default values of the model quantities before the attributes change
+                default_val = getattr(self.device, attr)
+                setattr(self.device, attr, new_val)
+                self.assertNotEqual(getattr(self.device, attr), default_val)
         # Here the test_model_defaults is called to quanify the changes on the model
         self.test_model_defaults()
