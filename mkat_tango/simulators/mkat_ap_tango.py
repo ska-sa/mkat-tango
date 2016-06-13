@@ -48,7 +48,7 @@ class MkatAntennaPositioner(Device):
         for sensor in sensors:
             MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
             attribute = katcp_sensor2tango_attr(sensor)
-            self.add_attribute(attribute)
+            self.add_attribute(attribute, self.read_attr)
 
     def read_attr(self, attr):
         '''Read value for an attribute from the AP model into the Tango attribute
