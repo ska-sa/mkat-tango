@@ -21,7 +21,6 @@ from katcp import Sensor
 from katproxy.sim.mkat_ap import MkatApModel
 from devicetest import DeviceTestCase
 from tango_katcp_proxy import TangoDeviceServer, update_tango_server_attribute_list
-from PyTango import CmdArgType, DevState, DevFailed
 
 logger = logging.getLogger(__name__)
 
