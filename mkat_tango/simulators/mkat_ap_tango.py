@@ -45,35 +45,25 @@ class MkatAntennaPositioner(Device):
 
     def initialize_dynamic_attributes(self):
         sensors = self.ap_model.get_sensors()
-        method_call_read = self.read_attr
         for sensor in sensors:
             MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
-            method_call_write = None
             attribute = katcp_sensor2tango_attr(sensor)
-            if sensor.name.startswith('requested-'):
-                method_call_write = self.write_attr
-            self.add_attribute(attribute, method_call_read, method_call_write)
+            self.add_attribute(attribute)
 
     def read_attr(self, attr):
-        '''Method reading an attribute value
+        '''Read value for an attribute from the AP model into the Tango attribute
+
         Parameters
         ==========
         attribute : PyTango.Attribute
-            The attribute to read from.
+            The attribute into which the value is read from the AP model.
+
+        Note: `attr` is modified in place.
         '''
         self.info_stream("Reading attribute %s", attr.get_name())
         sensor_name = unformatter(attr.get_name())
         sensor = self.ap_model.get_sensor(sensor_name)
         attr.set_value(sensor.value())
-
-    def write_attr(self, attr):
-        '''Method reading an attribute value
-        Parameters
-        ==========
-        attribute : PyTango.WAttribute
-            The attribute to read from.
-        '''
-        pass
 
     @command
     def Stop(self):

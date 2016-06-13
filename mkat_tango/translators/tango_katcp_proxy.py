@@ -8,8 +8,6 @@
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
 """
-MeerKAT AP simulator.
-
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import weakref
@@ -65,13 +63,8 @@ def katcp_sensor2tango_attr(sensor):
     tango_type = kattype2tangotype_object(sensor.stype)
     attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
     from mkat_tango.simulators.mkat_ap_tango import formatter
-    sensor_name = formatter(sensor.name)
-
-    if sensor.name.startswith('requested-'):
-        attribute = Attr(sensor_name, tango_type, AttrWriteType.READ_WRITE)
-    else:
-        attribute = Attr(sensor_name, tango_type, AttrWriteType.READ)
-
+    attr_name = formatter(sensor.name)
+    attribute = Attr(attr_name, tango_type, AttrWriteType.READ)
     if sensor.stype in ['integer', 'float']:
         attr_props.set_min_value(str(sensor.params[0]))
         attr_props.set_max_value(str(sensor.params[1]))
@@ -82,12 +75,12 @@ def katcp_sensor2tango_attr(sensor):
     attribute.set_default_properties(attr_props)
     return attribute
 
-def update_tango_server_attribute_list(tango_dserver, sensor_list):
-    """Populate the TANGO device server attribute list
+def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=False):
+    """Add in new TANGO attributes or remove existing attributes
 
     Input Parameters
     ----------------
-    tango_dserver: An instance of the TangoDeviceServer
+    tango_dserver: An instance of the TangoDeviceServer (TANGO device server)
     sensor_list: A list of katcp.Sensor objects
 
     Returns
@@ -95,9 +88,15 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list):
     None
 
     """
-    for sensor in sensor_list:
-        attribute = katcp_sensor2tango_attr(sensor)
-        tango_dserver.add_attribute(attribute)
+    if remove_attr:
+        from mkat_tango.simulators.mkat_ap_tango import formatter
+        for sensor in sensor_list:
+            attr_name = formatter(sensor.name)
+            tango_dserver.remove_attribute(attr_name)
+    else:
+        for sensor in sensor_list:
+            attribute = katcp_sensor2tango_attr(sensor)
+            tango_dserver.add_attribute(attribute)
 
 class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
