@@ -81,23 +81,23 @@ class test_SimControl(DeviceTestCase):
         device_model = self.device_instance.model
         # test that the model instance of the sim control is the same one as Fixture
         self.assertIs(device_model, self.test_model)
-        default_model = FixtureModel(
+        expected_model = FixtureModel(
                 'random_test_name',
                 time_func=lambda: self.test_model.start_time)
-        self._compare_models(device_model, default_model)
+        self._compare_models(device_model, expected_model)
 
-    def _compare_models(self, device_model, default_model):
+    def _compare_models(self, device_model, expected_model):
         """Function compares two models to confirm value similaritiesi
         Parameters
         ==========
         device_model : device instance model
-        default_model : default instance test model
+        expected_model : default instance test model
         """
-        # test that default values from the instantiated model match that of sim control
+        # test that expected values from the instantiated model match that of sim control
         for quantity in device_model.sim_quantities.keys():
             self.device.sensor_name = quantity  # sets the sensor name for which
             # to evaluate the quantities to be controlled
-            desired_quantity = default_model.sim_quantities[quantity]
+            desired_quantity = expected_model.sim_quantities[quantity]
             for attr in self.test_model.sim_quantities[quantity].adjustable_attributes:
                 attribute_value = getattr(self.device, attr)
                 if hasattr(desired_quantity, attr):
@@ -125,16 +125,16 @@ class test_SimControl(DeviceTestCase):
         return control_attr_dict
 
     def _quants_before_dict(self):
-        """Function generate a dictionary of all the default
+        """Function generate a dictionary of all the expected
         quantity values of the initial test model.
         Returns
         =======
         quants_before : dict
-            A dictionary of all default model quantity values
+            A dictionary of all expected model quantity values
         """
         self.test_model.reset_model()
         quants_before = {}
-        # default values of the model quantities before the attributes change
+        # expected values of the model quantities before the attributes change
         for quant_name, quant in self.test_model.sim_quantities.items():
             quants_before[quant_name] = {attr: getattr(quant, attr)
                     for attr in quant.adjustable_attributes}
