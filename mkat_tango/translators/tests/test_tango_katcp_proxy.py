@@ -18,7 +18,7 @@ import weakref
 from katcp import Sensor
 from katproxy.sim.mkat_ap import MkatApModel
 from devicetest import DeviceTestCase
-from tango_katcp_proxy import TangoDeviceServer, update_tango_server_attribute_list
+from mkat_tango.translators.tango_katcp_proxy import TangoDeviceServer, update_tango_server_attribute_list
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
 
     def setUp(self):
-        super(TestMkatAp, self).setUp()
+        super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
         def cleanup_refs(): del self.instance
         self.addCleanup(cleanup_refs)

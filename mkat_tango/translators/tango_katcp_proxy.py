@@ -64,7 +64,7 @@ def katcp_sensor2tango_attr(sensor):
     """
     tango_type = kattype2tangotype_object(sensor.stype)
     attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
-    from mkat_ap_tango import formatter
+    from mkat_tango.simulators.mkat_ap_tango import formatter
     sensor_name = formatter(sensor.name)
 
     if sensor.name.startswith('requested-'):

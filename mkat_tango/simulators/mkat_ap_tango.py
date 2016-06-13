@@ -17,7 +17,7 @@ import weakref
 
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
-from tango_katcp_proxy import katcp_sensor2tango_attr
+from mkat_tango.translators.tango_katcp_proxy import katcp_sensor2tango_attr
 
 from PyTango.server import Device, DeviceMeta, command, server_run
 from PyTango import  DevState
