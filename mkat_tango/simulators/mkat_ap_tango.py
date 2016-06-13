@@ -17,10 +17,12 @@ import weakref
 
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
+from tango_katcp_proxy import katcp_sensor2tango_attr
+
 from PyTango.server import Device, DeviceMeta, command, server_run
-from PyTango import AttrWriteType, DevState
-from PyTango import Attr, DevString, DevBoolean, DevDouble, DevVarDoubleArray, DevULong
-from PyTango import UserDefaultAttrProp, Except, ErrSeverity
+from PyTango import  DevState
+from PyTango import DevString, DevBoolean, DevDouble, DevVarDoubleArray
+from PyTango import  Except, ErrSeverity
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +32,6 @@ class MkatAntennaPositioner(Device):
     instances = weakref.WeakValueDictionary()
 
     COMMAND_ERROR_REASON = "MkatAntennaPositioner_CommandFailed"
-    COMMAND_ERROR_DESC_OFF = "Device in an OFF State"
 
     def init_device(self):
         Device.init_device(self)
@@ -44,52 +45,34 @@ class MkatAntennaPositioner(Device):
 
     def initialize_dynamic_attributes(self):
         sensors = self.ap_model.get_sensors()
+        method_call_read = self.read_attr
         for sensor in sensors:
-            #MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
-            attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
-            sensor_name = formatter(sensor.name)
-            method_call_read = None
+            MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
             method_call_write = None
-
-            if sensor.stype == "boolean":
-                attr = Attr(sensor_name, DevBoolean, AttrWriteType.READ)
-                method_call_read = self.read_attr
-            elif sensor.stype == "float":
-                if sensor.name.startswith('requested-'):
-                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
-                    method_call_write = self.write_attr
-                else:
-                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
-                method_call_read = self.read_attr
-                attr_props.set_min_value(str(sensor.params[0]))
-                attr_props.set_max_value(str(sensor.params[1]))
-            elif sensor.stype == "integer":
-                if sensor.name.startswith('requested-'):
-                    attr = Attr(sensor_name, DevULong, AttrWriteType.READ_WRITE)
-                    method_call_write = self.write_attr
-                else:
-                    attr = Attr(sensor_name, DevULong, AttrWriteType.READ)
-                method_call_read = self.read_attr
-                attr_props.set_min_value(str(sensor.params[0]))
-                attr_props.set_max_value(str(sensor.params[1]))
-            elif sensor.stype == "discrete":
-                attr = Attr(sensor_name, DevString)
-                method_call_read = self.read_attr
-
-            attr_props.set_label(sensor.name)
-            attr_props.set_description(sensor.description)
-            attr_props.set_unit(sensor.units)
-            attr.set_default_properties(attr_props)
-
-            self.add_attribute(attr, method_call_read, method_call_write)
+            attribute = katcp_sensor2tango_attr(sensor)
+            if sensor.name.startswith('requested-'):
+                method_call_write = self.write_attr
+            self.add_attribute(attribute, method_call_read, method_call_write)
 
     def read_attr(self, attr):
+        '''Method reading an attribute value
+        Parameters
+        ==========
+        attribute : PyTango.Attribute
+            The attribute to read from.
+        '''
         self.info_stream("Reading attribute %s", attr.get_name())
         sensor_name = unformatter(attr.get_name())
         sensor = self.ap_model.get_sensor(sensor_name)
         attr.set_value(sensor.value())
 
     def write_attr(self, attr):
+        '''Method reading an attribute value
+        Parameters
+        ==========
+        attribute : PyTango.WAttribute
+            The attribute to read from.
+        '''
         pass
 
     @command
