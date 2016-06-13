@@ -98,7 +98,7 @@ class test_SimControl(DeviceTestCase):
             self.device.sensor_name = quantity  # sets the sensor name for which
             # to evaluate the quantities to be controlled
             desired_quantity = expected_model.sim_quantities[quantity]
-            for attr in self.test_model.sim_quantities[quantity].adjustable_attributes:
+            for attr in desired_quantity.adjustable_attributes:
                 attribute_value = getattr(self.device, attr)
                 if hasattr(desired_quantity, attr):
                     model_attr_value = getattr(desired_quantity, attr)
