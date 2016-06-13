@@ -14,9 +14,8 @@ MeerKAT AP simulator.
 """
 import weakref
 
-from katcp import kattypes
-from PyTango import (DevDouble, DevLong64, DevBoolean, DevString, DevEnum)
-from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, DevState
+from PyTango import DevDouble, DevLong64, DevBoolean, DevString
+from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
 from PyTango.server import Device, DeviceMeta, server_run
 
 KATCP_TYPE_TO_TANGO_TYPE = {
@@ -52,7 +51,7 @@ def kattype2tangotype_object(katcp_sens_type):
     return tango_type
 
 def katcp_sensor2tango_attr(sensor):
-    """Convert Tango type object to corresponding kattype type object
+    """Convert KATCP type object to corresponding TANGO type object
 
     Input Parameters
     ----------------

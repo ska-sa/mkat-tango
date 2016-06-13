@@ -8,8 +8,6 @@
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
 """
-MeerKAT AP simulator.
-
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import unittest2 as unittest
@@ -27,7 +25,7 @@ logger = logging.getLogger(__name__)
 ap_model = MkatApModel()
 ap_model.start()
 
-class TestMkatAp(DeviceTestCase):
+class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     external = False
     device = TangoDeviceServer
