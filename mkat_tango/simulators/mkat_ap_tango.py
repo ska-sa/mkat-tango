@@ -17,10 +17,13 @@ import weakref
 
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
+from mkat_tango.translators.tango_katcp_proxy import katcp_sensor2tango_attr
+from mkat_tango.translators.utilities import tangoname2katcpname
+
 from PyTango.server import Device, DeviceMeta, command, server_run
-from PyTango import AttrWriteType, DevState
-from PyTango import Attr, DevString, DevBoolean, DevDouble, DevVarDoubleArray, DevULong
-from PyTango import UserDefaultAttrProp, Except, ErrSeverity
+from PyTango import  DevState
+from PyTango import DevString, DevBoolean, DevDouble, DevVarDoubleArray
+from PyTango import  Except, ErrSeverity
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +33,6 @@ class MkatAntennaPositioner(Device):
     instances = weakref.WeakValueDictionary()
 
     COMMAND_ERROR_REASON = "MkatAntennaPositioner_CommandFailed"
-    COMMAND_ERROR_DESC_OFF = "Device in an OFF State"
 
     def init_device(self):
         Device.init_device(self)
@@ -45,52 +47,24 @@ class MkatAntennaPositioner(Device):
     def initialize_dynamic_attributes(self):
         sensors = self.ap_model.get_sensors()
         for sensor in sensors:
-            #MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
-            attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
-            sensor_name = formatter(sensor.name)
-            method_call_read = None
-            method_call_write = None
-
-            if sensor.stype == "boolean":
-                attr = Attr(sensor_name, DevBoolean, AttrWriteType.READ)
-                method_call_read = self.read_attr
-            elif sensor.stype == "float":
-                if sensor.name.startswith('requested-'):
-                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ_WRITE)
-                    method_call_write = self.write_attr
-                else:
-                    attr = Attr(sensor_name, DevDouble, AttrWriteType.READ)
-                method_call_read = self.read_attr
-                attr_props.set_min_value(str(sensor.params[0]))
-                attr_props.set_max_value(str(sensor.params[1]))
-            elif sensor.stype == "integer":
-                if sensor.name.startswith('requested-'):
-                    attr = Attr(sensor_name, DevULong, AttrWriteType.READ_WRITE)
-                    method_call_write = self.write_attr
-                else:
-                    attr = Attr(sensor_name, DevULong, AttrWriteType.READ)
-                method_call_read = self.read_attr
-                attr_props.set_min_value(str(sensor.params[0]))
-                attr_props.set_max_value(str(sensor.params[1]))
-            elif sensor.stype == "discrete":
-                attr = Attr(sensor_name, DevString)
-                method_call_read = self.read_attr
-
-            attr_props.set_label(sensor.name)
-            attr_props.set_description(sensor.description)
-            attr_props.set_unit(sensor.units)
-            attr.set_default_properties(attr_props)
-
-            self.add_attribute(attr, method_call_read, method_call_write)
+            MODULE_LOGGER.debug("Adding mkat_ap sensor %r", sensor.name)
+            attribute = katcp_sensor2tango_attr(sensor)
+            self.add_attribute(attribute, self.read_attr)
 
     def read_attr(self, attr):
+        '''Read value for an attribute from the AP model into the Tango attribute
+
+        Parameters
+        ==========
+        attribute : PyTango.Attribute
+            The attribute into which the value is read from the AP model.
+
+        Note: `attr` is modified in place.
+        '''
         self.info_stream("Reading attribute %s", attr.get_name())
-        sensor_name = unformatter(attr.get_name())
+        sensor_name = tangoname2katcpname(attr.get_name())
         sensor = self.ap_model.get_sensor(sensor_name)
         attr.set_value(sensor.value())
-
-    def write_attr(self, attr):
-        pass
 
     @command
     def Stop(self):
@@ -549,52 +523,6 @@ class MkatAntennaPositioner(Device):
     def Watchdog(self):
         #TODO Implement if required
         pass
-
-
-
-def formatter(sensor_name):
-    """
-    Removes the dash(es) in the sensor name and replaces them with underscore(s)
-    to guard against illegal attribute identifiers in TANGO
-
-    Parameters
-    ----------
-    sensor_name : str
-    The name of the sensor. For example:
-
-        'actual-azim'
-
-    Returns
-    -------
-    attr_name : str
-    The legal identifier for an attribute. For example:
-
-        'actual_azim'
-    """
-    attr_name = sensor_name.replace('-', '_')
-    return attr_name
-
-def unformatter(attr_name):
-    """
-    Removes the underscore(s) in the attribute name and replaces them with
-    dashe(s), so that we can access the the KATCP Sensors using their identifiers
-
-    Parameters
-    ----------
-    attr_name : str
-    The name of the sensor. For example:
-
-        'actual_azim'
-
-    Returns
-    -------
-    sensor_name : str
-    The legal identifier for an attribute. For example:
-
-        'actual-azim'
-    """
-    sensor_name = attr_name.replace('_', '-')
-    return sensor_name
 
 
 if __name__ == "__main__":
