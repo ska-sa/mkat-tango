@@ -43,13 +43,13 @@ class test_SimControl(DeviceTestCase):
     def setUp(self):
         super(test_SimControl, self).setUp()
         self.addCleanup(self.test_model.reset_model)
-        self.control_attributes = self._control_attributes()
+        self.control_attributes = self._control_attributes(self.test_model)
         self.device_instance = sim_test_interface.SimControl.instances[
                 self.device.name()]
         def cleanup_refs(): del self.device_instance
         self.addCleanup(cleanup_refs)
 
-    def _control_attributes(self):
+    def _control_attributes(self, test_model):
         """Function collects all the available models and gets all the
         adjustable_attributes which will be control attributes on the
         simulator test interface device.
@@ -60,7 +60,7 @@ class test_SimControl(DeviceTestCase):
         """
         control_attributes = []
         models = set([quant.__class__
-                for quant in self.test_model.sim_quantities.values()])
+                for quant in test_model.sim_quantities.values()])
         for cls in models:
             control_attributes += [attr for attr in cls.adjustable_attributes
                     if attr not in control_attributes]
@@ -104,7 +104,7 @@ class test_SimControl(DeviceTestCase):
                     model_attr_value = getattr(desired_quantity, attr)
                     self.assertEqual(attribute_value, model_attr_value)
 
-    def _control_attr_dict(self, sensor_name):
+    def _control_attr_dict(self):
         """Function generate a dictionary of all the control
         quantities of the test model.
         Returns
@@ -112,7 +112,6 @@ class test_SimControl(DeviceTestCase):
         control_attr_dict : dict
             A dictionary of all control model quantities
         """
-        desired_sensor_name = sensor_name
         control_attr_dict = {}
         control_attr_dict['desired_mean'] = 600
         control_attr_dict['desired_min_bound'] = 50
@@ -121,10 +120,9 @@ class test_SimControl(DeviceTestCase):
         control_attr_dict['desired_max_slew_rate'] = 200
         control_attr_dict['desired_last_val'] = 62
         control_attr_dict['desired_last_update_time'] = time.time()
-        self.device.sensor_name = desired_sensor_name
         return control_attr_dict
 
-    def _quants_before_dict(self):
+    def _quants_before_dict(self, test_model):
         """Function generate a dictionary of all the expected
         quantity values of the initial test model.
         Returns
@@ -132,10 +130,9 @@ class test_SimControl(DeviceTestCase):
         quants_before : dict
             A dictionary of all expected model quantity values
         """
-        self.test_model.reset_model()
         quants_before = {}
         # expected values of the model quantities before the attributes change
-        for quant_name, quant in self.test_model.sim_quantities.items():
+        for quant_name, quant in test_model.sim_quantities.items():
             quants_before[quant_name] = {attr: getattr(quant, attr)
                     for attr in quant.adjustable_attributes}
         return quants_before
@@ -143,11 +140,13 @@ class test_SimControl(DeviceTestCase):
     def test_model_attribute_change(self):
         # setting the desired attribute values for the device's attributes
         # that can be controlled and checking if new values are actually
-        # different to from the defualt.
-        quants_before = self._quants_before_dict()
+        # different to from the defualt. 
+        self.test_model.reset_model()
+        quants_before = self._quants_before_dict(self.test_model)
         desired_sensor_name = 'relative-humidity'
+        self.device.sensor_name = desired_sensor_name
         for attr in self.control_attributes:
-            new_val = self._control_attr_dict(desired_sensor_name)[
+            new_val = self._control_attr_dict()[
                     'desired_' + attr]
             setattr(self.device, attr, new_val)
             self.assertNotEqual(getattr(self.device, attr),
@@ -158,10 +157,12 @@ class test_SimControl(DeviceTestCase):
 
         # Changing the second quantity to see modification and making sure
         # the other quantities are not modified
-        quants_before = self._quants_before_dict()
+        self.test_model.reset_model()
+        quants_before = self._quants_before_dict(self.test_model)
         desired_sensor_name = 'wind-speed'
+        self.device.sensor_name = desired_sensor_name
         for attr in self.control_attributes:
-            new_val = self._control_attr_dict(desired_sensor_name)[
+            new_val = self._control_attr_dict()[
                     'desired_' + attr]
             setattr(self.device, attr, new_val)
             self.assertNotEqual(getattr(self.device, attr),
