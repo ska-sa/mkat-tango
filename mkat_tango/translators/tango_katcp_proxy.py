@@ -11,24 +11,29 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import weakref
+import logging
 
-from PyTango import DevDouble, DevLong64, DevBoolean, DevString
+from mkat_tango.translators.utilities import katcpname2tangoname
+
+from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
 from PyTango.server import Device, DeviceMeta, server_run
+
+MODULE_LOGGER = logging.getLogger(__name__)
 
 KATCP_TYPE_TO_TANGO_TYPE = {
     'integer': DevLong64,
     'float': DevDouble,
     'boolean': DevBoolean,
     'lru': DevString,
-    'discrete': DevString,     #TODO (KM) 2016-06-10 : Need to change to DevEnum once solution is found
+    'discrete': DevString,     # TODO (KM) 2016-06-10 : Need to change to DevEnum once solution is found
     'string': DevString,
     'timestamp': DevDouble,
     'address': DevString
 }
 
 def kattype2tangotype_object(katcp_sens_type):
-    """Convert Tango type object to corresponding kattype type object
+    """Convert KATCP Sensor type to A corresponding TANGO type object
 
     Input Parameters
     ----------------
@@ -43,7 +48,7 @@ def kattype2tangotype_object(katcp_sens_type):
     try:
         tango_type = KATCP_TYPE_TO_TANGO_TYPE[katcp_sens_type]
     except KeyError as ke:
-        raise NotImplementedError("Sensor type deprecated {}"
+        raise NotImplementedError("Sensor type {} not yet implemented or is invalid"
                                   .format(tango_type))
 
     return tango_type
@@ -62,8 +67,7 @@ def katcp_sensor2tango_attr(sensor):
     """
     tango_type = kattype2tangotype_object(sensor.stype)
     attr_props = UserDefaultAttrProp()  # Used to set the attribute default properties
-    from mkat_tango.simulators.mkat_ap_tango import formatter
-    attr_name = formatter(sensor.name)
+    attr_name = katcpname2tangoname(sensor.name)
     attribute = Attr(attr_name, tango_type, AttrWriteType.READ)
     if sensor.stype in ['integer', 'float']:
         attr_props.set_min_value(str(sensor.params[0]))
@@ -80,7 +84,9 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
 
     Input Parameters
     ----------------
-    tango_dserver: An instance of the TangoDeviceServer (TANGO device server)
+    tango_dserver: A PyTango.TangoDeviceServer instance
+        Tango Attributes mirroring the KATCP sensors in sensor_list are added to
+        tango_dserver.
     sensor_list: A list of katcp.Sensor objects
 
     Returns
@@ -89,14 +95,17 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
 
     """
     if remove_attr:
-        from mkat_tango.simulators.mkat_ap_tango import formatter
         for sensor in sensor_list:
-            attr_name = formatter(sensor.name)
-            tango_dserver.remove_attribute(attr_name)
+            attr_name = katcpname2tangoname(sensor.name)
+            try:
+                tango_dserver.remove_attribute(attr_name)
+            except DevFailed:
+                MODULE_LOGGER.debug("Attribute {} does not exist".format(attr_name))
     else:
         for sensor in sensor_list:
             attribute = katcp_sensor2tango_attr(sensor)
             tango_dserver.add_attribute(attribute)
+            # TODO (KM) 2016-06-14: Have to provide a read method for the attributes
 
 class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta

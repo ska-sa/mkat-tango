@@ -18,6 +18,7 @@ import weakref
 from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
 from mkat_tango.translators.tango_katcp_proxy import katcp_sensor2tango_attr
+from mkat_tango.translators.utilities import tangoname2katcpname
 
 from PyTango.server import Device, DeviceMeta, command, server_run
 from PyTango import  DevState
@@ -61,7 +62,7 @@ class MkatAntennaPositioner(Device):
         Note: `attr` is modified in place.
         '''
         self.info_stream("Reading attribute %s", attr.get_name())
-        sensor_name = unformatter(attr.get_name())
+        sensor_name = tangoname2katcpname(attr.get_name())
         sensor = self.ap_model.get_sensor(sensor_name)
         attr.set_value(sensor.value())
 
@@ -522,52 +523,6 @@ class MkatAntennaPositioner(Device):
     def Watchdog(self):
         #TODO Implement if required
         pass
-
-
-
-def formatter(sensor_name):
-    """
-    Removes the dash(es) in the sensor name and replaces them with underscore(s)
-    to guard against illegal attribute identifiers in TANGO
-
-    Parameters
-    ----------
-    sensor_name : str
-    The name of the sensor. For example:
-
-        'actual-azim'
-
-    Returns
-    -------
-    attr_name : str
-    The legal identifier for an attribute. For example:
-
-        'actual_azim'
-    """
-    attr_name = sensor_name.replace('-', '_')
-    return attr_name
-
-def unformatter(attr_name):
-    """
-    Removes the underscore(s) in the attribute name and replaces them with
-    dashe(s), so that we can access the the KATCP Sensors using their identifiers
-
-    Parameters
-    ----------
-    attr_name : str
-    The name of the sensor. For example:
-
-        'actual_azim'
-
-    Returns
-    -------
-    sensor_name : str
-    The legal identifier for an attribute. For example:
-
-        'actual-azim'
-    """
-    sensor_name = attr_name.replace('_', '-')
-    return sensor_name
 
 
 if __name__ == "__main__":
