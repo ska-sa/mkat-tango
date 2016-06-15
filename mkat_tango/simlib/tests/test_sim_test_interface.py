@@ -72,6 +72,7 @@ class test_SimControl(DeviceTestCase):
             'State',    # Tango library attribute
             'sensor_name',    # Attribute indentifier for sensor to be controlled
             'pause_active',    # Flag for pausing the model updates
+            'control_sensor_list_names',  # List of sensors to control
             ])
         attributes = set(self.device.get_attribute_list())
         self.assertEqual(attributes - ADDITIONAL_IMPLEMENTED_ATTR,

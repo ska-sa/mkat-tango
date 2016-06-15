@@ -18,7 +18,10 @@ import time
 import logging
 
 from devicetest import DeviceTestCase
-from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner, unformatter
+
+from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner
+from mkat_tango.translators.utilities import tangoname2katcpname
+
 from PyTango import CmdArgType, DevState, DevFailed
 
 logger = logging.getLogger(__name__)
@@ -341,7 +344,7 @@ class MkatApTangoTests(DeviceTestCase):
         def get_actual_sensor_list():
             """Return the list of actual attributes of the connected device server"""
             attr_list = self.device.get_attribute_list()
-            sens_list = [unformatter(attr) for attr in attr_list]
+            sens_list = [tangoname2katcpname(attr) for attr in attr_list]
             return sens_list
 
         if self.external:
@@ -369,7 +372,7 @@ class MkatApTangoTests(DeviceTestCase):
         def get_actual_command_list():
             """Return the list of actual requests of the connected server"""
             command_list = self.device.command_list_query()
-            req_list = [unformatter(command.cmd_name.lower()) for command in command_list]
+            req_list = [tangoname2katcpname(command.cmd_name.lower()) for command in command_list]
             return req_list
 
 

@@ -56,6 +56,10 @@ class SimControl(Device):
             raise NameError('Name does not exist in the sensor list {}'.
                             format(self.device_sensors))
 
+    @attribute(dtype=str, dformat=PyTango.AttrDataFormat.SPECTRUM, max_dim_x=9999)
+    def control_sensor_list_names(self):
+        return self.device_sensors
+
     @attribute(dtype=bool)
     def pause_active(self):
         return self._pause_active
