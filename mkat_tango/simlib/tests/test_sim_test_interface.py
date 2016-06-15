@@ -175,4 +175,3 @@ class test_SimControl(DeviceTestCase):
         # Compare the modified quantities and check if the other
         # quantities have not changed
         self._compare_models(self.test_model, expected_model)
-
