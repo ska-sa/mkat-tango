@@ -88,7 +88,8 @@ class test_SimControl(DeviceTestCase):
         self._compare_models(device_model, expected_model)
 
     def _compare_models(self, device_model, expected_model):
-        """Function compares two models to confirm value similaritiesi
+        """Function compares two models for equality using assertEqual
+
         Parameters
         ==========
         device_model : device instance model
@@ -104,13 +105,16 @@ class test_SimControl(DeviceTestCase):
                 model_attr_value = getattr(desired_quantity, attr)
                 self.assertEqual(attribute_value, model_attr_value)
 
-    def it_quants_to_dict(self):
-        """Function generate a dictionary of all the control
-        quantities of the test model.
+    def generate_test_attribute_values(self):
+        """Generate adjustable attribute test values for GaussianSlewLimited quantities
+
         Returns
         =======
         control_attr_dict : dict
-            A dictionary of all control model quantities
+            A dictionary of all GaussianSlewLimited quantity adjustable control
+            attributes.  Values are guaranteed to be different to the values in
+            FixtureModel.
+
         """
         control_attr_dict = {}
         control_attr_dict['desired_mean'] = 600
@@ -147,7 +151,7 @@ class test_SimControl(DeviceTestCase):
         desired_sensor_name = 'relative-humidity'
         self.device.sensor_name = desired_sensor_name
         for attr in self.control_attributes:
-            new_val = self.it_quants_to_dict()[
+            new_val = self.generate_test_attribute_values()[
                     'desired_' + attr]
             setattr(self.device, attr, new_val)
             setattr(expected_model.sim_quantities[desired_sensor_name], attr, new_val)
@@ -166,12 +170,13 @@ class test_SimControl(DeviceTestCase):
         desired_sensor_name = 'wind-speed'
         self.device.sensor_name = desired_sensor_name
         for attr in self.control_attributes:
-            new_val = self.it_quants_to_dict()[
+            new_val = self.generate_test_attribute_values()[
                     'desired_' + attr]
             setattr(self.device, attr, new_val)
             setattr(expected_model.sim_quantities[desired_sensor_name], attr, new_val)
+            # Sanity check that we have indeed changed the value.
             self.assertNotEqual(getattr(self.device, attr),
                     quants_before[desired_sensor_name][attr])
-        # Compare the modified quantities and check if the other
-        # quantities have not changed
+        # Compare the modified quantities and check that no other quantities
+        # have changed.
         self._compare_models(self.test_model, expected_model)
