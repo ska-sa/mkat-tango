@@ -94,17 +94,16 @@ class test_SimControl(DeviceTestCase):
         expected_model : default instance test model
         """
         # test that expected values from the instantiated model match that of sim control
-        for quantity in device_model.sim_quantities.keys():
+        for quantity in expected_model.sim_quantities.keys():
             self.device.sensor_name = quantity  # sets the sensor name for which
             # to evaluate the quantities to be controlled
             desired_quantity = expected_model.sim_quantities[quantity]
             for attr in desired_quantity.adjustable_attributes:
                 attribute_value = getattr(self.device, attr)
-                if hasattr(desired_quantity, attr):
-                    model_attr_value = getattr(desired_quantity, attr)
-                    self.assertEqual(attribute_value, model_attr_value)
+                model_attr_value = getattr(desired_quantity, attr)
+                self.assertEqual(attribute_value, model_attr_value)
 
-    def _control_attr_dict(self):
+    def it_quants_to_dict(self):
         """Function generate a dictionary of all the control
         quantities of the test model.
         Returns
@@ -140,31 +139,35 @@ class test_SimControl(DeviceTestCase):
     def test_model_attribute_change(self):
         # setting the desired attribute values for the device's attributes
         # that can be controlled and checking if new values are actually
-        # different to from the defualt. 
-        self.test_model.reset_model()
-        quants_before = self._quants_before_dict(self.test_model)
+        # different to from the defualt.
+        expected_model = FixtureModel('random_test1_name',
+                time_func=lambda: self.test_model.start_time)
+        quants_before = self._quants_before_dict(expected_model)
         desired_sensor_name = 'relative-humidity'
         self.device.sensor_name = desired_sensor_name
         for attr in self.control_attributes:
-            new_val = self._control_attr_dict()[
+            new_val = self.it_quants_to_dict()[
                     'desired_' + attr]
             setattr(self.device, attr, new_val)
+            setattr(expected_model.sim_quantities[desired_sensor_name], attr, new_val)
             self.assertNotEqual(getattr(self.device, attr),
                     quants_before[desired_sensor_name][attr])
         # Compare the modified quantities and check if the other
         # quantities have not changed
-        self._compare_models(self.device_instance.model, self.test_model)
+        self._compare_models(self.test_model, expected_model)
 
         # Changing the second quantity to see modification and making sure
         # the other quantities are not modified
-        self.test_model.reset_model()
+        expected_model = FixtureModel('random_test2_name',
+                time_func=lambda: self.test_model.start_time)
         quants_before = self._quants_before_dict(self.test_model)
         desired_sensor_name = 'wind-speed'
         self.device.sensor_name = desired_sensor_name
         for attr in self.control_attributes:
-            new_val = self._control_attr_dict()[
+            new_val = self.it_quants_to_dict()[
                     'desired_' + attr]
             setattr(self.device, attr, new_val)
+            setattr(expected_model.sim_quantities[desired_sensor_name], attr, new_val)
             self.assertNotEqual(getattr(self.device, attr),
                     quants_before[desired_sensor_name][attr])
         # Compare the modified quantities and check if the other
