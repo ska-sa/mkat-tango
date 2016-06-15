@@ -159,6 +159,7 @@ class test_SimControl(DeviceTestCase):
 
         # Changing the second quantity to see modification and making sure
         # the other quantities are not modified
+        self.test_model.reset_model()
         expected_model = FixtureModel('random_test2_name',
                 time_func=lambda: self.test_model.start_time)
         quants_before = self._quants_before_dict(self.test_model)
@@ -173,4 +174,5 @@ class test_SimControl(DeviceTestCase):
                     quants_before[desired_sensor_name][attr])
         # Compare the modified quantities and check if the other
         # quantities have not changed
-        self._compare_models(self.device_instance.model, self.test_model)
+        self._compare_models(self.test_model, expected_model)
+
