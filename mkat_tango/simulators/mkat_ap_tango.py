@@ -60,6 +60,7 @@ class MkatAntennaPositioner(Device):
             The attribute into which the value is read from the AP model.
 
         Note: `attr` is modified in place.
+
         '''
         self.info_stream("Reading attribute %s", attr.get_name())
         sensor_name = tangoname2katcpname(attr.get_name())

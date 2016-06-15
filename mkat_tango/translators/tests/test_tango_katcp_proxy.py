@@ -56,11 +56,11 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
         def cleanup_refs():
-            # Need to reset the device server to its default configuration
-            update_tango_server_attribute_list(self.instance, sensor_list, remove_attr=True)
             del self.instance
-
         self.addCleanup(cleanup_refs)
+        # Need to reset the device server to its default configuration
+        self.addCleanup(update_tango_server_attribute_list,
+                        self.instance, sensor_list, remove_attr=True)
 
     def test_update_tango_server_attribute_list(self):
         """Testing that the update_tango_server_attribute_list method works correctly.
@@ -144,8 +144,9 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
             # TODO (KM) 14-06-2016: Need to check the params for the discrete sensor type
                                  # once solution for DevEnum is found.
             elif sensor.stype == 'string':
-                self.assertEqual(attr_desc.min_value, "Not specified", "The string sensor type object"
-                                 " has unexpected min_value")
-                self.assertEqual(attr_desc.max_value, "Not specified", "The string sensor type object"
-                                 " has unexpected min_value")
-                self.assertEqual(sensor.params, [], "The sensor object has a non-empty params list")
+                self.assertEqual(attr_desc.min_value, "Not specified",
+                                 "The string sensor type object has unexpected min_value")
+                self.assertEqual(attr_desc.max_value, "Not specified",
+                                 "The string sensor type object has unexpected min_value")
+                self.assertEqual(sensor.params, [],
+                                 "The sensor object has a non-empty params list")

@@ -26,7 +26,8 @@ KATCP_TYPE_TO_TANGO_TYPE = {
     'float': DevDouble,
     'boolean': DevBoolean,
     'lru': DevString,
-    'discrete': DevString,     # TODO (KM) 2016-06-10 : Need to change to DevEnum once solution is found
+    'discrete': DevString, # TODO (KM) 2016-06-10 : Need to change to DevEnum
+                           # once solution is found
     'string': DevString,
     'timestamp': DevDouble,
     'address': DevString
