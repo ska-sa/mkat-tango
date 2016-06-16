@@ -95,6 +95,20 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
     None
 
     """
+
+    def read_attributes(self, attr):
+        '''Method reading an attribute value
+
+        Parameters
+        ==========
+        attr : PyTango.DevAttr
+        The attribute to read from.
+
+        '''
+        name = attr.get_name()
+        self.info_stream("Reading attribute %s", name)
+        attr.set_value(getattr(sensor, 'value'))
+
     if remove_attr:
         for sensor in sensor_list:
             attr_name = katcpname2tangoname(sensor.name)
@@ -105,7 +119,7 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
     else:
         for sensor in sensor_list:
             attribute = katcp_sensor2tango_attr(sensor)
-            tango_dserver.add_attribute(attribute)
+            tango_dserver.add_attribute(attribute, read_attributes)
             # TODO (KM) 2016-06-14: Have to provide a read method for the attributes
 
 class TangoDeviceServer(Device):
