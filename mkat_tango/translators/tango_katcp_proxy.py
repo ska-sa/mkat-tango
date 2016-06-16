@@ -17,7 +17,8 @@ from mkat_tango.translators.utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
-from PyTango.server import Device, DeviceMeta, server_run
+from PyTango.server import Device, DeviceMeta
+from PyTango.server import server_run, device_property
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -26,8 +27,8 @@ KATCP_TYPE_TO_TANGO_TYPE = {
     'float': DevDouble,
     'boolean': DevBoolean,
     'lru': DevString,
-    'discrete': DevString, # TODO (KM) 2016-06-10 : Need to change to DevEnum
-                           # once solution is found
+    'discrete': DevString,  # TODO (KM) 2016-06-10 : Need to change to DevEnum
+                            # once solution is found
     'string': DevString,
     'timestamp': DevDouble,
     'address': DevString
@@ -126,7 +127,17 @@ class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
     instances = weakref.WeakValueDictionary()
 
+    katcp_address = device_property(dtype=str, doc=
+            'katcp address of the device to translate as <host>:<port>')
+
+    def __init__(self, *args, **kwargs):
+        Device.__init__(self, *args, **kwargs)
+        self.katcp_tango_proxy = None
+
     def init_device(self):
+        if self.katcp_tango_proxy:
+            self.katcp_tango_proxy.ioloop.add_callback(
+                    self.katcp_tango_proxy.ioloop.stop)
         Device.init_device(self)
         name = self.get_name()
         self.instances[name] = self
