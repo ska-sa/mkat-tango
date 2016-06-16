@@ -14,8 +14,7 @@ import weakref
 import logging
 import tornado
 
-from katcp import inspecting_client
-
+from katcp import inspecting_client, ioloop_manager
 
 from mkat_tango.translators.utilities import katcpname2tangoname
 
@@ -174,8 +173,8 @@ class KatcpTango2DeviceProxy(object):
         print args, kwargs
 
     @classmethod
-    def from_katcp_address_tango_device(
-        cls, katcp_server_address, tango_device_server):
+    def from_katcp_address_tango_device(cls,
+            katcp_server_address, tango_device_server):
         """Instatiate KatcpTango2DeviceProxy from network address
 
         Parameters
