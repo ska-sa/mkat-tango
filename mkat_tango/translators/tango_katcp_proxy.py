@@ -12,6 +12,10 @@
 """
 import weakref
 import logging
+import tornado
+
+from katcp import inspecting_client
+
 
 from mkat_tango.translators.utilities import katcpname2tangoname
 
@@ -138,15 +142,58 @@ class TangoDeviceServer(Device):
         if self.katcp_tango_proxy:
             self.katcp_tango_proxy.ioloop.add_callback(
                     self.katcp_tango_proxy.ioloop.stop)
+
         Device.init_device(self)
         name = self.get_name()
         self.instances[name] = self
 
+        katcp_host, katcp_port = self.katcp_address.split(':')
+        katcp_port = int(katcp_port)
+        self.katcp_tango_proxy = (
+                KatcpTango2DeviceProxy.from_katcp_address_tango_device(
+                    (katcp_host, katcp_port), self))
+        self.katcp_tango_proxy.start()
 
 class KatcpTango2DeviceProxy(object):
-    def __init__(self):
-        pass
+    def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
+        self.katcp_inspecting_client = katcp_inspecting_client
+        self.tango_device_server = tango_device_server
+        self.ioloop = ioloop
 
+    def start(self):
+        """Start the translator
+
+        Starts the KATCP inspecting client
+
+        """
+        self.katcp_inspecting_client.set_state_callback(self.katcp_state_callback)
+        self.ioloop.add_callback(self.katcp_inspecting_client.connect)
+
+    @tornado.gen.coroutine
+    def katcp_state_callback(self, *args, **kwargs):
+        print args, kwargs
+
+    @classmethod
+    def from_katcp_address_tango_device(
+        cls, katcp_server_address, tango_device_server):
+        """Instatiate KatcpTango2DeviceProxy from network address
+
+        Parameters
+        =========
+        katcp_server_address : tuple (hostname : str, port, port : int)
+            Address where the KATCP server interface is listening
+        tango_device_server : PyTango.Device
+            Tango device that has the results of the translated katcp proxy
+
+        """
+        katcp_host, katcp_port = katcp_server_address
+        iolm = ioloop_manager.IOLoopManager()
+        iolm.setDaemon(True)
+        ioloop = iolm.get_ioloop()
+        iolm.start()
+        katcp_inspecting_client = inspecting_client.InspectingClientAsync(
+            katcp_host, katcp_port, ioloop=ioloop)
+        return cls(katcp_inspecting_client, tango_device_server, ioloop)
 
 if __name__ == "__main__":
-         server_run([TangoDeviceServer])
+    server_run([TangoDeviceServer])
