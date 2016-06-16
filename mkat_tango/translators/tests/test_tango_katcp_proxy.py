@@ -16,6 +16,10 @@ import logging
 from mock import Mock
 
 from katcp import Sensor, kattypes
+from katcp import DeviceServer, Sensor, ProtocolFlags, AsyncReply
+from katcp.kattypes import (Str, Float, Timestamp, Discrete,
+                            request, return_reply)
+from katcp.testutils import start_thread_with_cleanup
 
 from katproxy.sim.mkat_ap import MkatApModel
 
@@ -48,6 +52,27 @@ sensor_list = [
 
 default_attributes = frozenset(['State', 'Status'])
 
+server_host = "localhost"
+server_port = 5000
+
+class KatcpTestDevice(DeviceServer):
+
+    VERSION_INFO = ("example-api", 1, 0)
+    BUILD_INFO = ("example-implementation", 0, 1, "")
+
+    # Optionally set the KATCP protocol version and features. Defaults to
+    # the latest implemented version of KATCP, with all supported optional
+    # features
+    PROTOCOL_INFO = ProtocolFlags(5, 0, set([
+        ProtocolFlags.MULTI_CLIENT,
+        ProtocolFlags.MESSAGE_IDS,
+    ]))
+
+    def setup_sensors(self):
+        """Setup some server sensors."""
+        for sensor in sensor_list:
+            self.add_sensor(sensor)
+
 class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     device = TangoDeviceServer
@@ -55,12 +80,17 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
     def setUp(self):
         super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
+        self._setup_server()
         def cleanup_refs():
             del self.instance
         self.addCleanup(cleanup_refs)
         # Need to reset the device server to its default configuration
         self.addCleanup(update_tango_server_attribute_list,
                         self.instance, sensor_list, remove_attr=True)
+
+    def _setup_server(self):
+        self.katcp_server = KatcpTestDevice(server_host, server_port)
+        start_thread_with_cleanup(self, self.katcp_server, start_timeout=1)
 
     def test_update_tango_server_attribute_list(self):
         """Testing that the update_tango_server_attribute_list method works correctly.
