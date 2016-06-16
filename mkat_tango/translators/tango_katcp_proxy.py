@@ -107,7 +107,7 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
         '''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
-        attr.set_value(getattr(sensor, 'value'))
+        attr.set_value(getattr(sensor_list[name], 'value'))
 
     if remove_attr:
         for sensor in sensor_list:
