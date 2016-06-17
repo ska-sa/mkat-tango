@@ -76,6 +76,7 @@ class KatcpTestDevice(DeviceServer):
 class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     device = TangoDeviceServer
+    properties = dict(katcp_address=server_host + ':' + str(server_port))
 
     def setUp(self):
         super(test_KatcpTango2DeviceProxy, self).setUp()

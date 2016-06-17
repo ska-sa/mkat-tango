@@ -111,7 +111,8 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
         '''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
-        attr.set_value(getattr(sensor_list[name], 'value'))
+        sensor_value = getattr(sensor_list[name], 'value')
+        attr.set_value(sensor_value())
 
     if remove_attr:
         for sensor in sensor_list:
@@ -134,8 +135,8 @@ class TangoDeviceServer(Device):
             'katcp address of the device to translate as <host>:<port>')
 
     def __init__(self, *args, **kwargs):
-        Device.__init__(self, *args, **kwargs)
         self.katcp_tango_proxy = None
+        Device.__init__(self, *args, **kwargs)
 
     def init_device(self):
         if self.katcp_tango_proxy:
