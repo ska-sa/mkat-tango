@@ -16,7 +16,7 @@ import tornado
 
 from katcp import inspecting_client, ioloop_manager
 
-from mkat_tango.translators.utilities import katcpname2tangoname
+from utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
@@ -80,7 +80,7 @@ def katcp_sensor2tango_attr(sensor):
 
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
-    attr_props.set_unit(sensor.units)
+#    attr_props.set_unit(sensor.units)
     attribute.set_default_properties(attr_props)
     return attribute
 
@@ -171,7 +171,25 @@ class KatcpTango2DeviceProxy(object):
 
     @tornado.gen.coroutine
     def katcp_state_callback(self, *args, **kwargs):
-        print args, kwargs
+        #print args, kwargs
+        if args[1]:
+            removed_sens = args[1]['sensors']['removed']
+            added_sens = args[1]['sensors']['added']
+            print removed_sens
+            print added_sens
+            removed_sensor_list = []
+            for sens_name in removed_sens:
+                sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
+                removed_sensor_list.append(sensor)
+            update_tango_server_attribute_list(self.tango_device_server,
+                                               removed_sensor_list, remove_attr=True)
+
+            added_sensor_list = []
+            for sens_name in added_sens:
+                sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
+                added_sensor_list.append(sensor)
+            update_tango_server_attribute_list(self.tango_device_server,
+                                               added_sensor_list)
 
     @classmethod
     def from_katcp_address_tango_device(cls,

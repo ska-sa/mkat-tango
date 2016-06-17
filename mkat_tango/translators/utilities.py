@@ -31,7 +31,7 @@ def katcpname2tangoname(sensor_name):
         'actual_azim' or 'acs_temperature_01'
     """
     #TODO (KM) 13-06-2016 : Need to find a way to deal with sensor names with dots.
-    attribute_name = sensor_name.replace('-', '_')
+    attribute_name = sensor_name.replace('-', '_').replace('.', '_')
     return attribute_name
 
 def tangoname2katcpname(attribute_name):
