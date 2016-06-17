@@ -16,9 +16,9 @@ import tornado
 
 from katcp import inspecting_client, ioloop_manager
 
-from utilities import katcpname2tangoname
+from utilities import katcpname2tangoname, tangoname2katcpname
 
-from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed
+from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import server_run, device_property
@@ -80,7 +80,7 @@ def katcp_sensor2tango_attr(sensor):
 
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
-#    attr_props.set_unit(sensor.units)
+    attr_props.set_unit(sensor.units)
     attribute.set_default_properties(attr_props)
     return attribute
 
@@ -99,33 +99,19 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
     None
 
     """
-
-    def read_attributes(self, attr):
-        '''Method reading an attribute value
-
-        Parameters
-        ==========
-        attr : PyTango.DevAttr
-        The attribute to read from.
-
-        '''
-        name = attr.get_name()
-        self.info_stream("Reading attribute %s", name)
-        sensor_value = getattr(sensor_list[name], 'value')
-        attr.set_value(sensor_value())
-
     if remove_attr:
         for sensor in sensor_list:
-            attr_name = katcpname2tangoname(sensor.name)
+            attr_name = katcpname2tangoname(sensor_list[sensor].name)
             try:
                 tango_dserver.remove_attribute(attr_name)
             except DevFailed:
                 MODULE_LOGGER.debug("Attribute {} does not exist".format(attr_name))
     else:
         for sensor in sensor_list:
-            attribute = katcp_sensor2tango_attr(sensor)
-            tango_dserver.add_attribute(attribute, read_attributes)
+            attribute = katcp_sensor2tango_attr(sensor_list[sensor])
+            tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
             # TODO (KM) 2016-06-14: Have to provide a read method for the attributes
+
 
 class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
@@ -144,9 +130,9 @@ class TangoDeviceServer(Device):
                     self.katcp_tango_proxy.ioloop.stop)
 
         Device.init_device(self)
+        self.set_state(DevState.ON)
         name = self.get_name()
         self.instances[name] = self
-
         katcp_host, katcp_port = self.katcp_address.split(':')
         katcp_port = int(katcp_port)
         self.katcp_tango_proxy = (
@@ -154,11 +140,29 @@ class TangoDeviceServer(Device):
                     (katcp_host, katcp_port), self))
         self.katcp_tango_proxy.start()
 
+    def read_attr(self, attr):
+        '''Read value for an attribute from the AP model into the Tango attribute
+
+        Parameters
+        ==========
+        attribute : PyTango.Attribute
+            The attribute into which the value is read from the AP model.
+
+        Note: `attr` is modified in place.
+
+        '''
+        self.info_stream("Reading attribute %s", attr.get_name())
+        sens = self.katcp_tango_proxy._current_sensors
+        sensor_name = tangoname2katcpname(attr.get_name())
+        sensor = sens[sensor_name]
+        attr.set_value(sensor.value())
+
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
         self.katcp_inspecting_client = katcp_inspecting_client
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
+        self._current_sensors = {}
 
     def start(self):
         """Start the translator
@@ -169,27 +173,50 @@ class KatcpTango2DeviceProxy(object):
         self.katcp_inspecting_client.set_state_callback(self.katcp_state_callback)
         self.ioloop.add_callback(self.katcp_inspecting_client.connect)
 
+    def stop(self, timeout=1.0):
+        """Stop the translator
+
+        At the moment only the KATCP component is stopped since we don't yet
+        know how to stop the Tango DeviceProxy. Some thread leakage therefore to
+        be expected :(
+
+        """
+        self.katcp_inspecting_client.stop(timeout=timeout)
+
+    def join(self, timeout=None):
+        self.katcp_inspecting_client.join(timeout=timeout)
+
     @tornado.gen.coroutine
     def katcp_state_callback(self, *args, **kwargs):
-        #print args, kwargs
         if args[1]:
-            removed_sens = args[1]['sensors']['removed']
-            added_sens = args[1]['sensors']['added']
-            print removed_sens
-            print added_sens
-            removed_sensor_list = []
-            for sens_name in removed_sens:
-                sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-                removed_sensor_list.append(sensor)
-            update_tango_server_attribute_list(self.tango_device_server,
-                                               removed_sensor_list, remove_attr=True)
+            try:
+                removed_sensors = args[1]['sensors']['removed']
+                added_sensors = args[1]['sensors']['added']
+            except KeyError:
+                pass
+            else:
+                self.reconfigure_tango_device_server(removed_sensors, added_sensors)
 
-            added_sensor_list = []
-            for sens_name in added_sens:
-                sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-                added_sensor_list.append(sensor)
-            update_tango_server_attribute_list(self.tango_device_server,
-                                               added_sensor_list)
+    @tornado.gen.coroutine
+    def reconfigure_tango_device_server(self, removed_sens, added_sens):
+        removed_sensor_list = dict()
+        for sens_name in removed_sens:
+            sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
+            removed_sensor_list[sens_name] = sensor
+        update_tango_server_attribute_list(self.tango_device_server,
+                                           removed_sensor_list, remove_attr=True)
+
+        added_sensor_list = dict()
+        for sens_name in added_sens:
+            sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
+            added_sensor_list[sens_name] = sensor
+        update_tango_server_attribute_list(self.tango_device_server, added_sensor_list)
+        self._update_existing_sensor_list(added_sensor_list, removed_sensor_list)
+
+    def _update_existing_sensor_list(self, added, removed):
+        for sens_name in removed:
+            self._current_sensors.pop(sens_name)
+        self._current_sensors.update(added)
 
     @classmethod
     def from_katcp_address_tango_device(cls,
