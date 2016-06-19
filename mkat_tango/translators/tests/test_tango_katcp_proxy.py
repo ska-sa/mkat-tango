@@ -56,7 +56,10 @@ sensor_list = {
 default_attributes = {'state': 'State', 'status': 'Status'}
 
 server_host = "localhost"
-server_port = 53020
+server_port = 4598
+# TODO (KM 2016-06-17) : Need to figure a way to let the katcp inspecting client know
+   # where our katcp server is listening at, instead of giving it a static ip address,
+   # as our katcp inspecting client starts running before the katcp server.
 
 class KatcpTestDevice(DeviceServer):
 
@@ -93,6 +96,16 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         # Need to reset the device server to its default configuration
         self.addCleanup(update_tango_server_attribute_list,
                         self.instance, sensor_list, remove_attr=True)
+
+    def test_connections(self):
+        """Testing if both the TANGO client proxy and the KATCP inspecting clients
+        have established a connection with their device servers, respectively.
+        """
+        is_proxy_connecting_to_server = is_tango_device_running(self.device)
+        self.assertEqual(is_proxy_connecting_to_server, True, "No connection established"
+                         " between client and server")
+        self.assertEqual(self.instance.katcp_tango_proxy.katcp_inspecting_client.is_connected(), True, "The KATCP inspecting client"
+                        " is not connected to the device server")
 
     def test_update_tango_server_attribute_list(self):
         """Testing that the update_tango_server_attribute_list method works correctly.
@@ -186,58 +199,4 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
 
-
-    def test_connections(self):
-        """Testing if both the TANGO client proxy and the KATCP inspecting clients
-        have established a connection with their device servers, respectively.
-        """
-        is_proxy_connecting_to_server = is_tango_device_running(self.device)
-        self.assertEqual(is_proxy_connecting_to_server, True, "No connection established"
-                         " between client and server")
-        self.assertEqual(self.instance.katcp_tango_proxy.katcp_inspecting_client.is_connected(), True, "The KATCP inspecting client"
-                        " is not connected to the device server")
-
-
-     # TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
-#class test_KatcpTango(DeviceTestCase, tornado.testing.AsyncTestCase):
-#
-#    device = TangoDeviceServer
-#    properties = dict(katcp_address=server_host + ':' + str(server_port))
-#
-#    def setUp(self):
-#        super(test_KatcpTango, self).setUp()
-#        self.instance = TangoDeviceServer.instances[self.device.name()]
-#        self.katcp_server = KatcpTestDevice(server_host, server_port)
-#        if hasattr(self, 'io_loop'):
-#            self.DUT.set_ioloop(self.io_loop)
-#            self.io_loop.add_callback(self.katcp_server.start)
-#            self.addCleanup(self.DUT.stop, timeout=None)
-#        else:
-#            start_thread_with_cleanup(self, self.katcp_server)
-#        self.instance.katcp_tango_proxy.katcp_inspecting_client.katcp_client.wait_protocol(timeout=2)
-#        def cleanup_refs():
-#            del self.instance
-#        self.addCleanup(cleanup_refs)
-#        # Need to reset the device server to its default configuration
-#        self.addCleanup(update_tango_server_attribute_list,
-#                        self.instance, sensor_list, remove_attr=True)
-#
-#
-#    @tornado.gen.coroutine
-#    def test_attribute_list_updates(self):
-#        """Testing if the KATCP device state updates reflect in the TANGO device
-#        configuration.
-#        """
-#        #time.sleep(3)
-#        initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
-#        #print initial_tango_dev_attr_list
-#        #import IPython; IPython.embed()
-#        #assert the sensor is in the katcp device and tango device
-#        self.katcp_server.remove_sensor('failure-present')
-#        yield self.instance.katcp_tango_proxy.katcp_inspecting_client.until_synced()
-#        self.assertNotIn('failure-present', self.katcp_server.get_sensors())
-#        #time.sleep(10)
-#        current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
-#        #print current_tango_dev_attr_list
-
-
+# TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
