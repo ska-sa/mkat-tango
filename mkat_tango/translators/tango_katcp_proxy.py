@@ -80,7 +80,7 @@ def katcp_sensor2tango_attr(sensor):
 
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
-    attr_props.set_unit(sensor.units)
+    attr_props.set_unit(sensor.units)      # Seems to cause a seg fault when starting DS
     attribute.set_default_properties(attr_props)
     return attribute
 
