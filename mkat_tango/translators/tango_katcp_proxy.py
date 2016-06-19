@@ -174,11 +174,7 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(self.katcp_inspecting_client.connect)
 
     def stop(self, timeout=1.0):
-        """Stop the translator
-
-        At the moment only the KATCP component is stopped since we don't yet
-        know how to stop the Tango DeviceProxy. Some thread leakage therefore to
-        be expected :(
+        """Stop the KATCP inspecting client
 
         """
         self.katcp_inspecting_client.stop(timeout=timeout)
