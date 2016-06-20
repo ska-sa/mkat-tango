@@ -80,7 +80,7 @@ def katcp_sensor2tango_attr(sensor):
 
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
-    attr_props.set_unit(sensor.units)      # Seems to cause a seg fault when starting DS
+    #attr_props.set_unit(sensor.units)      # Seems to cause a seg fault when starting DS
     attribute.set_default_properties(attr_props)
     return attribute
 
@@ -165,18 +165,18 @@ class TangoDeviceServer(Device):
         Note: `attr` is modified in place.
 
         '''
+        name = attr.get_name()
         self.info_stream("Reading attribute %s", attr.get_name())
-        sens = self.katcp_tango_proxy._current_sensors
-        sensor_name = tangoname2katcpname(attr.get_name())
-        sensor = sens[sensor_name]
-        attr.set_value(sensor.value())
+        sensor_value = self.tango_katcp_proxy._observers[name].updates[0][1].value
+        attr.set_value(sensor_value)
 
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
         self.katcp_inspecting_client = katcp_inspecting_client
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
-        self._current_sensors = {}
+        self._current_sensors = dict()
+        self._observers = dict()
 
     def start(self):
         """Start the translator
@@ -212,18 +212,24 @@ class KatcpTango2DeviceProxy(object):
         removed_sensors = dict()
         for sens_name in removed_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-            removed_sensors[sens_name] = sensor
+            tango_name = katcpname2tangoname(sens_name)
+            removed_sensors[tango_name] = sensor
         remove_tango_server_attribute_list(self.tango_device_server,
                                            removed_sensors)
 
         added_sensors = dict()
         for sens_name in added_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-            added_sensors[sens_name] = sensor
-        add_tango_server_attribute_list(self.tango_device_server, added_sensors)
-        self._update_existing_sensor_list(added_sensors, removed_sensors)
+            tango_name = katcpname2tangoname(sens_name)
+            if tango_name not in self._observers.keys():
+                self._observers[tango_name] = observer = SensorObserver()
+                sensor.attach(observer)
 
-    def _update_existing_sensor_list(self, added_sensors, removed_sensors):
+            added_sensors[tango_name] = sensor
+        add_tango_server_attribute_list(self.tango_device_server, added_sensors)
+        self._update_existing_sensor_dict(added_sensors, removed_sensors)
+
+    def _update_existing_sensor_dict(self, added_sensors, removed_sensors):
         for sens_name in removed_sensors:
             self._current_sensors.pop(sens_name)
         self._current_sensors.update(added_sensors)
@@ -249,6 +255,17 @@ class KatcpTango2DeviceProxy(object):
         katcp_inspecting_client = inspecting_client.InspectingClientAsync(
             katcp_host, katcp_port, ioloop=ioloop)
         return cls(katcp_inspecting_client, tango_device_server, ioloop)
+
+
+class SensorObserver(object):
+    def __init__(self):
+        self.updates = []
+
+    def update(self, sensor, reading):
+        if len(self.updates) > 0:
+            self.updates.pop()
+        self.updates.append((sensor, reading))
+        MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
 if __name__ == "__main__":
     server_run([TangoDeviceServer])
