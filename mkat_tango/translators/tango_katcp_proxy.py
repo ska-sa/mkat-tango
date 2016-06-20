@@ -85,7 +85,7 @@ def katcp_sensor2tango_attr(sensor):
     return attribute
 
 def add_tango_server_attribute_list(tango_dserver, sensors):
-    """Add in new TANGO attributes or remove existing attributes
+    """Add in new TANGO attributes.
 
     Input Parameters
     ----------------
@@ -105,7 +105,7 @@ def add_tango_server_attribute_list(tango_dserver, sensors):
         tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
 
 def remove_tango_server_attribute_list(tango_dserver, sensors):
-    """Remove existing TANGO attributes
+    """Remove existing TANGO attributes.
 
     Input Parameters
     ----------------
