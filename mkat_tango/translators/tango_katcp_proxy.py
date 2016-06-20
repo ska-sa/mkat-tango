@@ -169,7 +169,7 @@ class TangoDeviceServer(Device):
         '''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
-        sensor_value = self.tango_katcp_proxy._observers[name].updates[name].value
+        sensor_value = self.tango_katcp_proxy.sensor_observer.updates[name].value
         attr.set_value(sensor_value)
 
 class KatcpTango2DeviceProxy(object):
@@ -177,7 +177,7 @@ class KatcpTango2DeviceProxy(object):
         self.katcp_inspecting_client = katcp_inspecting_client
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
-        self._observers = dict()
+        self.sensor_observer = SensorObserver()
 
     def start(self):
         """Start the translator
@@ -214,7 +214,6 @@ class KatcpTango2DeviceProxy(object):
         removed_sensors = dict()
         for sens_name in removed_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-            tango_name = katcpname2tangoname(sens_name)
             removed_sensors[sens_name] = sensor
         remove_tango_server_attribute_list(self.tango_device_server,
                                            removed_sensors)
@@ -222,10 +221,7 @@ class KatcpTango2DeviceProxy(object):
         added_sensors = dict()
         for sens_name in added_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-            tango_name = katcpname2tangoname(sens_name)
-            if tango_name not in self._observers.keys():
-                self._observers[tango_name] = observer = SensorObserver()
-                sensor.attach(observer)
+            sensor.attach(self.sensor_observer)
             added_sensors[sens_name] = sensor
         add_tango_server_attribute_list(self.tango_device_server, added_sensors)
         self._setup_sensor_sampling()
@@ -234,9 +230,7 @@ class KatcpTango2DeviceProxy(object):
     def _setup_sensor_sampling(self):
         for sensor_name in self.katcp_inspecting_client.sensors:
             reply, informs = yield self.katcp_inspecting_client.simple_request(
-                    'sensor-sampling',
-                    sensor_name,
-                    'event')
+                    'sensor-sampling', sensor_name, 'event')
             if not reply.reply_ok():
                 MODULE_LOGGER.debug("Unexpected failure reply for {} sensor. Informs: {}"
                         .format(sensor_name, informs))
