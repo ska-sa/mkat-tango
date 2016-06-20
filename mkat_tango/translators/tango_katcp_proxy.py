@@ -175,7 +175,6 @@ class KatcpTango2DeviceProxy(object):
         self.katcp_inspecting_client = katcp_inspecting_client
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
-        self._current_sensors = dict()
         self._observers = dict()
 
     def start(self):
@@ -213,7 +212,7 @@ class KatcpTango2DeviceProxy(object):
         for sens_name in removed_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
             tango_name = katcpname2tangoname(sens_name)
-            removed_sensors[tango_name] = sensor
+            removed_sensors[sens_name] = sensor
         remove_tango_server_attribute_list(self.tango_device_server,
                                            removed_sensors)
 
@@ -224,26 +223,20 @@ class KatcpTango2DeviceProxy(object):
             if tango_name not in self._observers.keys():
                 self._observers[tango_name] = observer = SensorObserver()
                 sensor.attach(observer)
-            added_sensors[tango_name] = sensor
+            added_sensors[sens_name] = sensor
         add_tango_server_attribute_list(self.tango_device_server, added_sensors)
-        self._update_existing_sensor_dict(added_sensors, removed_sensors)
         self._setup_sensor_sampling()
 
     @tornado.gen.coroutine
     def _setup_sensor_sampling(self):
-        for sensor_name in self._current_sensors.keys():
+        for sensor_name in self.katcp_inspecting_client.sensors:
             reply, informs = yield self.katcp_inspecting_client.simple_request(
                     'sensor-sampling',
-                    tangoname2katcpname(sensor_name),
+                    sensor_name,
                     'event')
             if not reply.reply_ok():
                 MODULE_LOGGER.debug("Unexpected failure reply for {} sensor."
                         .format(sensor_name))
-
-    def _update_existing_sensor_dict(self, added_sensors, removed_sensors):
-        for sens_name in removed_sensors:
-            self._current_sensors.pop(sens_name)
-        self._current_sensors.update(added_sensors)
 
     @classmethod
     def from_katcp_address_tango_device(cls,
