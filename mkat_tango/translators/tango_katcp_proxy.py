@@ -135,13 +135,13 @@ class TangoDeviceServer(Device):
             'katcp address of the device to translate as <host>:<port>')
 
     def __init__(self, *args, **kwargs):
-        self.katcp_tango_proxy = None
+        self.tango_katcp_proxy = None
         Device.__init__(self, *args, **kwargs)
 
     def init_device(self):
-        if self.katcp_tango_proxy:
-            self.katcp_tango_proxy.ioloop.add_callback(
-                    self.katcp_tango_proxy.ioloop.stop)
+        if self.tango_katcp_proxy:
+            self.tango_katcp_proxy.ioloop.add_callback(
+                    self.tango_katcp_proxy.ioloop.stop)
 
         Device.init_device(self)
         self.set_state(DevState.ON)
@@ -149,10 +149,10 @@ class TangoDeviceServer(Device):
         self.instances[name] = self
         katcp_host, katcp_port = self.katcp_address.split(':')
         katcp_port = int(katcp_port)
-        self.katcp_tango_proxy = (
+        self.tango_katcp_proxy = (
                 KatcpTango2DeviceProxy.from_katcp_address_tango_device(
                     (katcp_host, katcp_port), self))
-        self.katcp_tango_proxy.start()
+        self.tango_katcp_proxy.start()
 
     def read_attr(self, attr):
         '''Read value for an attribute from the AP model into the Tango attribute
@@ -166,7 +166,7 @@ class TangoDeviceServer(Device):
 
         '''
         name = attr.get_name()
-        self.info_stream("Reading attribute %s", attr.get_name())
+        self.info_stream("Reading attribute %s", name)
         sensor_value = self.tango_katcp_proxy._observers[name].updates[0][1].value
         attr.set_value(sensor_value)
 
@@ -224,10 +224,18 @@ class KatcpTango2DeviceProxy(object):
             if tango_name not in self._observers.keys():
                 self._observers[tango_name] = observer = SensorObserver()
                 sensor.attach(observer)
-
             added_sensors[tango_name] = sensor
         add_tango_server_attribute_list(self.tango_device_server, added_sensors)
         self._update_existing_sensor_dict(added_sensors, removed_sensors)
+
+        for sensor_name in self._current_sensors.keys():
+            reply, informs = yield self.katcp_inspecting_client.simple_request(
+                    'sensor-sampling',
+                    tangoname2katcpname(sensor_name),
+                    'event')
+            if not reply.reply_ok():
+                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor".format(
+                    sensor_name))
 
     def _update_existing_sensor_dict(self, added_sensors, removed_sensors):
         for sens_name in removed_sensors:
@@ -241,7 +249,7 @@ class KatcpTango2DeviceProxy(object):
 
         Parameters
         =========
-        katcp_server_address : tuple (hostname : str, port, port : int)
+        katcp_server_address : tuple (hostname : str, port : int)
             Address where the KATCP server interface is listening
         tango_device_server : PyTango.Device
             Tango device that has the results of the translated katcp proxy
