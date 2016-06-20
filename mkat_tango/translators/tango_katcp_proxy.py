@@ -84,7 +84,7 @@ def katcp_sensor2tango_attr(sensor):
     attribute.set_default_properties(attr_props)
     return attribute
 
-def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=False):
+def add_tango_server_attribute_list(tango_dserver, sensors):
     """Add in new TANGO attributes or remove existing attributes
 
     Input Parameters
@@ -92,26 +92,40 @@ def update_tango_server_attribute_list(tango_dserver, sensor_list, remove_attr=F
     tango_dserver: A PyTango.TangoDeviceServer instance
         Tango Attributes mirroring the KATCP sensors in sensor_list are added to
         tango_dserver.
-    sensor_list: A list of katcp.Sensor objects
+    sensors: dict()
+        A dictionary mapping sensor names to katcp.Sensor objects.
 
     Returns
     -------
     None
 
     """
-    if remove_attr:
-        for sensor in sensor_list:
-            attr_name = katcpname2tangoname(sensor_list[sensor].name)
-            try:
-                tango_dserver.remove_attribute(attr_name)
-            except DevFailed:
-                MODULE_LOGGER.debug("Attribute {} does not exist".format(attr_name))
-    else:
-        for sensor in sensor_list:
-            attribute = katcp_sensor2tango_attr(sensor_list[sensor])
-            tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
-            # TODO (KM) 2016-06-14: Have to provide a read method for the attributes
+    for sensor in sensors:
+        attribute = katcp_sensor2tango_attr(sensors[sensor])
+        tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
 
+def remove_tango_server_attribute_list(tango_dserver, sensors):
+    """Remove existing TANGO attributes
+
+    Input Parameters
+    ----------------
+    tango_dserver: A PyTango.TangoDeviceServer instance
+        Tango Attributes mirroring the KATCP sensors in sensor_list are added to
+        tango_dserver.
+    sensors: dict()
+        A dictionary mapping sensor names to katcp.Sensor objects
+
+    Returns
+    -------
+    None
+
+    """
+    for sensor in sensors:
+        attr_name = katcpname2tangoname(sensors[sensor].name)
+        try:
+            tango_dserver.remove_attribute(attr_name)
+        except DevFailed:
+            MODULE_LOGGER.debug("Attribute {} does not exist".format(attr_name))
 
 class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
@@ -183,11 +197,11 @@ class KatcpTango2DeviceProxy(object):
         self.katcp_inspecting_client.join(timeout=timeout)
 
     @tornado.gen.coroutine
-    def katcp_state_callback(self, *args, **kwargs):
-        if args[1]:
+    def katcp_state_callback(self, state, model_changes):
+        if model_changes:
             try:
-                removed_sensors = args[1]['sensors']['removed']
-                added_sensors = args[1]['sensors']['added']
+                removed_sensors = model_changes['sensors']['removed']
+                added_sensors = model_changes['sensors']['added']
             except KeyError:
                 pass
             else:
@@ -195,24 +209,24 @@ class KatcpTango2DeviceProxy(object):
 
     @tornado.gen.coroutine
     def reconfigure_tango_device_server(self, removed_sens, added_sens):
-        removed_sensor_list = dict()
+        removed_sensors = dict()
         for sens_name in removed_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-            removed_sensor_list[sens_name] = sensor
-        update_tango_server_attribute_list(self.tango_device_server,
-                                           removed_sensor_list, remove_attr=True)
+            removed_sensors[sens_name] = sensor
+        remove_tango_server_attribute_list(self.tango_device_server,
+                                           removed_sensors)
 
-        added_sensor_list = dict()
+        added_sensors = dict()
         for sens_name in added_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
-            added_sensor_list[sens_name] = sensor
-        update_tango_server_attribute_list(self.tango_device_server, added_sensor_list)
-        self._update_existing_sensor_list(added_sensor_list, removed_sensor_list)
+            added_sensors[sens_name] = sensor
+        add_tango_server_attribute_list(self.tango_device_server, added_sensors)
+        self._update_existing_sensor_list(added_sensors, removed_sensors)
 
-    def _update_existing_sensor_list(self, added, removed):
-        for sens_name in removed:
+    def _update_existing_sensor_list(self, added_sensors, removed_sensors):
+        for sens_name in removed_sensors:
             self._current_sensors.pop(sens_name)
-        self._current_sensors.update(added)
+        self._current_sensors.update(added_sensors)
 
     @classmethod
     def from_katcp_address_tango_device(cls,
