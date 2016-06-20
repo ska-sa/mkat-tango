@@ -80,7 +80,8 @@ def katcp_sensor2tango_attr(sensor):
 
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
-    #attr_props.set_unit(sensor.units)      # Seems to cause a seg fault when starting DS
+    if sensor.units:
+        attr_props.set_unit(sensor.units)      # Seems to cause a seg fault when starting DS
     attribute.set_default_properties(attr_props)
     return attribute
 
@@ -155,7 +156,8 @@ class TangoDeviceServer(Device):
         self.tango_katcp_proxy.start()
 
     def read_attr(self, attr):
-        '''Read value for an attribute from the AP model into the Tango attribute
+        '''Read value for an attribute from the katcp proxy update
+        into the Tango attribute
 
         Parameters
         ==========
@@ -167,7 +169,7 @@ class TangoDeviceServer(Device):
         '''
         name = attr.get_name()
         self.info_stream("Reading attribute %s", name)
-        sensor_value = self.tango_katcp_proxy._observers[name].updates[0][1].value
+        sensor_value = self.tango_katcp_proxy._observers[name].updates[name].value
         attr.set_value(sensor_value)
 
 class KatcpTango2DeviceProxy(object):
@@ -199,8 +201,9 @@ class KatcpTango2DeviceProxy(object):
     def katcp_state_callback(self, state, model_changes):
         if model_changes:
             try:
-                removed_sensors = model_changes['sensors']['removed']
-                added_sensors = model_changes['sensors']['added']
+                sensor_changes = model_changes.get('sensors', {})
+                added_sensors = sensor_changes.get('added', set())
+                removed_sensors = sensor_changes.get('removed', set())
             except KeyError:
                 pass
             else:
@@ -235,8 +238,8 @@ class KatcpTango2DeviceProxy(object):
                     sensor_name,
                     'event')
             if not reply.reply_ok():
-                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor."
-                        .format(sensor_name))
+                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor. Informs: {}"
+                        .format(sensor_name, informs))
 
     @classmethod
     def from_katcp_address_tango_device(cls,
@@ -263,12 +266,10 @@ class KatcpTango2DeviceProxy(object):
 
 class SensorObserver(object):
     def __init__(self):
-        self.updates = []
+        self.updates = dict()
 
     def update(self, sensor, reading):
-        if len(self.updates) > 0:
-            self.updates.pop()
-        self.updates.append((sensor, reading))
+        self.updates[katcpname2tangoname(sensor.name)] = reading
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
 if __name__ == "__main__":
