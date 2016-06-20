@@ -227,15 +227,18 @@ class KatcpTango2DeviceProxy(object):
             added_sensors[tango_name] = sensor
         add_tango_server_attribute_list(self.tango_device_server, added_sensors)
         self._update_existing_sensor_dict(added_sensors, removed_sensors)
+        self._setup_sensor_sampling()
 
+    @tornado.gen.coroutine
+    def _setup_sensor_sampling(self):
         for sensor_name in self._current_sensors.keys():
             reply, informs = yield self.katcp_inspecting_client.simple_request(
                     'sensor-sampling',
                     tangoname2katcpname(sensor_name),
                     'event')
             if not reply.reply_ok():
-                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor".format(
-                    sensor_name))
+                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor."
+                        .format(sensor_name))
 
     def _update_existing_sensor_dict(self, added_sensors, removed_sensors):
         for sens_name in removed_sensors:
