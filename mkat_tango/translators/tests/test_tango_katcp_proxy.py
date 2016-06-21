@@ -79,15 +79,15 @@ class KatcpTestDevice(DeviceServer):
 class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     device = TangoDeviceServer
-    properties = dict(katcp_address=server_host + ':' + str(server_port))
 
     @classmethod
     def setUpClass(cls):
         cls.katcp_server = KatcpTestDevice(server_host, server_port)
         cls.katcp_server.start()
         address = cls.katcp_server.bind_address
-        host, port = address
-        cls.properties = dict(katcp_address=host + ':' + str(port))
+        katcp_server_host, katcp_server_port = address
+        cls.properties = dict(katcp_address=katcp_server_host + ':'
+                              + str(katcp_server_port))
         super(test_KatcpTango2DeviceProxy, cls).setUpClass()
 
     def setUp(self):
