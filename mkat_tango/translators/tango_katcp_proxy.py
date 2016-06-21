@@ -16,7 +16,7 @@ import tornado
 
 from katcp import inspecting_client, ioloop_manager
 
-from utilities import katcpname2tangoname, tangoname2katcpname
+from mkat_tango.translators.utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
@@ -121,8 +121,8 @@ def remove_tango_server_attribute_list(tango_dserver, sensors):
     None
 
     """
-    for sensor in sensors:
-        attr_name = katcpname2tangoname(sensors[sensor].name)
+    for sensor in sensors.values():
+        attr_name = katcpname2tangoname(sensor.name)
         try:
             tango_dserver.remove_attribute(attr_name)
         except DevFailed:
@@ -168,9 +168,9 @@ class TangoDeviceServer(Device):
 
         '''
         name = attr.get_name()
-        self.info_stream("Reading attribute %s", name)
-        sensor_value = self.tango_katcp_proxy.sensor_observer.updates[name].value
-        attr.set_value(sensor_value)
+        sensor_updates = self.tango_katcp_proxy.sensor_observer.updates[name]
+        self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
+        attr.set_value(sensor_updates.value)
 
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
@@ -200,14 +200,10 @@ class KatcpTango2DeviceProxy(object):
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
         if model_changes:
-            try:
-                sensor_changes = model_changes.get('sensors', {})
-                added_sensors = sensor_changes.get('added', set())
-                removed_sensors = sensor_changes.get('removed', set())
-            except KeyError:
-                pass
-            else:
-                self.reconfigure_tango_device_server(removed_sensors, added_sensors)
+            sensor_changes = model_changes.get('sensors', {})
+            added_sensors = sensor_changes.get('added', set())
+            removed_sensors = sensor_changes.get('removed', set())
+            self.reconfigure_tango_device_server(removed_sensors, added_sensors)
 
     @tornado.gen.coroutine
     def reconfigure_tango_device_server(self, removed_sens, added_sens):
@@ -259,6 +255,8 @@ class KatcpTango2DeviceProxy(object):
 
 
 class SensorObserver(object):
+    """The observer class attached to katcp sensor to recieve updates after the
+    sensor strategy is set."""
     def __init__(self):
         self.updates = dict()
 
