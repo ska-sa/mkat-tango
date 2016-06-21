@@ -15,11 +15,12 @@ import logging
 import tornado
 
 from katcp import inspecting_client, ioloop_manager
+from katcp.core import Sensor
 
 from mkat_tango.translators.utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
-from PyTango import Attr, UserDefaultAttrProp, AttrWriteType
+from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import server_run, device_property
 
@@ -36,6 +37,17 @@ KATCP_TYPE_TO_TANGO_TYPE = {
     'timestamp': DevDouble,
     'address': DevString
 }
+
+KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY = {
+        'nominal': AttrQuality.ATTR_VALID,
+        'warn': AttrQuality.ATTR_WARNING,
+        'error': AttrQuality.ATTR_ALARM,
+        'failure': AttrQuality.ATTR_INVALID,
+        'unknown': AttrQuality.ATTR_INVALID,
+        #  TODO (AR) 2016-06-10: We should probably rather remove the
+        #  TANGO attribute if the KATCP sensor is 'inactive'.
+        'inactive': AttrQuality.ATTR_INVALID
+        }
 
 def kattype2tangotype_object(katcp_sens_type):
     """Convert KATCP Sensor type to A corresponding TANGO type object
@@ -55,7 +67,6 @@ def kattype2tangotype_object(katcp_sens_type):
     except KeyError as ke:
         raise NotImplementedError("Sensor type {} not yet implemented or is invalid"
                                   .format(tango_type))
-
     return tango_type
 
 def katcp_sensor2tango_attr(sensor):
@@ -169,8 +180,13 @@ class TangoDeviceServer(Device):
         '''
         name = attr.get_name()
         sensor_updates = self.tango_katcp_proxy.sensor_observer.updates[name]
+        quality = KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY[
+                Sensor.STATUSES[sensor_updates.status]]
+        timestamp = sensor_updates.timestamp
+        value = sensor_updates.value
         self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
-        attr.set_value(sensor_updates.value)
+        attr.set_value_date_quality(value, timestamp, quality)
+        attr.set_value(value)
 
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
