@@ -113,7 +113,7 @@ def add_tango_server_attribute_list(tango_dserver, sensors):
     None
 
     """
-    for sensor in sensors.value():
+    for sensor in sensors.values():
         attribute = katcp_sensor2tango_attr(sensor)
         tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
 
@@ -217,7 +217,7 @@ class KatcpTango2DeviceProxy(object):
             sensor_changes = model_changes.get('sensors', {})
             added_sensors = sensor_changes.get('added', set())
             removed_sensors = sensor_changes.get('removed', set())
-            self.reconfigure_tango_device_server(removed_sensors, added_sensors)
+            yield self.reconfigure_tango_device_server(removed_sensors, added_sensors)
 
     @tornado.gen.coroutine
     def reconfigure_tango_device_server(self, removed_sens, added_sens):
