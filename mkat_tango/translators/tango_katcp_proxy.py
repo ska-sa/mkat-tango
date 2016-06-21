@@ -211,9 +211,6 @@ class KatcpTango2DeviceProxy(object):
         """
         self.katcp_inspecting_client.stop(timeout=timeout)
 
-    def join(self, timeout=None):
-        self.katcp_inspecting_client.join(timeout=timeout)
-
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
         if model_changes:
