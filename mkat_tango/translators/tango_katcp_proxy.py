@@ -36,7 +36,7 @@ KATCP_TYPE_TO_TANGO_TYPE = {
     'string': DevString,
     'timestamp': DevDouble,
     'address': DevString
-}
+    }
 
 KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY = {
         'nominal': AttrQuality.ATTR_VALID,
@@ -44,9 +44,8 @@ KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY = {
         'error': AttrQuality.ATTR_ALARM,
         'failure': AttrQuality.ATTR_INVALID,
         'unknown': AttrQuality.ATTR_INVALID,
-        #  TODO (AR) 2016-06-10: We should probably rather remove the
-        #  TANGO attribute if the KATCP sensor is 'inactive'.
-        'inactive': AttrQuality.ATTR_INVALID
+        'inactive': AttrQuality.ATTR_INVALID  # TODO (AR) 2016-06-10: We should
+        #  probably rather remove the TANGO attribute if the KATCP sensor is 'inactive'.
         }
 
 def kattype2tangotype_object(katcp_sens_type):
@@ -168,7 +167,7 @@ class TangoDeviceServer(Device):
         self.tango_katcp_proxy.start()
 
     def read_attr(self, attr):
-        '''Read value for an attribute from the katcp proxy update
+        '''Read value for an attribute from the katcp sensor observer updates
         into the Tango attribute
 
         Parameters
@@ -204,12 +203,7 @@ class KatcpTango2DeviceProxy(object):
         """
         self.katcp_inspecting_client.set_state_callback(self.katcp_state_callback)
         self.ioloop.add_callback(self.katcp_inspecting_client.connect)
-
-    def stop(self, timeout=1.0):
-        """Stop the KATCP inspecting client
-
-        """
-        self.katcp_inspecting_client.stop(timeout=timeout)
+        self.ioloop.add_callback(self.ioloop.stop)
 
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
