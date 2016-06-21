@@ -52,7 +52,7 @@ sensors = {
 
 default_attributes = {'state': 'State', 'status': 'Status'}
 
-server_host = "localhost"
+server_host = ""
 server_port = 4598
 # TODO (KM 2016-06-17) : Need to figure a way to let the katcp inspecting client know
    # where our katcp server is listening at, instead of giving it a static ip address,
