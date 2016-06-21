@@ -92,7 +92,8 @@ def katcp_sensor2tango_attr(sensor):
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
     if sensor.units:
-        attr_props.set_unit(sensor.units)      # Seems to cause a seg fault when starting DS
+        # Seems to cause a seg fault if units is empty
+        attr_props.set_unit(sensor.units)
     attribute.set_default_properties(attr_props)
     return attribute
 
@@ -112,8 +113,8 @@ def add_tango_server_attribute_list(tango_dserver, sensors):
     None
 
     """
-    for sensor in sensors:
-        attribute = katcp_sensor2tango_attr(sensors[sensor])
+    for sensor in sensors.value():
+        attribute = katcp_sensor2tango_attr(sensor)
         tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
 
 def remove_tango_server_attribute_list(tango_dserver, sensors):
