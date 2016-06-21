@@ -102,8 +102,8 @@ def add_tango_server_attribute_list(tango_dserver, sensors):
     None
 
     """
-    for sensor in sensors:
-        attribute = katcp_sensor2tango_attr(sensors[sensor])
+    for sensor in sensors.value():
+        attribute = katcp_sensor2tango_attr(sensor)
         tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
 
 def remove_tango_server_attribute_list(tango_dserver, sensors):
