@@ -228,8 +228,8 @@ class KatcpTango2DeviceProxy(object):
             reply, informs = yield self.katcp_inspecting_client.simple_request(
                     'sensor-sampling', sensor_name, 'event')
             if not reply.reply_ok():
-                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor. Informs: {}"
-                        .format(sensor_name, informs))
+                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor. \n" +
+                        " Informs: {} \n Reply: {}".format(sensor_name, informs, reply))
 
     @classmethod
     def from_katcp_address_tango_device(cls,
