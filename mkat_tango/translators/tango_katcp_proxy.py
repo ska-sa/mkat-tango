@@ -162,7 +162,7 @@ class TangoDeviceServer(Device):
         Parameters
         ==========
         attribute : PyTango.Attribute
-            The attribute into which the value is read from the AP model.
+            The attribute into which the value is read from the katcp sensor observer.
 
         Note: `attr` is modified in place.
 
