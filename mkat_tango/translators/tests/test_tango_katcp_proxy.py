@@ -199,7 +199,73 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
 
+    def _update_katcp_server_sensor_values(self, katcp_device_server):
+        """Method that makes updates to all the katcp device server sensors.
+
+        Input Parameters
+        ----------------
+
+        katcp_device_server : KATCP DeviceServer
+            The katcp device server for which sensor updates are applied to.
+
+        Returns
+        ------
+
+        katcp_device_server : KATCP DeviveServer
+            The same katcp server but with new sensor value updates.
+
+        """
+        for sensor in katcp_device_server.get_sensors():
+            if sensor.stype in ['integer']:
+                value = 5
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['float']:
+                value = 10.0
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['boolean']:
+                value = True
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['lru', 'descrete', 'string']:
+                value = 'other'  # used 'other' for string values since is part of
+                                 # descrete values in our katcp server descrete sensor.
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['timestamp']:
+                value = time.time()
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['address']:
+                value = 'localhost:5000'
+                self.assertNotEqual(sensor.value, value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+        return katcp_device_server
+
     def test_sensor_attribute_value_update(self):
-        pass
+        """Testing if the KATCP server sensor updates reflect as attribute
+        updates in the Tango device server
+        """
+        tango_device_server = self.device
+        katcp_device_server = self._update_katcp_server_sensor_values(
+                self.katcp_server)
+       # import IPython; IPython.embed()
+        for sensor in katcp_device_server.get_sensors():
+            attribute_name = katcpname2tangoname(sensor.name)
+            attribute_value = getattr(tango_device_server, attribute_name)
+            self.assertEqual(attribute_value, sensor.value())
 
 # TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
