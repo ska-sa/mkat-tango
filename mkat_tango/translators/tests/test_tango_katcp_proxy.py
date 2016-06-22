@@ -43,10 +43,9 @@ sensors = {
                    "", [0, 3000]),
         'gps-nmea': Sensor(Sensor.STRING, "gps-nmea", "GPS NMEA string details"
                            " received", ""),
-        'ntp-addr2': Sensor(Sensor.TIMESTAMP, "ntp-addr2", "NTP server IP address", "",
-                            [0.00, 1000000000.00]),
-        'ntp-addr4': Sensor(Sensor.ADDRESS, "ntp-addr4", "NTP server IP address", "")}
-#        'ntp-addr5': Sensor(Sensor.LRU, "ntp-addr5", "NTP server IP address", "")}
+        'ntp-timestamp': Sensor(Sensor.TIMESTAMP, "ntp-timestamp",
+                "NTP server timestamp", "", [0.00, 1000000000.00]),
+        'ntp-lru': Sensor(Sensor.ADDRESS, "ntp-lru", "NTP server IP address", "")}
 
 default_attributes = {'state': 'State', 'status': 'Status'}
 
