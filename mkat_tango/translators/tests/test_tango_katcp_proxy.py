@@ -10,7 +10,6 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
-import unittest2 as unittest
 import logging
 
 import tornado.testing
@@ -51,9 +50,6 @@ default_attributes = {'state': 'State', 'status': 'Status'}
 
 server_host = ""
 server_port = 0
-# TODO (KM 2016-06-17) : Need to figure a way to let the katcp inspecting client know
-   # where our katcp server is listening at, instead of giving it a static ip address,
-   # as our katcp inspecting client starts running before the katcp server.
 
 class KatcpTestDevice(DeviceServer):
 
@@ -201,7 +197,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
 
-# TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
 class test_KatcpTango(test_KatcpTango2DeviceProxy, tornado.testing.AsyncTestCase):
 
     def setUp(self):
