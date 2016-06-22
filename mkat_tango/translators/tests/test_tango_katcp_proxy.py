@@ -186,7 +186,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                                  "The sensor and attribute max values are not"
                                  " identical")
             # TODO (KM) 14-06-2016: Need to check the params for the discrete sensor
-                                 #type once solution for DevEnum is found.
+                 #type once solution for DevEnum is found.
             elif sensor.stype == 'string':
                 self.assertEqual(attr_desc.min_value, "Not specified",
                                  "The string sensor type object has unexpected"
