@@ -88,7 +88,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
     def setUp(self):
         super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
-        self.katcp_ic = self.instance.katcp_tango_proxy.katcp_inspecting_client
+        self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
         def cleanup_refs():
             del self.instance
