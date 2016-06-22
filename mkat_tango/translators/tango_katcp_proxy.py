@@ -184,6 +184,10 @@ class TangoDeviceServer(Device):
                 Sensor.STATUSES[sensor_updates.status]]
         timestamp = sensor_updates.timestamp
         value = sensor_updates.value
+        if type(value) is tuple:
+            # Address sensor type contains a Tuple contaning (host, port) and
+            # mapped to tango DevString type i.e "host:port"
+            value = ':'.join(str(s) for s in value)
         self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
         attr.set_value_date_quality(value, timestamp, quality)
 
