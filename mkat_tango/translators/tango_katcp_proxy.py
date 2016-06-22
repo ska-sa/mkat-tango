@@ -39,12 +39,12 @@ KATCP_TYPE_TO_TANGO_TYPE = {
     }
 
 KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY = {
-        'nominal': AttrQuality.ATTR_VALID,
-        'warn': AttrQuality.ATTR_WARNING,
-        'error': AttrQuality.ATTR_ALARM,
-        'failure': AttrQuality.ATTR_INVALID,
-        'unknown': AttrQuality.ATTR_INVALID,
-        'inactive': AttrQuality.ATTR_INVALID  # TODO (AR) 2016-06-10: We should
+        Sensor.NOMINAL: AttrQuality.ATTR_VALID,
+        Sensor.WARN: AttrQuality.ATTR_WARNING,
+        Sensor.ERROR: AttrQuality.ATTR_ALARM,
+        Sensor.FAILURE: AttrQuality.ATTR_INVALID,
+        Sensor.UNKNOWN: AttrQuality.ATTR_INVALID,
+        Sensor.INACTIVE: AttrQuality.ATTR_INVALID  # TODO (AR) 2016-06-10: We should
         #  probably rather remove the TANGO attribute if the KATCP sensor is 'inactive'.
         }
 
@@ -181,7 +181,7 @@ class TangoDeviceServer(Device):
         name = attr.get_name()
         sensor_updates = self.tango_katcp_proxy.sensor_observer.updates[name]
         quality = KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY[
-                Sensor.STATUSES[sensor_updates.status]]
+                sensor_updates.status]
         timestamp = sensor_updates.timestamp
         value = sensor_updates.value
         if type(value) is tuple:
