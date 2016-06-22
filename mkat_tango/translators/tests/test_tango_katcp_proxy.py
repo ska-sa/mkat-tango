@@ -11,13 +11,10 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import unittest2 as unittest
-import time
 import logging
 import tornado
-from mock import Mock
 
-from katcp import DeviceServer, Sensor, ProtocolFlags
-from katcp.testutils import start_thread_with_cleanup
+from katcp import DeviceServer, Sensor, ProtocolFlags, ioloop_manager, Message
 
 from mkat_tango.translators.tango_katcp_proxy import (TangoDeviceServer,
                                                       remove_tango_server_attribute_list,
@@ -98,7 +95,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         self.addCleanup(cleanup_refs)
         # Need to reset the device server to its default configuration
         self.addCleanup(remove_tango_server_attribute_list,
-                        self.instance, sensors)
+                        self.instance, self.katcp_server._sensors)
 
     @classmethod
     def tearDownClass(cls):
@@ -203,3 +200,57 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                                  "The sensor object has a non-empty params list")
 
 # TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
+class test_KatcpTango(test_KatcpTango2DeviceProxy, tornado.testing.AsyncTestCase):
+
+    def setUp(self):
+        super(test_KatcpTango, self).setUp()
+        iolm = ioloop_manager.IOLoopManager()
+        self.io_loop = iolm.get_ioloop()
+        self.io_loop.make_current
+
+    @tornado.testing.gen_test
+    def test_sensor2attr_removal_updates(self):
+        """Testing if removing a sensor from the KATCP device server also results in the "
+        removal of the equivalent TANGO attribute on the TANGO device server.
+        """
+        yield self.katcp_ic.until_data_synced()
+        yield tornado.gen.sleep(0.5)
+        initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        sensor_name = 'failure-present'
+        self.assertIn(sensor_name, self.katcp_server._sensors.keys(), "Sensor not in"
+                      " list")
+        self.assertIn(katcpname2tangoname(sensor_name), initial_tango_dev_attr_list,
+                      "The attribute was not removed")
+        self.katcp_server.remove_sensor(sensor_name)
+        self.katcp_server.mass_inform(Message.inform('interface-changed'))
+        yield self.katcp_ic.until_data_synced()
+        yield tornado.gen.sleep(0.5)
+        current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        self.assertNotIn(katcpname2tangoname(sensor_name), current_tango_dev_attr_list,
+                      "The attribute was not removed")
+
+    @tornado.testing.gen_test
+    def test_sensor2attr_addition_updates(self):
+        """Testing if adding a sensor to the KATCP device server also results in the "
+        addition of the equivalent TANGO attribute on the TANGO device server.
+        """
+        yield self.katcp_ic.until_data_synced()
+        yield tornado.gen.sleep(0.5)
+        initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        sens = Sensor(Sensor.FLOAT, "experimental-sens", "A test sensor", "",
+                      [-1.5, 1.5])
+        self.assertNotIn(sens.name, self.katcp_server._sensors.keys(), "Unexpected"
+                      " sensor in the sensor list")
+        self.assertNotIn(katcpname2tangoname(sens.name),
+                         initial_tango_dev_attr_list,
+                         "Unexpected attribute in the attribute list")
+        self.katcp_server.add_sensor(sens)
+        self.katcp_server.mass_inform(Message.inform('interface-changed'))
+        yield self.katcp_ic.until_data_synced()
+        yield tornado.gen.sleep(0.5)
+        current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        self.assertIn(sens.name, self.katcp_server._sensors.keys(),
+                      "Sensor was not added to the katcp device server.")
+        self.assertIn(katcpname2tangoname(sens.name),
+                      current_tango_dev_attr_list,
+                      "Attribute was not added to the TANGO device server.")
