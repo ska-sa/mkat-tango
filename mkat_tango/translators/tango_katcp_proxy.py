@@ -186,7 +186,6 @@ class TangoDeviceServer(Device):
         value = sensor_updates.value
         self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
         attr.set_value_date_quality(value, timestamp, quality)
-        attr.set_value(value)
 
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
@@ -203,6 +202,11 @@ class KatcpTango2DeviceProxy(object):
         """
         self.katcp_inspecting_client.set_state_callback(self.katcp_state_callback)
         self.ioloop.add_callback(self.katcp_inspecting_client.connect)
+
+    def stop(self, timeout=1.0):
+        """Stop the ioloop and thus the KATCP inspecting client
+
+        """
         self.ioloop.add_callback(self.ioloop.stop)
 
     @tornado.gen.coroutine
