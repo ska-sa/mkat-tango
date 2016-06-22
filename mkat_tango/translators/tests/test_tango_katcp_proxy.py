@@ -52,9 +52,6 @@ default_attributes = {'state': 'State', 'status': 'Status'}
 
 server_host = ""
 server_port = 0
-# TODO (KM 2016-06-17) : Need to figure a way to let the katcp inspecting client know
-   # where our katcp server is listening at, instead of giving it a static ip address,
-   # as our katcp inspecting client starts running before the katcp server.
 
 class KatcpTestDevice(DeviceServer):
 
@@ -84,14 +81,14 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         cls.katcp_server.start()
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
-        cls.properties = dict(katcp_address=katcp_server_host + ':'
-                              + str(katcp_server_port))
+        cls.properties = dict(katcp_address=katcp_server_host + ':' +
+                              str(katcp_server_port))
         super(test_KatcpTango2DeviceProxy, cls).setUpClass()
 
     def setUp(self):
         super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
-        self.katcp_ic = self.instance.katcp_tango_proxy.katcp_inspecting_client
+        self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
         def cleanup_refs():
             del self.instance
@@ -102,8 +99,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(test_KatcpTango2DeviceProxy, cls).tearDownClass()
         cls.katcp_server.stop()
+        super(test_KatcpTango2DeviceProxy, cls).tearDownClass()
 
     def test_connections(self):
         """Testing if both the TANGO client proxy and the KATCP inspecting clients
@@ -201,5 +198,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                                  " min_value")
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
+
+    def test_sensor_attribute_value_update(self):
+        pass
 
 # TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
