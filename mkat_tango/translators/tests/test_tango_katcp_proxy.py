@@ -22,9 +22,7 @@ from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.translators.tango_katcp_proxy import (TangoDeviceServer,
                                                       remove_tango_server_attribute_list,
                                                       add_tango_server_attribute_list)
-from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
-from mkat_tango.translators.katcp_tango_proxy import (tango_attr_descr2katcp_sensor,
-                                                      is_tango_device_running)
+from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 
 from devicetest import DeviceTestCase
@@ -127,6 +125,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         self.assertEquals(device_attrs, default_attrs,
                           "The device server has unexpected default attributes")
         add_tango_server_attribute_list(self.instance, sensors)
+
         device_attrs = set(list(self.device.get_attribute_list()))
         self.assertNotEquals(device_attrs, default_attrs,
                              "Attribute list was never updated")
@@ -143,46 +142,31 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """Testing if the expected attribute list matches with the actual attribute list
            after adding the new attributes.
         """
-        default_device_sens = self._create_default_sensors()
-        attr_list = set(list(self.device.get_attribute_list()))
+        attr_list = list(self.device.get_attribute_list())
         default_attrs = set(default_attributes.values())
-        self.assertEquals(attr_list, default_attrs, "The device server"
+        self.assertEquals(set(attr_list), default_attrs, "The device server"
                           " has unexpected default attributes")
         add_tango_server_attribute_list(self.instance, sensors)
-        attr_list = set(list(self.device.get_attribute_list()))
-        sens = sensors.copy()
-        sens.update(default_device_sens)
-        sens_list_names = []
-        for sen in sens:
-            sens_list_names.append(katcpname2tangoname(sens[sen].name))
-        self.assertEqual(attr_list, set(sens_list_names), "The attribute list and the "
-                         "the sensor list do not match")
+        attr_list = list(self.device.get_attribute_list())
+        for def_attr in default_attrs:
+            attr_list.remove(def_attr)
 
-    def _create_default_sensors(self):
-        """
-        """
-        tango_insp_client = Mock(wraps=TangoInspectingClient(self.device))
-        def_attrs = tango_insp_client.inspect_attributes()
-        def_sens = {}
-        attr2sens = Mock(side_effect=tango_attr_descr2katcp_sensor)
-        for attrs_desc in def_attrs.keys():
-            def_sens[attrs_desc] = attr2sens(def_attrs[attrs_desc])
-        return def_sens
-
+        sens_names = sensors.keys()
+        sensname2tangoname_list = []
+        for sen_name in sens_names:
+            sensname2tangoname_list.append(katcpname2tangoname(sen_name))
+        self.assertEqual(set(attr_list), set(sensname2tangoname_list), "The attribute"
+                         " list and the the sensor list do not match")
 
     def test_attribute_sensor_properties_match(self):
         """ Testing if the sensor object properties were translated correctly
         """
-        default_device_sens = self._create_default_sensors()
         attr_list = set(list(self.device.get_attribute_list()))
         default_attrs = set(default_attributes.values())
         self.assertEquals(attr_list, default_attrs, "The device server"
                           " has unexpected default attributes")
         add_tango_server_attribute_list(self.instance, sensors)
-        sens = sensors.copy()
-        sens.update(default_device_sens)
-
-        for sensor in sens.values():
+        for sensor in sensors.values():
             attr_desc = self.device.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
             self.assertEqual(tangoname2katcpname(attr_desc.name), sensor.name,
