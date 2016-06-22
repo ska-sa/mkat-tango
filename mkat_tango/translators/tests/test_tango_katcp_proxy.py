@@ -12,7 +12,9 @@
 """
 import unittest2 as unittest
 import logging
-import tornado
+
+import tornado.testing
+import tornado.gen
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, ioloop_manager, Message
 
