@@ -132,8 +132,8 @@ def remove_tango_server_attribute_list(tango_dserver, sensors):
     None
 
     """
-    for sensor in sensors.values():
-        attr_name = katcpname2tangoname(sensor.name)
+    for sensor_name in sensors.keys():
+        attr_name = katcpname2tangoname(sensor_name)
         try:
             tango_dserver.remove_attribute(attr_name)
         except DevFailed:
