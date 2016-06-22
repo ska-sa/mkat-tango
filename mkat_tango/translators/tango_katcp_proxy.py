@@ -181,13 +181,9 @@ class TangoDeviceServer(Device):
         name = attr.get_name()
         sensor_updates = self.tango_katcp_proxy.sensor_observer.updates[name]
         quality = KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY[
-                sensor_updates.status]
-        timestamp = sensor_updates.timestamp
-        value = sensor_updates.value
-        if type(value) is tuple:
-            # Address sensor type contains a Tuple contaning (host, port) and
-            # mapped to tango DevString type i.e "host:port"
-            value = ':'.join(str(s) for s in value)
+                sensor_updates['status']]
+        timestamp = sensor_updates['timestamp']
+        value = sensor_updates['value']
         self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
         attr.set_value_date_quality(value, timestamp, quality)
 
@@ -277,7 +273,12 @@ class SensorObserver(object):
         self.updates = dict()
 
     def update(self, sensor, reading):
-        self.updates[katcpname2tangoname(sensor.name)] = reading
+        read_dict = {'timestamp': reading.timestamp,
+                'status': reading.status,
+                'value': reading.value}
+        if sensor.stype in ['address']:
+            read_dict['value'] = ':'.join(str(s) for s in reading.value)
+        self.updates[katcpname2tangoname(sensor.name)] = read_dict
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
 if __name__ == "__main__":
