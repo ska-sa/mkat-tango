@@ -44,9 +44,9 @@ sensors = {
         'gps-nmea': Sensor(Sensor.STRING, "gps-nmea", "GPS NMEA string details"
                            " received", ""),
         'ntp-addr2': Sensor(Sensor.TIMESTAMP, "ntp-addr2", "NTP server IP address", "",
-                            [0, 100000.00]),
-        'ntp-addr4': Sensor(Sensor.ADDRESS, "ntp-addr4", "NTP server IP address", ""),
-        'ntp-addr5': Sensor(Sensor.LRU, "ntp-addr5", "NTP server IP address", "")}
+                            [0.00, 1000000000.00]),
+        'ntp-addr4': Sensor(Sensor.ADDRESS, "ntp-addr4", "NTP server IP address", "")}
+#        'ntp-addr5': Sensor(Sensor.LRU, "ntp-addr5", "NTP server IP address", "")}
 
 default_attributes = {'state': 'State', 'status': 'Status'}
 
@@ -234,9 +234,15 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                         "Sensor {} value is identical to the value to be set".
                         format(sensor.name))
                 sensor.set_value(value)
-            elif sensor.stype in ['lru', 'descrete', 'string']:
-                value = 'other'  # used 'other' for string values since is part of
+            elif sensor.stype in ['discrete', 'string']:
+                value = 'remote'  # used 'remote' for string values since is part of
                                  # descrete values in our katcp server descrete sensor.
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['lru']:
+                value = Sensor.LRU_ERROR
                 self.assertNotEqual(sensor.value(), value,
                         "Sensor {} value is identical to the value to be set".
                         format(sensor.name))
@@ -248,24 +254,30 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                         format(sensor.name))
                 sensor.set_value(value)
             elif sensor.stype in ['address']:
-                value = 'localhost:5000'
+                value = ('localhost', 5000)
                 self.assertNotEqual(sensor.value, value,
                         "Sensor {} value is identical to the value to be set".
                         format(sensor.name))
                 sensor.set_value(value)
+        time.sleep(0.1)  # Wait short period for the tango device server to reconfigure
+                         # Otherwise device values are read before the state changes
         return katcp_device_server
 
     def test_sensor_attribute_value_update(self):
         """Testing if the KATCP server sensor updates reflect as attribute
         updates in the Tango device server
         """
-        tango_device_server = self.device
+        self.test_connections()
         katcp_device_server = self._update_katcp_server_sensor_values(
                 self.katcp_server)
-       # import IPython; IPython.embed()
         for sensor in katcp_device_server.get_sensors():
             attribute_name = katcpname2tangoname(sensor.name)
-            attribute_value = getattr(tango_device_server, attribute_name)
-            self.assertEqual(attribute_value, sensor.value())
+            attribute_value = getattr(self.device, attribute_name)
+            sensor_value = sensor.value()
+            if type(sensor_value) is tuple:
+                # Address sensor type contains a Tuple contaning (host, port) and
+                # mapped to tango DevString type i.e "host:port"
+                sensor_value = ':'.join(str(s) for s in sensor_value)
+            self.assertEqual(attribute_value, sensor_value)
 
 # TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
