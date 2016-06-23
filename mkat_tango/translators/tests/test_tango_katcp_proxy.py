@@ -240,12 +240,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                         "Sensor {} value is identical to the value to be set".
                         format(sensor.name))
                 sensor.set_value(value)
-            elif sensor.stype in ['lru']:
-                value = Sensor.LRU_ERROR
-                self.assertNotEqual(sensor.value(), value,
-                        "Sensor {} value is identical to the value to be set".
-                        format(sensor.name))
-                sensor.set_value(value)
             elif sensor.stype in ['timestamp']:
                 value = time.time()
                 self.assertNotEqual(sensor.value(), value,
@@ -258,9 +252,14 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                         "Sensor {} value is identical to the value to be set".
                         format(sensor.name))
                 sensor.set_value(value)
-        time.sleep(0.1)  # Wait short period for the tango device server to reconfigure
-                         # Otherwise device values are read before the state changes
         return katcp_device_server
+
+    def _wait_for_tango_device_to_congigure(self, tango_device, timeout=1):
+        stoptime = time.time() + timeout
+        while (len(tango_device.get_attribute_list()) <= 2):
+            time.sleep(0.1)
+            if time.time() > stoptime:
+                raise Exception("TimeOutError : Tango device server not configured.")
 
     def test_sensor_attribute_value_update(self):
         """Testing if the KATCP server sensor updates reflect as attribute
@@ -269,6 +268,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         self.test_connections()
         katcp_device_server = self._update_katcp_server_sensor_values(
                 self.katcp_server)
+        self._wait_for_tango_device_to_congigure(self.device)
         for sensor in katcp_device_server.get_sensors():
             attribute_name = katcpname2tangoname(sensor.name)
             attribute_value = getattr(self.device, attribute_name)

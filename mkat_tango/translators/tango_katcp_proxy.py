@@ -274,9 +274,10 @@ class SensorObserver(object):
 
     def update(self, sensor, reading):
         read_dict = {'timestamp': reading.timestamp,
-                'status': reading.status,
-                'value': reading.value}
+                'status': reading.status, 'value': reading.value}
         if sensor.stype in ['address']:
+            # Address sensor type contains a Tuple contaning (host, port) and
+            # mapped to tango DevString type i.e "host:port"
             read_dict['value'] = ':'.join(str(s) for s in reading.value)
         self.updates[katcpname2tangoname(sensor.name)] = read_dict
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
