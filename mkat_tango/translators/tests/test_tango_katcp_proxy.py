@@ -43,18 +43,14 @@ sensors = {
                    "", [0, 3000]),
         'gps-nmea': Sensor(Sensor.STRING, "gps-nmea", "GPS NMEA string details"
                            " received", ""),
-        'ntp-addr2': Sensor(Sensor.TIMESTAMP, "ntp-addr2", "NTP server IP address", "",
-                            [0, 100000.00]),
-        'ntp-addr4': Sensor(Sensor.ADDRESS, "ntp-addr4", "NTP server IP address", ""),
-        'ntp-addr5': Sensor(Sensor.LRU, "ntp-addr5", "NTP server IP address", "")}
+        'ntp-timestamp': Sensor(Sensor.TIMESTAMP, "ntp-timestamp",
+                "NTP server timestamp", "", [0.00, 1000000000.00]),
+        'ntp-lru': Sensor(Sensor.ADDRESS, "ntp-lru", "NTP server IP address", "")}
 
 default_attributes = {'state': 'State', 'status': 'Status'}
 
 server_host = ""
 server_port = 0
-# TODO (KM 2016-06-17) : Need to figure a way to let the katcp inspecting client know
-   # where our katcp server is listening at, instead of giving it a static ip address,
-   # as our katcp inspecting client starts running before the katcp server.
 
 class KatcpTestDevice(DeviceServer):
 
@@ -84,14 +80,14 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         cls.katcp_server.start()
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
-        cls.properties = dict(katcp_address=katcp_server_host + ':'
-                              + str(katcp_server_port))
+        cls.properties = dict(katcp_address=katcp_server_host + ':' +
+                              str(katcp_server_port))
         super(test_KatcpTango2DeviceProxy, cls).setUpClass()
 
     def setUp(self):
         super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
-        self.katcp_ic = self.instance.katcp_tango_proxy.katcp_inspecting_client
+        self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
         def cleanup_refs():
             del self.instance
@@ -102,8 +98,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(test_KatcpTango2DeviceProxy, cls).tearDownClass()
         cls.katcp_server.stop()
+        super(test_KatcpTango2DeviceProxy, cls).tearDownClass()
 
     def test_connections(self):
         """Testing if both the TANGO client proxy and the KATCP inspecting clients
@@ -201,5 +197,86 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                                  " min_value")
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
+
+    def _update_katcp_server_sensor_values(self, katcp_device_server):
+        """Method that makes updates to all the katcp device server sensors.
+
+        Input Parameters
+        ----------------
+
+        katcp_device_server : KATCP DeviceServer
+            The katcp device server for which sensor updates are applied to.
+
+        Returns
+        ------
+
+        katcp_device_server : KATCP DeviveServer
+            The same katcp server but with new sensor value updates.
+
+        """
+        for sensor in katcp_device_server.get_sensors():
+            if sensor.stype in ['integer']:
+                value = 5
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['float']:
+                value = 10.0
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['boolean']:
+                value = True
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['discrete', 'string']:
+                value = 'remote'  # used 'remote' for string values since is part of
+                                 # descrete values in our katcp server descrete sensor.
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['timestamp']:
+                value = time.time()
+                self.assertNotEqual(sensor.value(), value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+            elif sensor.stype in ['address']:
+                value = ('localhost', 5000)
+                self.assertNotEqual(sensor.value, value,
+                        "Sensor {} value is identical to the value to be set".
+                        format(sensor.name))
+                sensor.set_value(value)
+        return katcp_device_server
+
+    def _wait_for_tango_device_to_congigure(self, tango_device, timeout=1):
+        stoptime = time.time() + timeout
+        while (len(tango_device.get_attribute_list()) <= 2):
+            time.sleep(0.025)
+            if time.time() > stoptime:
+                raise Exception("TimeOutError : Tango device server not configured.")
+
+    def test_sensor_attribute_value_update(self):
+        """Testing if the KATCP server sensor updates reflect as attribute
+        updates in the Tango device server
+        """
+        self.test_connections()
+        katcp_device_server = self._update_katcp_server_sensor_values(
+                self.katcp_server)
+        self._wait_for_tango_device_to_congigure(self.device)
+        for sensor in katcp_device_server.get_sensors():
+            attribute_name = katcpname2tangoname(sensor.name)
+            attribute_value = getattr(self.device, attribute_name)
+            sensor_value = sensor.value()
+            if type(sensor_value) is tuple:
+                # Address sensor type contains a Tuple contaning (host, port) and
+                # mapped to tango DevString type i.e "host:port"
+                sensor_value = ':'.join(str(s) for s in sensor_value)
+            self.assertEqual(attribute_value, sensor_value)
 
 # TODO (KM 2016-06-17) : Need to check for config changes on the tango device server
