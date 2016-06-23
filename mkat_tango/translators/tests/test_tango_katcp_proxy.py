@@ -94,6 +94,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         self.in_ioloop = self.ioloop_wrapper.decorate_callable
         # Using these two lines for state consistency for tango ds, will be replaced.
         self.in_ioloop(self.katcp_ic.until_data_synced)()
+        # TODO (KM 2016-06-23): Need to make use of the Tango device interface change
+           # event instead of sleeping to allow the tango device server be configured.
         time.sleep(0.5)
 
         def cleanup_refs():
