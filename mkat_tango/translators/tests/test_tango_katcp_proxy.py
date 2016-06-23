@@ -257,7 +257,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
     def _wait_for_tango_device_to_congigure(self, tango_device, timeout=1):
         stoptime = time.time() + timeout
         while (len(tango_device.get_attribute_list()) <= 2):
-            time.sleep(0.1)
+            time.sleep(0.025)
             if time.time() > stoptime:
                 raise Exception("TimeOutError : Tango device server not configured.")
 
