@@ -92,6 +92,9 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
         self.ioloop_wrapper = IOLoopThreadWrapper(self.ioloop)
         self.in_ioloop = self.ioloop_wrapper.decorate_callable
+        # Using these two lines for state consistency for tango ds, will be replaced.
+        self.in_ioloop(self.katcp_ic.until_data_synced)()
+        time.sleep(0.5)
 
         def cleanup_refs():
             del self.instance
@@ -129,9 +132,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """Testing that the update methods (add/remove_tango_server_attribute_list
         method) works correctly.
         """
-        # Using these two lines for state consistency for tango ds, will be replaced.
-        self.in_ioloop(self.katcp_ic.until_data_synced)()
-        time.sleep(0.5)
         # Reset the device server to its default configuration as the server is
         # reconfigured once the inspecting client gets state updates
         remove_tango_server_attribute_list(self.instance, sensors)
@@ -158,9 +158,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """Testing if the expected attribute list matches with the actual attribute list
            after adding the new attributes.
         """
-        # Using these two lines for state consistency for tango ds, will be replace
-        self.in_ioloop(self.katcp_ic.until_data_synced)()
-        time.sleep(0.5)
         default_attrs = set(default_attributes.values())
         attr_list = list(self.device.get_attribute_list())
         for def_attr in default_attrs:
@@ -177,9 +174,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """ Testing if the sensor object properties were translated correctly directly
         using the add method.
         """
-        # Using these two lines for state consistency for tango ds, will be replace
-        self.in_ioloop(self.katcp_ic.until_data_synced)()
-        time.sleep(0.5)
         remove_tango_server_attribute_list(self.instance, sensors)
         add_tango_server_attribute_list(self.instance, sensors)
         for sensor in self.katcp_server._sensors.values():
@@ -222,9 +216,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """ Testing if the sensor object properties were translated correctly using the
         proxy translator.
         """
-        # Using these two lines for state consistency for tango ds, will be replace
-        self.in_ioloop(self.katcp_ic.until_data_synced)()
-        time.sleep(0.5)
         for sensor in self.katcp_server._sensors.values():
             attr_desc = self.device.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
@@ -266,8 +257,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """Testing if removing a sensor from the KATCP device server also results in the "
         removal of the equivalent TANGO attribute on the TANGO device server.
         """
-        self.in_ioloop(self.katcp_ic.until_data_synced)()
-        time.sleep(0.5)
         initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
         sensor_name = 'failure-present'
         self.assertIn(sensor_name, self.katcp_server._sensors.keys(), "Sensor not in"
@@ -287,8 +276,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """Testing if adding a sensor to the KATCP device server also results in the "
         addition of the equivalent TANGO attribute on the TANGO device server.
         """
-        self.in_ioloop(self.katcp_ic.until_data_synced)()
-        time.sleep(0.5)
         initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
         sens = Sensor(Sensor.FLOAT, "experimental-sens", "A test sensor", "",
                       [-1.5, 1.5])
