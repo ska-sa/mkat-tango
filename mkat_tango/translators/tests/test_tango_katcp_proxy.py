@@ -11,11 +11,13 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 import logging
+import time
 
 import tornado.testing
 import tornado.gen
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, ioloop_manager, Message
+from katcp.resource_client import IOLoopThreadWrapper
 
 from mkat_tango.translators.tango_katcp_proxy import (TangoDeviceServer,
                                                       remove_tango_server_attribute_list,
@@ -86,8 +88,12 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
     def setUp(self):
         super(test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
+        self.ioloop = self.instance.tango_katcp_proxy.ioloop
         self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
+        self.ioloop_wrapper = IOLoopThreadWrapper(self.ioloop)
+        self.in_ioloop = self.ioloop_wrapper.decorate_callable
+
         def cleanup_refs():
             del self.instance
         self.addCleanup(cleanup_refs)
@@ -197,21 +203,13 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
 
-class test_KatcpTango(test_KatcpTango2DeviceProxy, tornado.testing.AsyncTestCase):
 
-    def setUp(self):
-        super(test_KatcpTango, self).setUp()
-        iolm = ioloop_manager.IOLoopManager()
-        self.io_loop = iolm.get_ioloop()
-        self.io_loop.make_current
-
-    @tornado.testing.gen_test
     def test_sensor2attr_removal_updates(self):
         """Testing if removing a sensor from the KATCP device server also results in the "
         removal of the equivalent TANGO attribute on the TANGO device server.
         """
-        yield self.katcp_ic.until_data_synced()
-        yield tornado.gen.sleep(0.5)
+        self.in_ioloop(self.katcp_ic.until_data_synced)()
+        time.sleep(0.5)
         initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
         sensor_name = 'failure-present'
         self.assertIn(sensor_name, self.katcp_server._sensors.keys(), "Sensor not in"
@@ -220,19 +218,20 @@ class test_KatcpTango(test_KatcpTango2DeviceProxy, tornado.testing.AsyncTestCase
                       "The attribute was not removed")
         self.katcp_server.remove_sensor(sensor_name)
         self.katcp_server.mass_inform(Message.inform('interface-changed'))
-        yield self.katcp_ic.until_data_synced()
-        yield tornado.gen.sleep(0.5)
+        self.in_ioloop(self.katcp_ic.until_data_synced)()
+        time.sleep(0.5)
+        self.device.Status()
         current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
         self.assertNotIn(katcpname2tangoname(sensor_name), current_tango_dev_attr_list,
                       "The attribute was not removed")
 
-    @tornado.testing.gen_test
     def test_sensor2attr_addition_updates(self):
         """Testing if adding a sensor to the KATCP device server also results in the "
         addition of the equivalent TANGO attribute on the TANGO device server.
         """
-        yield self.katcp_ic.until_data_synced()
-        yield tornado.gen.sleep(0.5)
+
+        self.in_ioloop(self.katcp_ic.until_data_synced)()
+        time.sleep(0.5)
         initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
         sens = Sensor(Sensor.FLOAT, "experimental-sens", "A test sensor", "",
                       [-1.5, 1.5])
@@ -243,8 +242,8 @@ class test_KatcpTango(test_KatcpTango2DeviceProxy, tornado.testing.AsyncTestCase
                          "Unexpected attribute in the attribute list")
         self.katcp_server.add_sensor(sens)
         self.katcp_server.mass_inform(Message.inform('interface-changed'))
-        yield self.katcp_ic.until_data_synced()
-        yield tornado.gen.sleep(0.5)
+        self.in_ioloop(self.katcp_ic.until_data_synced)()
+        time.sleep(0.5)
         current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
         self.assertIn(sens.name, self.katcp_server._sensors.keys(),
                       "Sensor was not added to the katcp device server.")
