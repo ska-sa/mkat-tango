@@ -156,11 +156,11 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
     def test_attribute_sensor_properties_match(self):
         """ Testing if the sensor object properties were translated correctly
         """
-        attr_list = set(list(self.device.get_attribute_list()))
-        default_attrs = set(default_attributes.values())
-        self.assertEquals(attr_list, default_attrs, "The device server"
-                          " has unexpected default attributes")
-        add_tango_server_attribute_list(self.instance, sensors)
+#        attr_list = set(list(self.device.get_attribute_list()))
+#        default_attrs = set(default_attributes.values())
+#        self.assertEquals(attr_list, default_attrs, "The device server"
+#                          " has unexpected default attributes")
+#        add_tango_server_attribute_list(self.instance, sensors)
         for sensor in sensors.values():
             attr_desc = self.device.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
