@@ -374,7 +374,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
             value = getattr(self.device, attr_name, None)
             time.sleep(poll_period)
             if time.time() > stoptime:
-                raise RuntimeError("TimeOutError : Tango device server not configured.")
+                raise RuntimeError("TimeOutError : Tango device server not well"
+                "configured. Attributes not updated")
 
     def test_sensor_attribute_value_update(self):
         """Testing if the KATCP server sensor updates reflect as attribute
