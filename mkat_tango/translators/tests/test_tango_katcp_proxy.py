@@ -380,7 +380,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """Testing if the KATCP server sensor updates reflect as attribute
         updates in the Tango device server
         """
-        self.test_connections()
         katcp_device_server = self._update_katcp_server_sensor_values(
                 self.katcp_server)
         for sensor in katcp_device_server.get_sensors():
