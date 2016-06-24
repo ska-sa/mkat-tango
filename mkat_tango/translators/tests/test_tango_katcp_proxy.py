@@ -106,7 +106,6 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         self.addCleanup(remove_tango_server_attribute_list,
                         self.instance, self.katcp_server._sensors)
 
-
     def _reset_katcp_server(self):
         """For removing any sensors that were added during testing
         """
@@ -353,23 +352,40 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 sensor.set_value(value)
         return katcp_device_server
 
-    def _wait_for_tango_device_to_congigure(self, tango_device, timeout=1):
+    def _wait_for_tango_attribute_to_update(
+            self, attr_name, timeout=1, poll_period=0.025):
+        """Keeps polling tango attribute from running device until the a value that
+        is not None is found, otherwise timeout error exception is raised.
+
+        Input Parameters
+        ----------------
+
+        attr_name : str
+            Name of tango attribute name to poll.
+        timeout : int [defualt = 1 ]seconds
+            Suspension time after which a RuntimeError is raise.
+        poll_period : int [defualt = 0.025 ]seconds
+            Period of sampling the value of the device attribute.
+
+        """
         stoptime = time.time() + timeout
-        while (len(tango_device.get_attribute_list()) <= 2):
-            time.sleep(0.025)
+        value = getattr(self.device, attr_name)
+        while value is None:
+            value = getattr(self.device, attr_name, None)
+            time.sleep(poll_period)
             if time.time() > stoptime:
-                raise Exception("TimeOutError : Tango device server not configured.")
+                raise RuntimeError("TimeOutError : Tango device server not well"
+                "configured. Attributes not updated")
 
     def test_sensor_attribute_value_update(self):
         """Testing if the KATCP server sensor updates reflect as attribute
         updates in the Tango device server
         """
-        self.test_connections()
         katcp_device_server = self._update_katcp_server_sensor_values(
                 self.katcp_server)
-        self._wait_for_tango_device_to_congigure(self.device)
         for sensor in katcp_device_server.get_sensors():
             attribute_name = katcpname2tangoname(sensor.name)
+            self._wait_for_tango_attribute_to_update(attribute_name)
             attribute_value = getattr(self.device, attribute_name)
             sensor_value = sensor.value()
             if type(sensor_value) is tuple:
