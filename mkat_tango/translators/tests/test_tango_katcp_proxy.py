@@ -352,8 +352,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 sensor.set_value(value)
         return katcp_device_server
 
-    def _wait_for_tango_attribute_to_update(self, attr_name,
-            timeout=1, poll_period=0.025):
+    def _wait_for_tango_attribute_to_update(
+            self, attr_name, timeout=1, poll_period=0.025):
         """Keeps polling tango attribute from running device until the a value that
         is not None is found, otherwise timeout error exception is raised.
 
