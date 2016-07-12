@@ -27,7 +27,7 @@ from tornado.gen import Return
 from katcp import Sensor, kattypes
 from katcp import server as katcp_server
 from PyTango import DevState, AttrDataFormat, CmdArgType
-from PyTango import (DevFloat, DevDouble,
+from PyTango import (DevFloat, DevDouble,AttrQuality,
                      DevUChar, DevShort, DevUShort, DevLong, DevULong,
                      DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
@@ -108,6 +108,13 @@ TANGO2KATCP_TYPE_INFO = {
         params=(DevState.names.keys()))
 }
 
+
+TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS = {
+        AttrQuality.ATTR_VALID: Sensor.NOMINAL,
+        AttrQuality.ATTR_WARNING: Sensor.WARN,
+        AttrQuality.ATTR_ALARM: Sensor.ERROR,
+        AttrQuality.ATTR_INVALID: Sensor.FAILURE
+}
 
 def tango_attr_descr2katcp_sensor(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
@@ -435,7 +442,8 @@ class TangoDevice2KatcpProxy(object):
             # AttrQuality values to the sensor status constants
             if sensor.type == 'discrete':
                 value = str(value)
-            sensor.set_value(value, timestamp=timestamp)
+            status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
+            sensor.set_value(value, status=status, timestamp=timestamp)
 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
