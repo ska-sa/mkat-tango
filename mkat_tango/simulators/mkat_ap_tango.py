@@ -525,7 +525,9 @@ class MkatAntennaPositioner(Device):
         #TODO Implement if required
         pass
 
+def main():
+    logging.basicConfig(level=logging.INFO)
+    server_run([MkatAntennaPositioner])
 
 if __name__ == "__main__":
-         logging.basicConfig(level=logging.DEBUG)
-         server_run([MkatAntennaPositioner])
+    main()

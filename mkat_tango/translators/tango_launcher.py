@@ -30,7 +30,7 @@ parser.add_argument('--put-device-property', action='append', help=
                     "'device/name/X:property_name:property_value'. Only allows "
                     "properties to be set on devices started with this command. "
                     "Can be specified multiple times.",
-                    dest='device_properties')
+                    dest='device_properties', default=[])
 
 def register_device(name, device_class, server_name, instance):
     dev_info = PyTango.DbDevInfo()
@@ -45,6 +45,8 @@ def register_device(name, device_class, server_name, instance):
 
 def put_device_property(dev_name, property_name, property_value):
     db = PyTango.Database()
+    print "Setting device {!r} property {!r}: {!r}".format(
+        dev_name, property_name, property_value)
     db.put_device_property(dev_name, {property_name:[property_value]})
 
 def start_device(opts):
@@ -70,7 +72,6 @@ def start_device(opts):
             '-ORBendPoint', 'giop:tcp::{}'.format(opts.port)]
     print "Starting TANGO device server:\n{}".format(
         " ".join(["{!r}".format(arg) for arg in args]))
-    print args
     sys.stdout.flush()
     sys.stderr.flush()
     os.execvp(opts.server_command, args)
