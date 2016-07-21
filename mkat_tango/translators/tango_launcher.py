@@ -25,6 +25,12 @@ required_argument('--class', dest='device_class', action='append',
 required_argument('--server-command', help="TANGO server executable command")
 required_argument('--server-instance', help="TANGO server instance name")
 required_argument('--port', help="TCP port where TANGO server should listen")
+parser.add_argument('--put-device-property', action='append', help=
+                    "Put a device property into the TANGO DB, format is: "
+                    "'device/name/X:property_name:property_value'. Only allows "
+                    "properties to be set on devices started with this command. "
+                    "Can be specified multiple times.",
+                    dest='device_properties')
 
 def register_device(name, device_class, server_name, instance):
     dev_info = PyTango.DbDevInfo()
@@ -37,6 +43,10 @@ def register_device(name, device_class, server_name, instance):
     db = PyTango.Database()
     db.add_device(dev_info)
 
+def put_device_property(dev_name, property_name, property_value):
+    db = PyTango.Database()
+    db.put_device_property(dev_name, {property_name:[property_value]})
+
 def start_device(opts):
     server_name = os.path.basename(opts.server_command)
     number_of_devices = len(opts.name)
@@ -44,6 +54,17 @@ def start_device(opts):
     for i in range(number_of_devices):
         register_device(
             opts.name[i], opts.device_class[i], server_name, opts.server_instance)
+    for dev_property in opts.device_properties:
+        try:
+            dev_name, dev_property_name, dev_property_val = dev_property.split(
+                ':', 2)
+        except ValueError:
+            raise ValueError('Device property incorrectly specified, '
+                             'see help for --put-device-property')
+        assert dev_name in opts.name, (
+            "Device {!r} not launched by this command".format(dev_name))
+        put_device_property(dev_name, dev_property_name, dev_property_val)
+
     args = [opts.server_command,
             opts.server_instance,
             '-ORBendPoint', 'giop:tcp::{}'.format(opts.port)]
