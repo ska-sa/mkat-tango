@@ -282,5 +282,8 @@ class SensorObserver(object):
         self.updates[katcpname2tangoname(sensor.name)] = read_dict
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
-if __name__ == "__main__":
+def main():
     server_run([TangoDeviceServer])
+
+if __name__ == "__main__":
+    main()
