@@ -4,7 +4,9 @@ import threading
 
 from PyTango.server import server_run
 
-def simulator_main(sim_class, sim_control_class=None):
+from mkat_tango.simlib.sim_test_interface import SimControl
+
+def simulator_main(sim_class, sim_control_class=SimControl):
     """Main function for a simulator with class sim_class
 
     sim_class is a tango.server.Device subclass
