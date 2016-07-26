@@ -85,8 +85,9 @@ def katcp_sensor2tango_attr(sensor):
     attr_name = katcpname2tangoname(sensor.name)
     attribute = Attr(attr_name, tango_type, AttrWriteType.READ)
     if sensor.stype in ['integer', 'float']:
-        attr_props.set_min_value(str(sensor.params[0]))
-        attr_props.set_max_value(str(sensor.params[1]))
+        if sensor.params:
+            attr_props.set_min_value(str(sensor.params[0]))
+            attr_props.set_max_value(str(sensor.params[1]))
 
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
