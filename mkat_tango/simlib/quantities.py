@@ -96,7 +96,7 @@ class GaussianSlewLimited(Quantity):
         ['mean', 'std_dev', 'max_slew_rate', 'min_bound', 'max_bound'])
 
     def __init__(self, mean, std_dev,
-                 max_slew_rate=inf, meta = None,
+                 max_slew_rate=inf, meta=None,
                  min_bound=ninf, max_bound=inf,
                  start_value=None, start_time=None):
         start_value = start_value if start_value is not None else mean
