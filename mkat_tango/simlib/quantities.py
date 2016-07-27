@@ -25,37 +25,32 @@ class Quantity(object):
         Subclasses should also initialise the `last_val` attribute with the initial
         quantity value.
 
+        Arguments
+        =========
+
+        start_time : float
+            The initial time when a quantity is updated.
+        start_value : float
+            The initial value of a quantity.
+        meta : dict
+            This data structure must contain all the attribute desciption data
+            of all quantities that represent tango device simulator attributes.
+            List of all available tango attibute description data:
+            -----------------------------------------------------
+            abs_change, archive_abs_change, archive_period, archive_rel_change,
+            label, max_alarm, max_value, max_warning, min_alarm, min_value,
+            delta_t, delta_val, description, display_unit, format,
+            min_warning, period, rel_change
+         e.g. meta=dict(label="Outside Temperature", dtype=float)
+         TODO (AR) 2016-07-27 : Ideally these properties should not be TANGO
+         specific as is at the moment.
+
         """
         self.last_update_time = start_time or time.time()
+        self.meta = meta
 
         if start_value is not None:
             self.last_val = start_value
-
-        self.meta = meta
-        # This data structure must contain all the attribute desciption data
-        # of all quantities that represent tango device simulator attributes.
-        # List of all available tango attibute description data:
-        # -----------------------------------------------------
-        # abs_change
-        # archive_abs_changec
-        # archive_period
-        # archive_rel_change
-        # delta_t
-        # delta_val
-        # description
-        # display_unit
-        # enum_labels
-        # format
-        # label
-        # max_alarm
-        # max_value
-        # max_warning
-        # min_alarm
-        # min_value
-        # min_warning
-        # period
-        # rel_change
-        # e.g. meta=dict(label="Outside Temperature", dtype=float)
 
     @abc.abstractmethod
     def next_val(self, t):
