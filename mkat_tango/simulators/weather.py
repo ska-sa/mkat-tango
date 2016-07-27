@@ -73,7 +73,7 @@ class Weather(Device):
         return value, update_time, AttrQuality.ATTR_VALID
 
     @attribute(name='wind-direction', label="Wind direction", dtype=float,
-               doc="Wind speed in central telescope area",
+               doc="Wind direction in central telescope area",
                unit="Degrees", max_value=360, min_value=0,
                polling_period=DEFAULT_POLLING_PERIOD_MS)
     def wind_direction(self):
