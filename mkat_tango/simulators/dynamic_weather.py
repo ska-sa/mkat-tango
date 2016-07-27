@@ -22,7 +22,7 @@ import numpy
 from functools import partial
 
 from PyTango import UserDefaultAttrProp
-from PyTango import AttrQuality, DevState
+from PyTango import AttrQuality, DevState, DevLong
 from PyTango import Attr, AttrWriteType, WAttribute
 from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
@@ -35,8 +35,15 @@ from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
-
 MODULE_LOGGER.debug('Importing')
+
+PYTHON_TYPES_TO_TANGO_TYPE = {
+        #Scalar types
+        str: DevString,
+        int: DevLong,
+        float: DevDouble,
+        bool: DevBoolean
+        }
 
 class Weather(Device):
     __metaclass__ = DeviceMeta
@@ -51,6 +58,40 @@ class Weather(Device):
         self.model = WeatherModel(name)
         self.set_state(DevState.ON)
 
+    def initialize_dynamic_attributes(self):
+        """The device method that sets up attributes during run time"""
+        model_sim_quants = self.model.sim_quantities
+        attribute_list = set([attr for attr in model_sim_quants.keys()])
+
+        for attribute_name in attribute_list:
+            model.MODULE_LOGGER.info("Added dynamic weather {} attribute"
+                    .format(attribute_name))
+            attr_props = UserDefaultAttrProp()
+            meta_data = model_sim_quants[attribute_name].meta
+            attr_dtype = PYTHON_TYPES_TO_TANGO_TYPE[meta_data.pop('dtype')]
+            attr = Attr(attribute_name, attr_dtype, AttrWriteType.READ)
+            for prop in meta_data.keys():
+                attr_prop = getattr(attr_props, 'set_' + prop)
+                if attr_prop:
+                    attr_prop(str(meta_data[prop]))
+            attr.set_default_properties(attr_props)
+            self.add_attribute(attr, self.read_attributes)
+
+    def read_attributes(self, attr):
+        """Method reading an attribute value
+
+        Arguments
+        ==========
+
+        attr : PyTango.DevAttr
+            The attribute to read from.
+
+        """
+        name = attr.get_name()
+        value, update_time = self.model.quantity_state[name]
+        quality = AttrQuality.ATTR_VALID
+        self.info_stream("Reading attribute %s", name)
+        attr.set_value_date_quality(value, update_time, quality)
 
 class WeatherModel(model.Model):
 
@@ -66,42 +107,42 @@ class WeatherModel(model.Model):
                 min_bound=-10, max_bound=55, meta=dict(
                     label="Outside Temperature",
                     dtype=float,
-                    doc="Current temperature outside near the telescope",
+                    description="Current temperature outside near the telescope",
                     min_warning=-5, max_warning=45,
                     min_alarm=-9, max_alarm=50,
                     min_value=-10, max_value=51,
                     unit="Degrees Centrigrade",
-                    polling_period=Weather.DEFAULT_POLLING_PERIOD_MS)),
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
             insolation=GaussianSlewLimited(
                 mean=500, std_dev=1000, max_slew_rate=100,
                 min_bound=0, max_bound=1100, meta=dict(
                     label="Insolation",
                     dtype=float,
-                    doc="Sun intensity in central telescope area",
+                    description="Sun intensity in central telescope area",
                     max_warning=1000, max_alarm=1100,
                     max_value=1200, min_value=0,
                     unit="W/m^2",
-                    polling_period=Weather.DEFAULT_POLLING_PERIOD_MS)),
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
             pressure=GaussianSlewLimited(
                 mean=650, std_dev=100, max_slew_rate=50,
                 min_bound=350, max_bound=1500, meta=dict(
                     label="Barometric pressure",
                     dtype=float,
-                    doc="Barometric pressure in central telescope area",
+                    description="Barometric pressure in central telescope area",
                     max_warning=900, max_alarm=1000,
                     max_value=1100, min_value=500,
                     unit="mbar",
-                    polling_period=Weather.DEFAULT_POLLING_PERIOD_MS)),
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
             rainfall=GaussianSlewLimited(
                 mean=1.5, std_dev=0.5, max_slew_rate=0.1,
                 min_bound=0, max_bound=5, meta=dict(
                     label="Rainfall",
                     dtype=float,
-                    doc="Rainfall in central telescope area",
+                    description="Rainfall in central telescope area",
                     max_warning=3.0, max_alarm=3.1,
                     max_value=3.2, min_value=0,
                     unit="mm",
-                    polling_period=Weather.DEFAULT_POLLING_PERIOD_MS)),
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
         ))
 #        self.sim_quantities['relative-humidity'] = GaussianSlewLimited(
 #            mean=65, std_dev=10, max_slew_rate=10,

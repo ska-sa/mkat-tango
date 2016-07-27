@@ -19,7 +19,7 @@ class Quantity(object):
     able to adjust via a user interface at simulation runtime
 
     """
-    def __init__(self, start_value=None, start_time=None):
+    def __init__(self, start_value=None, start_time=None, meta=None):
         """Subclasses must call this super __init__()
 
         Subclasses should also initialise the `last_val` attribute with the initial
@@ -27,6 +27,7 @@ class Quantity(object):
 
         """
         self.last_update_time = start_time or time.time()
+        self.meta = meta
         if start_value is not None:
             self.last_val = start_value
 
@@ -70,12 +71,13 @@ class GaussianSlewLimited(Quantity):
         ['mean', 'std_dev', 'max_slew_rate', 'min_bound', 'max_bound'])
 
     def __init__(self, mean, std_dev,
-                 max_slew_rate=inf,
+                 max_slew_rate=inf, meta = None,
                  min_bound=ninf, max_bound=inf,
                  start_value=None, start_time=None):
         start_value = start_value if start_value is not None else mean
         super(GaussianSlewLimited, self).__init__(start_value=start_value,
-                                                  start_time=start_time)
+                                                  start_time=start_time,
+                                                  meta=meta)
         self.mean = mean
         self.std_dev = std_dev
         assert max_slew_rate > 0
