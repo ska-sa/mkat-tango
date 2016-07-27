@@ -110,7 +110,7 @@ class WeatherModel(model.Model):
                 min_bound=-10, max_bound=55, meta=dict(
                     label="Outside Temperature",
                     dtype=float,
-                    description="Current temperature outside near the telescope",
+                    description="Current temperature outside near the telescope.",
                     min_warning=-5, max_warning=45,
                     min_alarm=-9, max_alarm=50,
                     min_value=-10, max_value=51,
@@ -121,7 +121,7 @@ class WeatherModel(model.Model):
                 min_bound=0, max_bound=1100, meta=dict(
                     label="Insolation",
                     dtype=float,
-                    description="Sun intensity in central telescope area",
+                    description="Sun intensity in central telescope area.",
                     max_warning=1000, max_alarm=1100,
                     max_value=1200, min_value=0,
                     unit="W/m^2",
@@ -131,7 +131,7 @@ class WeatherModel(model.Model):
                 min_bound=350, max_bound=1500, meta=dict(
                     label="Barometric pressure",
                     dtype=float,
-                    description="Barometric pressure in central telescope area",
+                    description="Barometric pressure in central telescope area.",
                     max_warning=900, max_alarm=1000,
                     max_value=1100, min_value=500,
                     unit="mbar",
@@ -141,29 +141,47 @@ class WeatherModel(model.Model):
                 min_bound=0, max_bound=5, meta=dict(
                     label="Rainfall",
                     dtype=float,
-                    description="Rainfall in central telescope area",
+                    description="Rainfall in central telescope area.",
                     max_warning=3.0, max_alarm=3.1,
                     max_value=3.2, min_value=0,
                     unit="mm",
                     period=Weather.DEFAULT_POLLING_PERIOD_MS)),
         ))
-#        self.sim_quantities['relative-humidity'] = GaussianSlewLimited(
-#            mean=65, std_dev=10, max_slew_rate=10,
-#            min_bound=0, max_bound=150)
-#        self.sim_quantities['wind-speed'] = GaussianSlewLimited(
-#                mean=1, std_dev=20, max_slew_rate=3,
-#                min_bound=0, max_bound=100)
-#        self.sim_quantities['wind-direction'] = GaussianSlewLimited(
-#                mean=0, std_dev=150, max_slew_rate=60,
-#                min_bound=0, max_bound=359.9999)
-#        self.sim_quantities['input-comms-ok'] = ConstantQuantity(start_value=True)
-#                dict(label="Wind speed",
-#                    dtype=float,
-#                    doc="Wind speed in central telescope area",
-#                    max_warning=15, max_alarm=25,
-#                    max_value=30, min_value=0,
-#                    unit="m/s",
-#                    polling_period=Weather.DEFAULT_POLLING_PERIOD_MS)],
+        self.sim_quantities['relative-humidity'] = GaussianSlewLimited(
+            mean=65, std_dev=10, max_slew_rate=10,
+            min_bound=0, max_bound=150, meta=dict(
+                   label="Air humidity",
+                   dtype=float,
+                   description="Relative humidity in central telescope area.",
+                   max_warning=98, max_alarm=99,
+                   max_value=100, min_value=0,
+                   unit="percent",
+                   period=Weather.DEFAULT_POLLING_PERIOD_MS))
+        self.sim_quantities['wind-speed'] = GaussianSlewLimited(
+            mean=1, std_dev=20, max_slew_rate=3,
+            min_bound=0, max_bound=100, meta=dict(
+                label="Wind speed",
+                dtype=float,
+                description="Wind speed in central telescope area.",
+                max_warning=15, max_alarm=25,
+                max_value=30, min_value=0,
+                unit="m/s",
+                period=Weather.DEFAULT_POLLING_PERIOD_MS))
+        self.sim_quantities['wind-direction'] = GaussianSlewLimited(
+                mean=0, std_dev=150, max_slew_rate=60,
+                min_bound=0, max_bound=359.9999, meta=dict(
+                   label="Wind direction",
+                   dtype=float,
+                   description="Wind direction in central telescope area.",
+                   max_value=360, min_value=0,
+                   unit="Degrees",
+                   period=Weather.DEFAULT_POLLING_PERIOD_MS))
+        self.sim_quantities['input-comms-ok'] = ConstantQuantity(
+                start_value=True, meta=dict(
+                   label="Input communication OK",
+                   dtype=bool,
+                   description="Communations with all weather sensors are nominal.",
+                   period=Weather.DEFAULT_POLLING_PERIOD_MS))
         super(WeatherModel, self).setup_sim_quantities()
 
 
