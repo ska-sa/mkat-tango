@@ -77,6 +77,9 @@ class Weather(Device):
             attr.set_default_properties(attr_props)
             self.add_attribute(attr, self.read_attributes)
 
+    def always_executed_hook(self):
+        self.model.update()
+
     def read_attributes(self, attr):
         """Method reading an attribute value
 
