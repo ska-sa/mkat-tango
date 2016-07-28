@@ -22,7 +22,7 @@ import numpy
 from functools import partial
 
 from PyTango import UserDefaultAttrProp
-from PyTango import AttrQuality, DevState
+from PyTango import AttrQuality, DevState, DevLong
 from PyTango import Attr, AttrWriteType, WAttribute
 from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
@@ -35,13 +35,20 @@ from mkat_tango.simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
-
 MODULE_LOGGER.debug('Importing')
+
+PYTHON_TYPES_TO_TANGO_TYPE = {
+        #Scalar types
+        str: DevString,
+        int: DevLong,
+        float: DevDouble,
+        bool: DevBoolean
+        }
 
 class Weather(Device):
     __metaclass__ = DeviceMeta
 
-    instances = weakref.WeakValueDictionary() # Access instances for debugging
+    instances = weakref.WeakValueDictionary()  # Access instances for debugging
     DEFAULT_POLLING_PERIOD_MS = int(1 * 1000)
 
     def init_device(self):
@@ -51,80 +58,43 @@ class Weather(Device):
         self.model = WeatherModel(name)
         self.set_state(DevState.ON)
 
-    @attribute(label="Outside Temperature", dtype=float,
-               doc="Current temperature outside near the telescope",
-               min_warning=-5, max_warning=45,
-               max_alarm=50, min_alarm=-9,
-               min_value=-10, max_value=51,
-               unit="Degrees Centigrade",
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def temperature(self):
-        value, update_time = self.model.quantity_state['temperature']
-        return value, update_time, AttrQuality.ATTR_VALID
+    def initialize_dynamic_attributes(self):
+        """The device method that sets up attributes during run time"""
+        model_sim_quants = self.model.sim_quantities
+        attribute_list = set([attr for attr in model_sim_quants.keys()])
 
-    @attribute(name='wind-speed', label="Wind speed", dtype=float,
-               doc="Wind speed in central telescope area",
-               max_warning=15, max_alarm=25,
-               max_value=30, min_value=0,
-               unit="m/s",
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def wind_speed(self):
-        value, update_time = self.model.quantity_state['wind-speed']
-        return value, update_time, AttrQuality.ATTR_VALID
-
-    @attribute(name='wind-direction', label="Wind direction", dtype=float,
-               doc="Wind direction in central telescope area",
-               unit="Degrees", max_value=360, min_value=0,
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def wind_direction(self):
-        value, update_time = self.model.quantity_state['wind-direction']
-        return value, update_time, AttrQuality.ATTR_VALID
-
-    @attribute(label="Insolation", dtype=float,
-               doc="Sun intensity in central telescope area",
-               unit="W/m^2", max_value=1200, min_value=0,
-               max_alarm=1100,
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def insolation(self):
-        value, update_time = self.model.quantity_state['insolation']
-        return value, update_time, AttrQuality.ATTR_VALID
-
-    @attribute(label="Barometric pressure", dtype=float,
-               doc="Barometric pressure in central telescope area",
-               unit="mbar", max_value=1100, min_value=500,
-               max_alarm=1000,
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def pressure(self):
-        value, update_time = self.model.quantity_state['pressure']
-        return value, update_time, AttrQuality.ATTR_VALID
-
-    @attribute(name='relative-humidity', label="Air humidity", dtype=float,
-               doc="Relative humidity in central telescope area",
-               unit="percent", max_value=100, min_value=0,
-               max_alarm=99,
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def relative_humidity(self):
-        value, update_time = self.model.quantity_state['relative-humidity']
-        return value, update_time, AttrQuality.ATTR_VALID
-
-    @attribute(label="Rainfall", dtype=float,
-               doc="Rainfall in central telescope area",
-               unit="mm", max_value=3.2, min_value=0,
-               max_alarm=3.1,
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def rainfall(self):
-        value, update_time = self.model.quantity_state['rainfall']
-        return value, update_time, AttrQuality.ATTR_VALID
-
-    @attribute(name='input-comms-ok', label="Input communication OK", dtype=bool,
-               doc="Communations with all weather sensors are nominal.",
-               polling_period=DEFAULT_POLLING_PERIOD_MS)
-    def input_comms_ok(self):
-        value, update_time = self.model.quantity_state['input-comms-ok']
-        return value, update_time, AttrQuality.ATTR_VALID
+        for attribute_name in attribute_list:
+            model.MODULE_LOGGER.info("Added dynamic weather {} attribute"
+                    .format(attribute_name))
+            attr_props = UserDefaultAttrProp()
+            meta_data = model_sim_quants[attribute_name].meta
+            attr_dtype = PYTHON_TYPES_TO_TANGO_TYPE[meta_data.pop('dtype')]
+            attr = Attr(attribute_name, attr_dtype, AttrWriteType.READ)
+            for prop in meta_data.keys():
+                attr_prop = getattr(attr_props, 'set_' + prop)
+                if attr_prop:
+                    attr_prop(str(meta_data[prop]))
+            attr.set_default_properties(attr_props)
+            self.add_attribute(attr, self.read_attributes)
 
     def always_executed_hook(self):
         self.model.update()
+
+    def read_attributes(self, attr):
+        """Method reading an attribute value
+
+        Arguments
+        ==========
+
+        attr : PyTango.DevAttr
+            The attribute to read from.
+
+        """
+        name = attr.get_name()
+        value, update_time = self.model.quantity_state[name]
+        quality = AttrQuality.ATTR_VALID
+        self.info_stream("Reading attribute %s", name)
+        attr.set_value_date_quality(value, update_time, quality)
 
 class WeatherModel(model.Model):
 
@@ -137,27 +107,81 @@ class WeatherModel(model.Model):
         self.sim_quantities.update(dict(
             temperature=GaussianSlewLimited(
                 mean=20, std_dev=20, max_slew_rate=5,
-                min_bound=-10, max_bound=55),
+                min_bound=-10, max_bound=55, meta=dict(
+                    label="Outside Temperature",
+                    dtype=float,
+                    description="Current temperature outside near the telescope.",
+                    min_warning=-5, max_warning=45,
+                    min_alarm=-9, max_alarm=50,
+                    min_value=-10, max_value=51,
+                    unit="Degrees Centrigrade",
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
             insolation=GaussianSlewLimited(
                 mean=500, std_dev=1000, max_slew_rate=100,
-                min_bound=0, max_bound=1100),
+                min_bound=0, max_bound=1100, meta=dict(
+                    label="Insolation",
+                    dtype=float,
+                    description="Sun intensity in central telescope area.",
+                    max_warning=1000, max_alarm=1100,
+                    max_value=1200, min_value=0,
+                    unit="W/m^2",
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
             pressure=GaussianSlewLimited(
                 mean=650, std_dev=100, max_slew_rate=50,
-                min_bound=350, max_bound=1500),
+                min_bound=350, max_bound=1500, meta=dict(
+                    label="Barometric pressure",
+                    dtype=float,
+                    description="Barometric pressure in central telescope area.",
+                    max_warning=900, max_alarm=1000,
+                    max_value=1100, min_value=500,
+                    unit="mbar",
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
             rainfall=GaussianSlewLimited(
                 mean=1.5, std_dev=0.5, max_slew_rate=0.1,
-                min_bound=0, max_bound=5),
+                min_bound=0, max_bound=5, meta=dict(
+                    label="Rainfall",
+                    dtype=float,
+                    description="Rainfall in central telescope area.",
+                    max_warning=3.0, max_alarm=3.1,
+                    max_value=3.2, min_value=0,
+                    unit="mm",
+                    period=Weather.DEFAULT_POLLING_PERIOD_MS)),
         ))
         self.sim_quantities['relative-humidity'] = GaussianSlewLimited(
             mean=65, std_dev=10, max_slew_rate=10,
-            min_bound=0, max_bound=150)
+            min_bound=0, max_bound=150, meta=dict(
+                   label="Air humidity",
+                   dtype=float,
+                   description="Relative humidity in central telescope area.",
+                   max_warning=98, max_alarm=99,
+                   max_value=100, min_value=0,
+                   unit="percent",
+                   period=Weather.DEFAULT_POLLING_PERIOD_MS))
         self.sim_quantities['wind-speed'] = GaussianSlewLimited(
-                mean=1, std_dev=20, max_slew_rate=3,
-                min_bound=0, max_bound=100)
+            mean=1, std_dev=20, max_slew_rate=3,
+            min_bound=0, max_bound=100, meta=dict(
+                label="Wind speed",
+                dtype=float,
+                description="Wind speed in central telescope area.",
+                max_warning=15, max_alarm=25,
+                max_value=30, min_value=0,
+                unit="m/s",
+                period=Weather.DEFAULT_POLLING_PERIOD_MS))
         self.sim_quantities['wind-direction'] = GaussianSlewLimited(
                 mean=0, std_dev=150, max_slew_rate=60,
-                min_bound=0, max_bound=359.9999)
-        self.sim_quantities['input-comms-ok'] = ConstantQuantity(start_value=True)
+                min_bound=0, max_bound=359.9999, meta=dict(
+                   label="Wind direction",
+                   dtype=float,
+                   description="Wind direction in central telescope area.",
+                   max_value=360, min_value=0,
+                   unit="Degrees",
+                   period=Weather.DEFAULT_POLLING_PERIOD_MS))
+        self.sim_quantities['input-comms-ok'] = ConstantQuantity(
+                start_value=True, meta=dict(
+                   label="Input communication OK",
+                   dtype=bool,
+                   description="Communications with all weather sensors are nominal.",
+                   period=Weather.DEFAULT_POLLING_PERIOD_MS))
         super(WeatherModel, self).setup_sim_quantities()
 
 
