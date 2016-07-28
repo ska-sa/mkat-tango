@@ -180,7 +180,7 @@ class WeatherModel(model.Model):
                 start_value=True, meta=dict(
                    label="Input communication OK",
                    dtype=bool,
-                   description="Communations with all weather sensors are nominal.",
+                   description="Communications with all weather sensors are nominal.",
                    period=Weather.DEFAULT_POLLING_PERIOD_MS))
         super(WeatherModel, self).setup_sim_quantities()
 
