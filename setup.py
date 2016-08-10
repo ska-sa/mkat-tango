@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(name="mkat_tango",
-      description=" Work relating to the use of tango in MeerKAT and for SKA",
+      description="Work relating to the use of tango in MeerKAT and for SKA.",
       author="SKA SA KAT-7 / MeerKAT CAM team",
       author_email="cam@ska.ac.za",
       packages=find_packages(),
@@ -24,7 +24,7 @@ setup(name="mkat_tango",
           "katcore",
           "katproxy",
           "katcp"],
-      test_require=[
+      tests_require=[
           'enum',
           'numpy',
           'nose_xunitmp',
