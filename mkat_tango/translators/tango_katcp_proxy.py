@@ -14,6 +14,7 @@ import weakref
 import logging
 import tornado
 
+from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager
 from katcp.core import Sensor
 
@@ -144,8 +145,12 @@ class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
     instances = weakref.WeakValueDictionary()
 
-    katcp_address = device_property(dtype=str, doc=
-            'katcp address of the device to translate as <host>:<port>')
+    katcp_address = device_property(
+        dtype=str, doc=
+        'katcp address of the device to translate as <host>:<port>')
+    katcp_sync_timeout = device_property(
+        dtype=float, default_value=5, doc=
+        'Timeout (in seconds) for syncing with the KATCP device at startup')
 
     def __init__(self, *args, **kwargs):
         self.tango_katcp_proxy = None
@@ -166,6 +171,10 @@ class TangoDeviceServer(Device):
                 KatcpTango2DeviceProxy.from_katcp_address_tango_device(
                     (katcp_host, katcp_port), self))
         self.tango_katcp_proxy.start()
+        MODULE_LOGGER.info('Waiting {}s for katcp sync'.format(
+            self.katcp_sync_timeout))
+        self.tango_katcp_proxy.wait_synced(self.katcp_sync_timeout)
+        MODULE_LOGGER.info('katcp synced')
 
     def read_attr(self, attr):
         '''Read value for an attribute from the katcp sensor observer updates
@@ -209,6 +218,20 @@ class KatcpTango2DeviceProxy(object):
 
         """
         self.ioloop.add_callback(self.ioloop.stop)
+
+    def wait_synced(self, timeout=None):
+        f = Future()            # Should be a thread-safe future
+        @tornado.gen.coroutine
+        def _wait_synced():
+            try:
+                yield self.katcp_inspecting_client.until_synced(timeout)
+            except Exception as exc:
+                f.set_exception(exc)
+            else:
+                f.set_result(None)
+        self.ioloop.add_callback(_wait_synced)
+        f.result()
+
 
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
