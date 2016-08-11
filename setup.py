@@ -18,7 +18,7 @@ setup(name="mkat_tango",
       setup_requires=["katversion"],
       use_katversion=True,
       install_requires=[
-          "PyTango>=8.1.5",
+          "PyTango>=9.2.0",
           "numpy",
           "enum",
           "katcore",
