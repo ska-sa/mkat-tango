@@ -1,0 +1,6 @@
+TAG	DEVICE	DESCRIPTION	SEVERITY	RECEIVERS	FORMULA
+ANC_Wind_Speed	mkat/panic/kataware	ANC implements this sensor giving 10-min mean wind speed over all wind sensors	ALARM	cam@ska.ac.za,kmadisa@ska.ac.za	(mkat/proxies/anc/mean_wind_speed.value > 11.1 or mkat/proxies/anc/mean_wind_speed.value < 1.5)
+AGG_Wind_Speed_reporting	mkat/panic/kataware	True if all wind related sensors ok	ALARM	cam@ska.ac.za	(mkat/proxies/anc/weather_connected == False or mkat/proxies/anc/weather_state != 'synced' or mkat/proxies/anc/wind_connected != True or mkat/proxies/anc/wind_state != 'synced')
+ANC_Wind_Gust	mkat/panic/kataware	ANC implements this sensor giving highest gust over all wind sensors	ALARM	cam@ska.ac.za	(mkat/proxies/anc/gust_wind_speed.value > 16.9 or mkat/proxies/anc/gust_wind_speed.value < 1.5)
+AGG_System_Power_Ok	mkat/panic/kataware	True if there is no power supply voltage in the KAPB	ALARM	cam@ska.ac.za	(mkat/proxies/anc/bms_imminent_power_failure == True)
+AGG_System_Fire_Ok	mkat/panic/kataware	True if there is no fire detected in KAPB	ALARM	cam@ska.ac.za	(mkat/proxies/anc/bms_kapb_fire_active.value == True)
