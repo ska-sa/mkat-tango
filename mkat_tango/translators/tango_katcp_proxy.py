@@ -154,6 +154,7 @@ class TangoDeviceServer(Device):
 
     def __init__(self, *args, **kwargs):
         self.tango_katcp_proxy = None
+        self._first_inspection_done = False
         Device.__init__(self, *args, **kwargs)
 
     def init_device(self):
@@ -173,7 +174,9 @@ class TangoDeviceServer(Device):
         self.tango_katcp_proxy.start()
         MODULE_LOGGER.info('Waiting {}s for katcp sync'.format(
             self.katcp_sync_timeout))
-        self.tango_katcp_proxy.wait_synced(self.katcp_sync_timeout)
+        if not self._first_inspection_done:
+            self.tango_katcp_proxy.wait_synced(self.katcp_sync_timeout)
+            self._first_inspection_done = True
         MODULE_LOGGER.info('katcp synced')
 
     def read_attr(self, attr):
@@ -196,6 +199,7 @@ class TangoDeviceServer(Device):
         value = sensor_updates['value']
         self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
         attr.set_value_date_quality(value, timestamp, quality)
+
 
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
@@ -221,6 +225,9 @@ class KatcpTango2DeviceProxy(object):
 
     def wait_synced(self, timeout=None):
         f = Future()            # Should be a thread-safe future
+        if timeout is None:
+            timeout = self.katcp_sync_timeout
+
         @tornado.gen.coroutine
         def _wait_synced():
             try:
@@ -230,8 +237,7 @@ class KatcpTango2DeviceProxy(object):
             else:
                 f.set_result(None)
         self.ioloop.add_callback(_wait_synced)
-        f.result()
-
+        f.result(timeout=timeout)
 
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
