@@ -172,12 +172,22 @@ class TangoDeviceServer(Device):
                 KatcpTango2DeviceProxy.from_katcp_address_tango_device(
                     (katcp_host, katcp_port), self))
         self.tango_katcp_proxy.start()
-        MODULE_LOGGER.info('Waiting {}s for katcp sync'.format(
-            self.katcp_sync_timeout))
+        # The conditional statement resolves the tango server error:
+        # Not able to acquire serialization (dev, class or process) monitor.
+        # Reason being API command timeout i.e. ~3000 mS exceeded.
+        # It happens during testing when the device test class sets up the
+        # testing environment by executing the device init command on the
+        # server side meanwhile the KatcpTango2DeviceProxy executes the command
+        # so we get a timeout error, this prevents frequent syncing of
+        # inspecting client to the katcp server thus a single inspection is ok.
+        # Note that one monitor per device which is taken when the command
+        # starts and which is released when the command ends.
         if not self._first_inspection_done:
+            MODULE_LOGGER.info('Waiting {}s for katcp sync'.format(
+                self.katcp_sync_timeout))
             self.tango_katcp_proxy.wait_synced(self.katcp_sync_timeout)
+            MODULE_LOGGER.info('katcp synced')
             self._first_inspection_done = True
-        MODULE_LOGGER.info('katcp synced')
 
     def read_attr(self, attr):
         '''Read value for an attribute from the katcp sensor observer updates
