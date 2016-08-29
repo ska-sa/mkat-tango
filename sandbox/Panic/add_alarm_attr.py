@@ -1,20 +1,6 @@
-import PyTango
-import subprocess
-
-db = PyTango.Database()
-
-def add_new_device(server,klass,device):
-    dev_info = PyTango.DbDevInfo()
-    dev_info.name = device
-    dev_info.klass = klass
-    dev_info.server = server
-    db.add_device(dev_info)
-
-# Create a PyAlarm device
-add_new_device('PyAlarm/kataware','PyAlarm','mkat/panic/kataware')
-
 # PyAlarm device server name alarms will be exported to as attributes
 pyalarm_name = 'mkat/panic/kataware'
+
 
 # Device properties (Alarm decleration)
 # ref: katcamconfig/static/alarms/mkat.sim.conf
@@ -75,8 +61,3 @@ properties = [alarm_list,
 
 for prop in properties:
     db.put_device_property(pyalarm_name,prop)
-
-print("Succefully registered PyAlarms in Tango-DB")
-print("==========================================")
-print("Attempting to run PyAlarm Device Server...")
-subprocess.check_call(["PyAlarm", "kataware"])
