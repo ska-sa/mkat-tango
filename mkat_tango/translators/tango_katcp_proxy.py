@@ -14,6 +14,8 @@ import weakref
 import logging
 import tornado
 
+import PyTango
+
 from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager
 from katcp.core import Sensor
@@ -23,7 +25,7 @@ from mkat_tango.translators.utilities import katcpname2tangoname
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality
 from PyTango.server import Device, DeviceMeta
-from PyTango.server import server_run, device_property
+from PyTango.server import server_run, device_property, attribute
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -98,7 +100,7 @@ def katcp_sensor2tango_attr(sensor):
     attribute.set_default_properties(attr_props)
     return attribute
 
-def add_tango_server_attribute_list(tango_dserver, sensors):
+def add_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
     """Add in new TANGO attributes.
 
     Input Parameters
@@ -108,6 +110,9 @@ def add_tango_server_attribute_list(tango_dserver, sensors):
         tango_dserver.
     sensors: dict()
         A dictionary mapping sensor names to katcp.Sensor objects.
+    error_list : list or None
+        List of sensors that could not be translated due to an error
+        condition. Will append error-sensors to this list.
 
     Returns
     -------
@@ -117,10 +122,18 @@ def add_tango_server_attribute_list(tango_dserver, sensors):
     # Sort by sensor names so that the don't show up in the tango system in a
     # random order.
     for _, sensor in sorted(sensors.items()):
-        attribute = katcp_sensor2tango_attr(sensor)
-        tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
+        try:
+            attribute = katcp_sensor2tango_attr(sensor)
+            tango_dserver.add_attribute(attribute, tango_dserver.read_attr)
+        except Exception:
+            MODULE_LOGGER.exception(
+                'Exception trying to add sensor {} to tango server'
+                .format(sensor.name))
+            if error_list is not None:
+                error_list.append(sensor.name)
 
-def remove_tango_server_attribute_list(tango_dserver, sensors):
+
+def remove_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
     """Remove existing TANGO attributes.
 
     Input Parameters
@@ -130,6 +143,10 @@ def remove_tango_server_attribute_list(tango_dserver, sensors):
         tango_dserver.
     sensors: dict()
         A dictionary mapping sensor names to katcp.Sensor objects
+    error_list : list or None
+        List of sensors that could not be translated due to an error
+        condition. Will remove error-sensors to this list if they are removed
+        from the KATCP device
 
     Returns
     -------
@@ -138,6 +155,12 @@ def remove_tango_server_attribute_list(tango_dserver, sensors):
     """
     for sensor_name in sensors.keys():
         attr_name = katcpname2tangoname(sensor_name)
+        if error_list is not None:
+            try:
+                error_list.remove(sensor_name)
+            except ValueError:
+                # OK if this was not an error-sensor.
+                pass
         try:
             tango_dserver.remove_attribute(attr_name)
         except DevFailed:
@@ -158,6 +181,19 @@ class TangoDeviceServer(Device):
         self.tango_katcp_proxy = None
         self._first_inspection_done = False
         Device.__init__(self, *args, **kwargs)
+
+    @attribute(dtype=(str,), doc="List of KATCP sensors that could not be "
+               "translated due to an unexpected error",
+               max_dim_x=10000, polling_period=10000)
+    def ErrorTranslatingSensors(self):
+        # TODO NM 2016-08-30 Perhaps change it into a table that also contains
+        # the reason for non-translation?
+        return self.tango_katcp_proxy.untranslated_sensors
+
+    @attribute(dtype=int, doc='Number or sensors that were not translated due '
+               'to an unexpected error', max_alarm=1, polling_period=10000)
+    def NumErrorTranslatingSensors(self):
+        return len(self.tango_katcp_proxy.untranslated_sensors)
 
     def init_device(self):
         if self.tango_katcp_proxy:
@@ -219,6 +255,7 @@ class KatcpTango2DeviceProxy(object):
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
         self.sensor_observer = SensorObserver()
+        self.untranslated_sensors = []
 
     def start(self):
         """Start the translator
@@ -265,15 +302,16 @@ class KatcpTango2DeviceProxy(object):
         for sens_name in removed_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
             removed_sensors[sens_name] = sensor
-        remove_tango_server_attribute_list(self.tango_device_server,
-                                           removed_sensors)
+        remove_tango_server_attribute_list(
+            self.tango_device_server, removed_sensors, self.untranslated_sensors)
 
         added_sensors = dict()
         for sens_name in added_sens:
             sensor = yield self.katcp_inspecting_client.future_get_sensor(sens_name)
             sensor.attach(self.sensor_observer)
             added_sensors[sens_name] = sensor
-        add_tango_server_attribute_list(self.tango_device_server, added_sensors)
+        add_tango_server_attribute_list(
+            self.tango_device_server, added_sensors, self.untranslated_sensors)
         self._setup_sensor_sampling()
 
     @tornado.gen.coroutine
