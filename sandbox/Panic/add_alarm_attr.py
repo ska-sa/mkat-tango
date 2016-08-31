@@ -1,6 +1,9 @@
+import PyTango
+
+db = PyTango.Database()
+
 # PyAlarm device server name alarms will be exported to as attributes
 pyalarm_name = 'mkat/panic/kataware'
-
 
 # Device properties (Alarm decleration)
 # ref: katcamconfig/static/alarms/mkat.sim.conf
