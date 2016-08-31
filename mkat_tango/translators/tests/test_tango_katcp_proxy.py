@@ -15,6 +15,7 @@ import time
 
 import tornado.testing
 import tornado.gen
+import PyTango
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
@@ -30,24 +31,37 @@ from devicetest import DeviceTestCase
 logger = logging.getLogger(__name__)
 
 sensors = {
-        'failure-present': Sensor(Sensor.BOOLEAN, "failure-present",
-                   "Indicates whether at least one failure that prevents antenna "
-                   "movement is currently latched", ""),
-        'reboot-reason': Sensor(Sensor.DISCRETE, "reboot-reason",
-                   "Reports reason for last reboot of the ACU",
-                   "", ['powerfailure', 'plc-watchdog', 'remote', 'other']),
-        'actual-azim': Sensor(Sensor.FLOAT, "actual-azim", "Actual azimuth position",
-                   "deg", [-183.32, 275.0], 32.9),
-        'track-stack-size': Sensor(Sensor.INTEGER, "track-stack-size",
-                   "The number of track samples available in the ACU sample stack",
-                   "", [0, 3000]),
-        'gps-nmea': Sensor(Sensor.STRING, "gps-nmea", "GPS NMEA string details"
-                           " received", ""),
-        'ntp-timestamp': Sensor(Sensor.TIMESTAMP, "ntp-timestamp",
-                "NTP server timestamp", "", [0.00, 1000000000.00]),
-        'ntp-lru': Sensor(Sensor.ADDRESS, "ntp-lru", "NTP server IP address", "")}
+        'failure-present': Sensor.boolean(
+            "failure-present",
+            "Indicates whether at least one failure that prevents antenna "
+            "movement is currently latched", ""),
+        'reboot-reason': Sensor.discrete(
+            "reboot-reason",
+            "Reports reason for last reboot of the ACU",
+            "", ['powerfailure', 'plc-watchdog', 'remote', 'other']),
+        'actual-azim': Sensor.float(
+            "actual-azim", "Actual azimuth position",
+            "deg", [-183.32, 275.0], 32.9),
+        'invalid-float': Sensor.float(
+            "invalid-float", "Float with bad min/max", "", [0, 0]),
+        'a-bad-bad-int': Sensor.integer(
+            "a-bad-bad-int", "Int with bad min/max", "", [10, 10]),
+        'track-stack-size': Sensor.integer(
+            "track-stack-size",
+            "The number of track samples available in the ACU sample stack",
+            "", [0, 3000]),
+        'gps-nmea': Sensor.string(
+            "gps-nmea", "GPS NMEA string details received", ""),
+        'ntp-timestamp': Sensor.timestamp(
+            "ntp-timestamp",
+            "NTP server timestamp", "", [0.00, 1000000000.00]),
+        'ntp-lru': Sensor.address("ntp-lru", "NTP server IP address", "")}
 
-default_attributes = {'state': 'State', 'status': 'Status'}
+# Names of the KATCP sensors that cannot be converted to a valid tango attribute
+invalid_sensor_names = set(['invalid-float', 'a-bad-bad-int'])
+
+default_attributes = {
+    'State', 'Status', 'NumErrorTranslatingSensors', 'ErrorTranslatingSensors'}
 
 server_host = ""
 server_port = 0
@@ -57,35 +71,41 @@ class KatcpTestDevice(DeviceServer):
     VERSION_INFO = ("example-api", 1, 0)
     BUILD_INFO = ("example-implementation", 0, 1, "")
 
-    # Optionally set the KATCP protocol version and features. Defaults to
-    # the latest implemented version of KATCP, with all supported optional
-    # features
-    PROTOCOL_INFO = ProtocolFlags(5, 0, set([
-        ProtocolFlags.MULTI_CLIENT,
-        ProtocolFlags.MESSAGE_IDS,
-    ]))
-
     def setup_sensors(self):
         """Setup some server sensors."""
         for sensor in sensors.values():
             self.add_sensor(sensor)
 
-class test_KatcpTango2DeviceProxy(DeviceTestCase):
+class KatcpTestDeviceValidSensorsOnly(DeviceServer):
 
+    VERSION_INFO = ("example-api", 1, 0)
+    BUILD_INFO = ("example-implementation", 0, 1, "")
+
+    def setup_sensors(self):
+        """Setup some server sensors."""
+        for sensor in sensors.values():
+            # Skip invalid sensors
+            if sensor.name in invalid_sensor_names:
+                continue
+            self.add_sensor(sensor)
+
+class _test_KatcpTango2DeviceProxy(DeviceTestCase):
+    longMessage = True
     device = TangoDeviceServer
+    KatcpTestDeviceClass = KatcpTestDevice
 
     @classmethod
     def setUpClass(cls):
-        cls.katcp_server = KatcpTestDevice(server_host, server_port)
+        cls.katcp_server = cls.KatcpTestDeviceClass(server_host, server_port)
         cls.katcp_server.start()
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
         cls.properties = dict(katcp_address=katcp_server_host + ':' +
                               str(katcp_server_port))
-        super(test_KatcpTango2DeviceProxy, cls).setUpClass()
+        super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
 
     def setUp(self):
-        super(test_KatcpTango2DeviceProxy, self).setUp()
+        super(_test_KatcpTango2DeviceProxy, self).setUp()
         self.instance = TangoDeviceServer.instances[self.device.name()]
         self.ioloop = self.instance.tango_katcp_proxy.ioloop
         self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
@@ -116,8 +136,9 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
     @classmethod
     def tearDownClass(cls):
         cls.katcp_server.stop()
-        super(test_KatcpTango2DeviceProxy, cls).tearDownClass()
+        super(_test_KatcpTango2DeviceProxy, cls).tearDownClass()
 
+class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
     def test_connections(self):
         """Testing if both the TANGO client proxy and the KATCP inspecting clients
         have established a connection with their device servers, respectively.
@@ -138,35 +159,46 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         remove_tango_server_attribute_list(self.instance, sensors)
         # Get the default attributes of the device server
         device_attrs = set(list(self.device.get_attribute_list()))
-        default_attrs = set(default_attributes.values())
-        self.assertEquals(device_attrs, default_attrs,
+        self.assertEquals(device_attrs, default_attributes,
                           "The device server has unexpected default attributes")
         add_tango_server_attribute_list(self.instance, sensors)
 
         device_attrs = set(list(self.device.get_attribute_list()))
-        self.assertNotEquals(device_attrs, default_attrs,
+        self.assertNotEquals(device_attrs, default_attributes,
                              "Attribute list was never updated")
         # Test if the number of attributes has increased after the update
-        self.assertGreater(len(device_attrs), len(default_attrs),
+        self.assertGreater(len(device_attrs), len(default_attributes),
                            "Attribute list was never updated")
         # Test if its possible to remove attributes from the device server.
         remove_tango_server_attribute_list(self.instance, sensors)
         device_attrs = set(list(self.device.get_attribute_list()))
-        self.assertEquals(device_attrs, default_attrs,
+        self.assertEquals(device_attrs, default_attributes,
                           "The device server has unexpected default attributes")
+
+    def test_sensor_translation_errors(self):
+        """Sensors untranslatable due to errors are properly reported?"""
+        # Initial sensor list will include some invalid sensors
+        # Check that the correct number and alarm quality are reported:
+        reading = self.device.read_attribute('NumErrorTranslatingSensors')
+        self.assertEqual(reading.value, len(invalid_sensor_names))
+        self.assertEqual(reading.quality, PyTango.AttrQuality.ATTR_ALARM)
+        # And the correct sensor names
+        self.assertEqual(sorted(self.device.ErrorTranslatingSensors),
+                         sorted(invalid_sensor_names))
 
     def test_expected_sensor_attributes(self):
         """Testing if the expected attribute list matches with the actual attribute list
            after adding the new attributes.
         """
-        default_attrs = set(default_attributes.values())
         attr_list = list(self.device.get_attribute_list())
-        for def_attr in default_attrs:
+        for def_attr in default_attributes:
             attr_list.remove(def_attr)
 
         sens_names = sensors.keys()
         sensname2tangoname_list = []
         for sen_name in sens_names:
+            if sen_name in invalid_sensor_names:
+                continue
             sensname2tangoname_list.append(katcpname2tangoname(sen_name))
         self.assertEqual(set(attr_list), set(sensname2tangoname_list), "The attribute"
                          " list and the the sensor list do not match")
@@ -178,6 +210,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         remove_tango_server_attribute_list(self.instance, sensors)
         add_tango_server_attribute_list(self.instance, sensors)
         for sensor in self.katcp_server._sensors.values():
+            if sensor.name in invalid_sensor_names:
+                continue
             attr_desc = self.device.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
             self.assertEqual(tangoname2katcpname(attr_desc.name), sensor.name,
@@ -218,8 +252,10 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         proxy translator.
         """
         for sensor in self.katcp_server._sensors.values():
+            if sensor.name in invalid_sensor_names:
+                continue
             attr_desc = self.device.get_attribute_config(
-                                                       katcpname2tangoname(sensor.name))
+                katcpname2tangoname(sensor.name))
             self.assertEqual(tangoname2katcpname(attr_desc.name), sensor.name,
                              "The sensor and the attribute name are not the same")
             self.assertEqual(attr_desc.description, sensor.description,
@@ -384,6 +420,8 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         katcp_device_server = self._update_katcp_server_sensor_values(
                 self.katcp_server)
         for sensor in katcp_device_server.get_sensors():
+            if sensor.name in invalid_sensor_names:
+                continue
             attribute_name = katcpname2tangoname(sensor.name)
             self._wait_for_tango_attribute_to_update(attribute_name)
             attribute_value = getattr(self.device, attribute_name)
@@ -393,3 +431,16 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
                 # mapped to tango DevString type i.e "host:port"
                 sensor_value = ':'.join(str(s) for s in sensor_value)
             self.assertEqual(attribute_value, sensor_value)
+
+class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
+    KatcpTestDeviceClass = KatcpTestDeviceValidSensorsOnly
+
+    def test_sensor_translation_errors(self):
+        """No spurious sensor translation errors are reported?"""
+        reading = self.device.read_attribute('NumErrorTranslatingSensors')
+        self.assertEqual(reading.value, 0)
+        self.assertEqual(reading.quality, PyTango.AttrQuality.ATTR_VALID)
+        # And the no sensor names
+        # TODO NM 2016-08-31 For some reason None is returned instead of an
+        # empty list, PyTango bug?
+        self.assertEqual(self.device.ErrorTranslatingSensors, None)
