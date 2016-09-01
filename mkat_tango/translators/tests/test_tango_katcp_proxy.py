@@ -19,7 +19,7 @@ import tornado.gen
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
 
-from mkat_tango.translators.tango_katcp_proxy import (TangoDeviceServer,
+from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       remove_tango_server_attribute_list,
                                                       add_tango_server_attribute_list)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
@@ -51,6 +51,8 @@ default_attributes = {'state': 'State', 'status': 'Status'}
 
 server_host = ""
 server_port = 0
+TangoDeviceServer = get_tango_device_server()
+
 
 class KatcpTestDevice(DeviceServer):
 
