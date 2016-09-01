@@ -10,19 +10,22 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+import sys
 import weakref
 import logging
 import tornado
 
 from concurrent.futures import Future
-from katcp import inspecting_client, ioloop_manager
+from katcp import inspecting_client, ioloop_manager, Message
 from katcp.core import Sensor
+from katcp.client import BlockingClient
 
 from mkat_tango.translators.utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality
-from PyTango.server import Device, DeviceMeta
+from PyTango import AttrDataFormat, Database
+from PyTango.server import Device, DeviceMeta, command
 from PyTango.server import server_run, device_property
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -143,8 +146,29 @@ def remove_tango_server_attribute_list(tango_dserver, sensors):
         except DevFailed:
             MODULE_LOGGER.debug("Attribute {} does not exist".format(attr_name))
 
-class TangoDeviceServer(Device):
-    __metaclass__ = DeviceMeta
+
+def create_command2request_handler(req_name, req_doc):
+    if 'Parameters' in req_doc:
+        def cmd_handler(self, *in_args):
+            reply = self.tango_katcp_proxy.do_request(
+                    req_name, *in_args)
+            return reply
+        cmd_handler.__name__ = katcpname2tangoname(req_name)
+        return command(f=cmd_handler,
+            dtype_in=str, dformat_in=AttrDataFormat.SPECTRUM,
+            dtype_out=str, dformat_out=AttrDataFormat.SPECTRUM,
+            doc_in=req_doc)
+    else:
+        def cmd_handler(self):
+            MODULE_LOGGER.info("Executing request {}".format(req_name))
+            reply = self.tango_katcp_proxy.do_request(req_name)
+            MODULE_LOGGER.info(reply)
+            return reply
+        cmd_handler.__name__ = katcpname2tangoname(req_name)
+        return command(f=cmd_handler, doc_in='No input parameters', doc_out=req_doc)
+
+
+class TangoDeviceServerBase(Device):
     instances = weakref.WeakValueDictionary()
 
     katcp_address = device_property(
@@ -251,6 +275,22 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         f.result(timeout=timeout)
 
+    def do_request(self, req, *args):
+        f = Future()            # Should be a thread-safe future
+        #if timeout is None:
+        #    timeout = self.katcp_sync_timeout
+
+        @tornado.gen.coroutine
+        def _wait_synced():
+            try:
+                reply, _ = yield self.katcp_inspecting_client.simple_request(req, *args)
+            except Exception as exc:
+                f.set_exception(exc)
+            else:
+                f.set_result(reply)
+        self.ioloop.add_callback(_wait_synced)
+        return f.result(timeout=5)
+
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
         if model_changes:
@@ -324,7 +364,48 @@ class SensorObserver(object):
         self.updates[katcpname2tangoname(sensor.name)] = read_dict
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
+def _get_katcp_address(server_name):
+    db = Database()
+    server_class = db.get_server_class_list(server_name).value_string[0]
+    device_name = db.get_device_name(server_name, server_class).value_string[0]
+    katcp_address = db.get_device_property(device_name,
+            'katcp_address')['katcp_address'][0]
+    return katcp_address
+
+
+def _get_request_client():
+    server_name = sys.argv[0].split('.')[0] + '/' + sys.argv[1]
+    katcp_address = _get_katcp_address(server_name)
+    katcp_host, katcp_port = katcp_address.split(':')
+    if katcp_host in ['localhost']:
+        katcp_host = '127.0.0.1'
+    katcp_port = int(katcp_port)
+    client = BlockingClient(katcp_host, katcp_port)
+    client.start()
+    client.wait_connected(timeout=5)
+    help_m = Message.request('help')
+    reply, informs = client.blocking_request(help_m)
+    client.stop()
+    client.join()
+    req_list = [req.arguments for req in informs]
+    req_dict = dict()
+    for req in req_list:
+        req_dict[req[0]] = req[1]
+    return req_dict
+
 def main():
+    requests_dict = _get_request_client()
+    class TangoDeviceServerCommands(object):
+        pass
+
+    for req_name, req_doc in requests_dict.items():
+        cmd_name = katcpname2tangoname(req_name)
+        tango_cmd = create_command2request_handler(req_name, req_doc)
+        setattr(TangoDeviceServerCommands, cmd_name, tango_cmd)
+
+    class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
+        __metaclass__ = DeviceMeta
+
     server_run([TangoDeviceServer])
 
 if __name__ == "__main__":
