@@ -277,8 +277,6 @@ class KatcpTango2DeviceProxy(object):
 
     def do_request(self, req, *args):
         f = Future()            # Should be a thread-safe future
-        #if timeout is None:
-        #    timeout = self.katcp_sync_timeout
 
         @tornado.gen.coroutine
         def _wait_synced():
@@ -364,7 +362,7 @@ class SensorObserver(object):
         self.updates[katcpname2tangoname(sensor.name)] = read_dict
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
-def _get_katcp_address(server_name):
+def get_katcp_address(server_name):
     db = Database()
     server_class = db.get_server_class_list(server_name).value_string[0]
     device_name = db.get_device_name(server_name, server_class).value_string[0]
@@ -373,12 +371,10 @@ def _get_katcp_address(server_name):
     return katcp_address
 
 
-def _get_request_client():
+def get_request_client():
     server_name = sys.argv[0].split('.')[0] + '/' + sys.argv[1]
-    katcp_address = _get_katcp_address(server_name)
+    katcp_address = get_katcp_address(server_name)
     katcp_host, katcp_port = katcp_address.split(':')
-    if katcp_host in ['localhost']:
-        katcp_host = '127.0.0.1'
     katcp_port = int(katcp_port)
     client = BlockingClient(katcp_host, katcp_port)
     client.start()
@@ -393,8 +389,8 @@ def _get_request_client():
         req_dict[req[0]] = req[1]
     return req_dict
 
-def _get_tango_device_server():
-    requests_dict = _get_request_client()
+def get_tango_device_server():
+    requests_dict = get_request_client()
 
     class TangoDeviceServerCommands(object):
         pass
@@ -410,7 +406,7 @@ def _get_tango_device_server():
     return TangoDeviceServer
 
 def main():
-    TangoDeviceServer = _get_tango_device_server()
+    TangoDeviceServer = get_tango_device_server()
     server_run([TangoDeviceServer])
 
 if __name__ == "__main__":
