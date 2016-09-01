@@ -15,5 +15,3 @@ add_new_device('FestivalDS/kataware','FestivalDS','mkat/festival/kataware')
 
 print("Succefully registered FestivalDS in Tango-DB")
 print("==========================================")
-print("Attempting to run Festival Device Server...")
-subprocess.check_call(["Festival", "kataware"])
