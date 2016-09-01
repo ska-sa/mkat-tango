@@ -393,8 +393,9 @@ def _get_request_client():
         req_dict[req[0]] = req[1]
     return req_dict
 
-def main():
+def _get_tango_device_server():
     requests_dict = _get_request_client()
+
     class TangoDeviceServerCommands(object):
         pass
 
@@ -406,6 +407,10 @@ def main():
     class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
         __metaclass__ = DeviceMeta
 
+    return TangoDeviceServer
+
+def main():
+    TangoDeviceServer = _get_tango_device_server()
     server_run([TangoDeviceServer])
 
 if __name__ == "__main__":
