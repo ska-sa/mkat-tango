@@ -174,7 +174,7 @@ class TangoDeviceServerBase(Device):
         dtype=str, doc=
         'katcp address of the device to translate as <host>:<port>')
     katcp_sync_timeout = device_property(
-        dtype=float, default_value=60, doc=
+        dtype=float, default_value=5, doc=
         'Timeout (in seconds) for syncing with the KATCP device at startup')
 
     def __init__(self, *args, **kwargs):
@@ -252,7 +252,6 @@ class KatcpTango2DeviceProxy(object):
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
         self.sensor_observer = SensorObserver()
-        self.added_requests = {}
         self._replies = []
         self._informs = []
 

@@ -200,7 +200,6 @@ class test_KatcpTango2DeviceProxy(KatcpDevice2TangoProxy_BaseMixin, unittest.Tes
         """
         remove_tango_server_attribute_list(self.instance, sensors)
         add_tango_server_attribute_list(self.instance, sensors)
-#        import IPython; IPython.embed()
         for sensor in self.katcp_server._sensors.values():
             attr_desc = self.device.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
