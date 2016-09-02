@@ -289,6 +289,9 @@ class KatcpTango2DeviceProxy(object):
     def do_request(self, req, *args):
         f = Future()            # Should be a thread-safe future
 
+        if len(args) > 0:
+            args = tuple(args[0])
+
         @tornado.gen.coroutine
         def _wait_synced():
             try:
