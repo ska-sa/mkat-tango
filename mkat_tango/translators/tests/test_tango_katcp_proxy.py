@@ -12,20 +12,28 @@
 """
 import logging
 import time
+import unittest
+import mock
 
 import tornado.testing
 import tornado.gen
+import devicetest
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
+from katcp.testutils import start_thread_with_cleanup
+from katcore.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       remove_tango_server_attribute_list,
                                                       add_tango_server_attribute_list)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
+from mkat_tango.translators.tests.test_tango_inspecting_client import (
+        ClassCleanupUnittestMixin)
+
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 
-from devicetest import DeviceTestCase
+from devicetest import DeviceTestCase, TangoTestContext
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +59,6 @@ default_attributes = {'state': 'State', 'status': 'Status'}
 
 server_host = ""
 server_port = 0
-TangoDeviceServer = get_tango_device_server()
-
 
 class KatcpTestDevice(DeviceServer):
 
@@ -72,23 +78,35 @@ class KatcpTestDevice(DeviceServer):
         for sensor in sensors.values():
             self.add_sensor(sensor)
 
-class test_KatcpTango2DeviceProxy(DeviceTestCase):
 
-    device = TangoDeviceServer
+class KatcpDevice2TangoProxy_BaseMixin(ClassCleanupUnittestMixin):
+
+    TangoDeviceServer = None
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClassWithCleanup(cls):
+        cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.katcp_server = KatcpTestDevice(server_host, server_port)
         cls.katcp_server.start()
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
         cls.properties = dict(katcp_address=katcp_server_host + ':' +
                               str(katcp_server_port))
-        super(test_KatcpTango2DeviceProxy, cls).setUpClass()
+        with mock.patch('mkat_tango.translators.tango_katcp_proxy.get_katcp_address'
+                        ) as mock_get_katcp_address:
+            mock_get_katcp_address.return_value = '{}:{}'.format(
+                    katcp_server_host, katcp_server_port)
+            cls.TangoDeviceServer = get_tango_device_server()
+            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
+                                             db=cls.tango_db,
+                                             properties=cls.properties)
+        start_thread_with_cleanup(cls, cls.tango_context)
+        devicetest.Patcher.unpatch_device_proxy()
 
     def setUp(self):
-        super(test_KatcpTango2DeviceProxy, self).setUp()
-        self.instance = TangoDeviceServer.instances[self.device.name()]
+        super(KatcpDevice2TangoProxy_BaseMixin, self).setUp()
+        self.device = self.tango_context.device
+        self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.ioloop = self.instance.tango_katcp_proxy.ioloop
         self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
@@ -107,6 +125,9 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         # Need to reset the device server to its default configuration
         self.addCleanup(remove_tango_server_attribute_list,
                         self.instance, self.katcp_server._sensors)
+
+
+class test_KatcpTango2DeviceProxy(KatcpDevice2TangoProxy_BaseMixin, unittest.TestCase):
 
     def _reset_katcp_server(self):
         """For removing any sensors that were added during testing
@@ -179,6 +200,7 @@ class test_KatcpTango2DeviceProxy(DeviceTestCase):
         """
         remove_tango_server_attribute_list(self.instance, sensors)
         add_tango_server_attribute_list(self.instance, sensors)
+#        import IPython; IPython.embed()
         for sensor in self.katcp_server._sensors.values():
             attr_desc = self.device.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
