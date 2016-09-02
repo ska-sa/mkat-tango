@@ -24,8 +24,8 @@ from mkat_tango.translators.utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality
-from PyTango import AttrDataFormat, Database
-from PyTango.server import Device, DeviceMeta, command
+from PyTango import Database
+from PyTango.server import Device, DeviceMeta, command, attribute
 from PyTango.server import server_run, device_property
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -152,20 +152,19 @@ def create_command2request_handler(req_name, req_doc):
         def cmd_handler(self, *in_args):
             reply = self.tango_katcp_proxy.do_request(
                     req_name, *in_args)
-            return reply
+            return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
-        return command(f=cmd_handler,
-            dtype_in=str, dformat_in=AttrDataFormat.SPECTRUM,
-            dtype_out=str, dformat_out=AttrDataFormat.SPECTRUM,
-            doc_in=req_doc)
+        return command(f=cmd_handler, dtype_in=(str,),
+                       dtype_out=(str,), doc_in=req_doc)
     else:
         def cmd_handler(self):
             MODULE_LOGGER.info("Executing request {}".format(req_name))
             reply = self.tango_katcp_proxy.do_request(req_name)
             MODULE_LOGGER.info(reply)
-            return reply
+            return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
-        return command(f=cmd_handler, doc_in='No input parameters', doc_out=req_doc)
+        return command(f=cmd_handler, doc_in='No input parameters',
+                       dtype_out=(str,), doc_out=req_doc)
 
 
 class TangoDeviceServerBase(Device):
@@ -175,7 +174,7 @@ class TangoDeviceServerBase(Device):
         dtype=str, doc=
         'katcp address of the device to translate as <host>:<port>')
     katcp_sync_timeout = device_property(
-        dtype=float, default_value=5, doc=
+        dtype=float, default_value=60, doc=
         'Timeout (in seconds) for syncing with the KATCP device at startup')
 
     def __init__(self, *args, **kwargs):
@@ -215,6 +214,16 @@ class TangoDeviceServerBase(Device):
             MODULE_LOGGER.info('katcp synced')
             self._first_inspection_done = True
 
+    @attribute(dtype=(str,), doc="List of KATCP request replies",
+               max_dim_x=10000, polling_period=1000)
+    def Replies(self):
+        return self.tango_katcp_proxy._replies
+
+    @attribute(dtype=(str,), doc="List of KATCP request informs",
+               max_dim_x=10000, polling_period=1000)
+    def Informs(self):
+        return self.tango_katcp_proxy._informs
+
     def read_attr(self, attr):
         '''Read value for an attribute from the katcp sensor observer updates
         into the Tango attribute
@@ -243,6 +252,9 @@ class KatcpTango2DeviceProxy(object):
         self.tango_device_server = tango_device_server
         self.ioloop = ioloop
         self.sensor_observer = SensorObserver()
+        self.added_requests = {}
+        self._replies = []
+        self._informs = []
 
     def start(self):
         """Start the translator
@@ -287,7 +299,9 @@ class KatcpTango2DeviceProxy(object):
             else:
                 f.set_result(reply)
         self.ioloop.add_callback(_wait_synced)
-        return f.result(timeout=5)
+        result = f.result(timeout=5)
+        self._replies = self._replies + result.arguments
+        return result
 
     @tornado.gen.coroutine
     def katcp_state_callback(self, state, model_changes):
