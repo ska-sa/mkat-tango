@@ -190,8 +190,10 @@ def create_command2request_handler(req_name, req_doc):
     """
     if 'Parameters' in req_doc:
         def cmd_handler(self, *in_args):
+            MODULE_LOGGER.info("Executing request {}".format(req_name))
             reply = self.tango_katcp_proxy.do_request(
                     req_name, *in_args)
+            MODULE_LOGGER.info(reply.arguments)
             return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
         return command(f=cmd_handler, dtype_in=(str,),
@@ -200,7 +202,7 @@ def create_command2request_handler(req_name, req_doc):
         def cmd_handler(self):
             MODULE_LOGGER.info("Executing request {}".format(req_name))
             reply = self.tango_katcp_proxy.do_request(req_name)
-            MODULE_LOGGER.info(reply)
+            MODULE_LOGGER.info(reply.arguments)
             return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
         return command(f=cmd_handler, doc_in='No input parameters',
