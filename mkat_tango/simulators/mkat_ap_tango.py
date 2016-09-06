@@ -188,8 +188,8 @@ class MkatAntennaPositioner(Device):
         """
         command_name = "Slew()"
         if self.ap_model.in_remote_control():
-            if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.slew,
-                                            ApOperMode.track]:
+            if self.ap_model.mode() not in [ApOperMode.stop,
+                                            ApOperMode.slew]:
                 Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
                                        "switch Antenna mode to 'slew' while in mode"
                                        "'%s'" % self.ap_model.mode(), command_name,
@@ -384,8 +384,8 @@ class MkatAntennaPositioner(Device):
         """
         command_name = "Track()"
         if self.ap_model.in_remote_control():
-            if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.slew,
-                                          ApOperMode.track]:
+            if self.ap_model.mode() not in [ApOperMode.stop,
+                                            ApOperMode.track]:
                 Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
                                        "switch Antenna mode to 'track' while in "
                                        "mode '%s'" % self.ap_model.mode(), command_name,
