@@ -164,10 +164,6 @@ EXPECTED_SENSOR_LIST = [
     ('struct-tilt-temp', 'Temperature as reported by the tiltmeter', 'degC', 'float', '-5', '40'),
     ('struct-tilt-x', 'Structural tilt in X direction', 'arcsec', 'float', '-120', '120'),
     ('struct-tilt-y', 'Structural tilt in Y direction', 'arcsec', 'float', '-120', '120'),
-    ('temperature-sensor1', 'The value from the first temperature sensor installed in the antenna tower of AP#1 only.', 'degC', 'float', '-5', '45'),
-    ('temperature-sensor2', 'The value from the second temperature sensor installed in the antenna tower of AP#1 only.', 'degC', 'float', '-5', '45'),
-    ('temperature-sensor3', 'The value from the third temperature sensor installed in the antenna tower of AP#1 only.', 'degC', 'float', '-5', '45'),
-    ('temperature-sensor4', 'The value from the fourth temperature sensor installed in the antenna tower of AP#1 only.', 'degC', 'float', '-5', '45'),
     ('tilt-corr-azim', 'Currently applied pointing error correction in azimuth based on tiltmeter readout', 'arcsec', 'float', '-3600', '3600'),
     ('tilt-corr-elev', 'Currently applied pointing error correction in elevation based on tiltmeter readout', 'arcsec', 'float', '-3600', '3600'),
     ('tilt-param-an0', 'Currently applied parameter AN0 for average tilt of tower towards North.', 'arcsec', 'float', '-3600', '3600'),
@@ -410,6 +406,10 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Stop")
         self.client.assertCommandSucceeds("Rate", AZ_REQ_RATE, EL_REQ_RATE)
         self.assertEqual(self.device.mode, "rate")
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
         az_req_rate = self.device.requested_azim_rate
         el_req_rate = self.device.requested_elev_rate
         self.assertEqual(az_req_rate, AZ_REQ_RATE)
@@ -449,6 +449,10 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Stop")
         self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
         self.assertEqual(self.device.mode, "slew")
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1,
+                                             attr_data_type=CmdArgType.DevBoolean)
         az_req_pos = self.device.requested_azim
         el_req_pos = self.device.requested_elev
         self.assertEqual(az_req_pos, AZ_REQ_POS)
@@ -469,10 +473,16 @@ class TestMkatAp(DeviceTestCase):
         self.client.wait_until_attribute_equals(1, 'mode', 'stop')
         self.client.assertCommandSucceeds("Track")
         self.client.wait_until_attribute_equals(1, 'mode', 'track')
-        self.client.assertCommandSucceeds("Slew", 210, 65)
-        self.client.wait_until_attribute_equals(1, 'mode', 'slew')
+        # Mode transitions are only allowed from STOP
+        self.client.assertCommandFails("Slew", 210, 65)
+        self.client.assertCommandSucceeds('Stop')
+        self.client.wait_until_attribute_equals(1, 'mode', 'stop')
         self.client.assertCommandSucceeds("Slew", 220, 75)
         self.client.wait_until_attribute_equals(1, 'mode', 'slew')
+        # Mode transitions are only allowed from STOP
+        self.client.assertCommandFails("Track")
+        self.client.assertCommandSucceeds("Stop")
+        self.client.wait_until_attribute_equals(1, 'mode', 'stop')
         self.client.assertCommandSucceeds("Track")
         self.client.wait_until_attribute_equals(1, 'mode', 'track')
         self.client.assertCommandSucceeds("Stop")
@@ -499,6 +509,8 @@ class TestMkatAp(DeviceTestCase):
         # Start tracking
         self.client.assertCommandSucceeds("Track")
         self.client.wait_until_attribute_equals(2, 'mode', 'track')
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(2, 'on_target', 0,
                                              attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(MAX_TRACK_WAIT_TIME, 'on_target', 1,
@@ -537,7 +549,7 @@ class TestMkatAp(DeviceTestCase):
     def test_stow(self):
         # Make test start nice and close to the actual stow position
         ELEV_FOR_TEST = self.instance.ap_model.STOW_ELEV - 2 #MkatApModel.STOW_ELEV - 2
-        MAX_STOW_WAIT_TIME = 5
+        MAX_STOW_WAIT_TIME = 8
         self.instance.ap_model.elev_drive.set_position(ELEV_FOR_TEST)
         self.client.assertCommandSucceeds("Stop")
         self.client.wait_until_attribute_equals(2, 'mode', 'stop')
@@ -546,13 +558,16 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Stop")
         self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         self.client.assertCommandSucceeds("Stow")
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(MAX_STOW_WAIT_TIME, 'mode', 'stowed')
 
     def test_maintenance(self):
         # Make test start nice and close to the actual maint position
+        # Add a bit to the max maint wait time to account for brake activity
         AZIM_FOR_TEST = self.instance.ap_model.MAINT_AZIM - 5
         ELEV_FOR_TEST = self.instance.ap_model.MAINT_ELEV - 2
-        MAX_MAINT_WAIT_TIME = 5
+        MAX_MAINT_WAIT_TIME = 8
         self.instance.ap_model.azim_drive.set_position(AZIM_FOR_TEST)
         self.instance.ap_model.elev_drive.set_position(ELEV_FOR_TEST)
         self.client.assertCommandSucceeds("Stop")
@@ -562,6 +577,8 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Stop")
         self.client.wait_until_attribute_equals(2, 'mode', 'stop')
         self.client.assertCommandSucceeds("Maintenance")
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(MAX_MAINT_WAIT_TIME, 'mode', 'maintenance')
 
     def test_set_indexer_position(self):
@@ -606,6 +623,8 @@ class TestMkatAp(DeviceTestCase):
         AZ_REQ_POS = -170
         EL_REQ_POS = 20
         self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(2, 'on_target', 0,
                                              attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(30, 'on_target', 1,
@@ -620,6 +639,8 @@ class TestMkatAp(DeviceTestCase):
         AZ_REQ_POS = -160
         EL_REQ_POS = 30
         self.client.assertCommandSucceeds("Slew", AZ_REQ_POS, EL_REQ_POS)
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(2, 'on_target', 0,
                                              attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(30, 'on_target', 1,
@@ -653,6 +674,8 @@ class TestMkatAp(DeviceTestCase):
         self.client.assertCommandSucceeds("Slew", 89, 89)
         self.assertNotEqual(self.device.mode, 'stop')
         self.client.assertCommandSucceeds("Stow")
+        self.client.wait_until_attribute_equals(3, 'azim_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
+        self.client.wait_until_attribute_equals(3, 'elev_brakes_released', 1, attr_data_type=CmdArgType.DevBoolean)
         self.client.wait_until_attribute_equals(11, 'mode', 'stowed',
                                              attr_data_type=CmdArgType.DevString)
         self.assertNotEqual(self.device.mode, 'stop')
