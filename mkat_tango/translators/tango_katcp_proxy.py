@@ -238,12 +238,12 @@ class TangoDeviceServerBase(Device):
         return len(self.tango_katcp_proxy.untranslated_sensors)
 
     @attribute(dtype=(str,), doc="List of KATCP request replies",
-               max_dim_x=10000, max_dim_y=10, polling_period=1000)
+               max_dim_x=10000, max_dim_y=1000, polling_period=1000)
     def Replies(self):
         return self.tango_katcp_proxy.replies
 
     @attribute(dtype=(str,), doc="List of KATCP request informs",
-               max_dim_x=10000, max_dim_y=10, polling_period=1000)
+               max_dim_x=10000, max_dim_y=1000, polling_period=1000)
     def Informs(self):
         return self.tango_katcp_proxy.informs
 
@@ -359,16 +359,13 @@ class KatcpTango2DeviceProxy(object):
                 f.set_result([reply, informs])
         self.ioloop.add_callback(_wait_synced)
         reply, informs = f.result(timeout=5.0)
-        self.replies = self.replies + reply.arguments
-        if len(self.replies) >= 10:
-            self.replies.pop(0)
+        self.replies = reply.arguments
         count_informs = len(informs)
         if count_informs > 0:
+            self.informs = []
             for i in range(count_informs):
                 inf = informs[i]
                 self.informs = self.informs + inf.arguments
-                if len(self.informs) >= 10:
-                    self.informs.pop(0)
         return reply
 
     @tornado.gen.coroutine

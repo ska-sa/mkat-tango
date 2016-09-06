@@ -263,7 +263,6 @@ class test_KatcpTango2DeviceProxy(KatcpDevice2TangoProxy_BaseMixin, unittest.Tes
            after adding the new attributes.
         """
         attr_list = list(self.device.get_attribute_list())
-        import IPython; IPython.embed()
         for def_attr in default_attributes:
             attr_list.remove(def_attr)
 
