@@ -342,7 +342,7 @@ class KatcpTango2DeviceProxy(object):
         req : str
             request name
         args : list
-            input parameters in string format
+            request parameters in string format
 
         Returns
         -------
@@ -364,12 +364,9 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         reply, informs = f.result(timeout=5.0)
         self.replies = reply.arguments
-        count_informs = len(informs)
-        if count_informs > 0:
-            self.informs = []
-            for i in range(count_informs):
-                inf = informs[i]
-                self.informs.append(inf.arguments)
+        self.informs = []
+        for inf in informs:
+            self.informs.extend(inf.arguments)
         return reply
 
     @tornado.gen.coroutine
@@ -470,8 +467,8 @@ def get_katcp_address(server_name):
             'katcp_address')['katcp_address'][0]
     return katcp_address
 
-def get_request_client():
-    """Instantiates a BlockingClient that connects to the running KATCP device.
+def get_request_client(timeout=60.0):
+    """Inspects the KATCP device for requests using a temporary BlockingClient.
 
     Returns
     -------
@@ -487,7 +484,7 @@ def get_request_client():
     client = BlockingClient(katcp_host, katcp_port)
     try:
         client.start()
-        client.wait_connected(timeout=5.0)
+        client.wait_connected(timeout=timeout)
         help_m = Message.request('help')
         reply, informs = client.blocking_request(help_m)
     finally:
@@ -521,6 +518,8 @@ def get_tango_device_server():
         tango_cmd = create_command2request_handler(req_name, req_doc)
         setattr(TangoDeviceServerCommands, cmd_name, tango_cmd)
 
+    # The device __metaclass__ must be in the final class defination and cannot
+    # come from the super class. i.e. The double-definitation
     class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
         __metaclass__ = DeviceMeta
 
