@@ -28,11 +28,12 @@ from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
 from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcore.testutils import cleanup_tempfile
 
-from mkat_tango.translators.tango_katcp_proxy import (TangoDeviceServerBase,
-                                                      get_request_client)
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       remove_tango_server_attribute_list,
-                                                      add_tango_server_attribute_list)
+                                                      add_tango_server_attribute_list,
+                                                      create_command2request_handler,
+                                                      TangoDeviceServerBase,
+                                                      get_request_client)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
@@ -230,9 +231,6 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
             del self.instance
         self.addCleanup(cleanup_refs)
         self.addCleanup(self._reset_katcp_server)
-        # Need to reset the device server to its default configuration
-        self.addCleanup(remove_tango_server_attribute_list,
-                        self.instance, self.katcp_server._sensors)
 
     def _reset_katcp_server(self):
         """For removing any sensors that were added during testing
@@ -598,6 +596,11 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         self.assertEqual(sensor_value.value(),
                 getattr(self.device, katcpname2tangoname(req)),
                 'Sensor value does not match attribute value after executing a command.')
+
+    def test_time_command(self):
+        req = 'time-result'
+        expected_result = time.time
+        self._test_command(req, expected_result())
 
     def test_add_command(self):
         req = 'add-result'
