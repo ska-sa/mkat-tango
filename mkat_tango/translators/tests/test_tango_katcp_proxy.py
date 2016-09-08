@@ -580,6 +580,44 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         self.assertEqual(set(command_list), set(reqname2tangoname_list),
                          "The command list and the request list do not match")
 
+    def _test_command2request_handler(self, req_name, req_doc, with_parameters=False):
+        """Testing the tango command handler with/without request parameters.
+
+        Parameters
+        ----------
+        req_name : str
+            KATCP request name
+        req_doc : str
+            KATCP request docstring
+        with_parameters : bool
+            Represent whether or not the request takes in parameters
+
+        """
+        command = create_command2request_handler(req_name, req_doc)
+        doc_in = command.func_dict['__tango_command__'][1][0][1]
+        doc_out = command.func_dict['__tango_command__'][1][1][1]
+        self.assertEqual(command.func_name, katcpname2tangoname(req_name),
+                'The command name is not tango format as expected')
+        if with_parameters:
+            self.assertEqual(doc_in, req_doc)
+            self.assertEqual(doc_out, '')
+        else:
+            self.assertEqual(doc_in, 'No input parameters')
+            self.assertEqual(doc_out, req_doc)
+
+    def test_commad_handler_with_inputs(self):
+        req = 'add-result'
+        # The command handler at these instance checks for the presence of the
+        # word Parameters in the doc string of the request to create a command
+        # handler with request parameters.
+        req_doc = 'Parameters are x and y'
+        self._test_command2request_handler(req, req_doc, with_parameters=True)
+
+    def test_commad_handler_without_inputs(self):
+        req = 'time-result'
+        req_doc = 'time result'
+        self._test_command2request_handler(req, req_doc)
+
     def _test_command(self, req, expected_result, *args):
         """Testing weather the katcp user defined request can be executed by the Tango
         proxy"""
@@ -596,11 +634,6 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         self.assertEqual(sensor_value.value(),
                 getattr(self.device, katcpname2tangoname(req)),
                 'Sensor value does not match attribute value after executing a command.')
-
-    def test_time_command(self):
-        req = 'time-result'
-        expected_result = time.time
-        self._test_command(req, expected_result())
 
     def test_add_command(self):
         req = 'add-result'
