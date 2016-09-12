@@ -334,8 +334,8 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         f.result(timeout=timeout)
 
-    def do_request(self, req, *args):
-        """Execute a request using a command handler.
+    def do_request(self, req, katcp_request_timeout=5.0, *args):
+        """Execute a KATCP request using a command handler.
 
         Parameters
         ----------
@@ -343,6 +343,8 @@ class KatcpTango2DeviceProxy(object):
             request name
         args : list
             request parameters in string format
+        katcp_request_timeout : float
+            KATCP request timeout
 
         Returns
         -------
@@ -362,7 +364,7 @@ class KatcpTango2DeviceProxy(object):
             else:
                 f.set_result([reply, informs])
         self.ioloop.add_callback(_wait_synced)
-        reply, informs = f.result(timeout=5.0)
+        reply, informs = f.result(timeout=katcp_request_timeout)
         self.replies = reply.arguments
         self.informs = []
         for inf in informs:
@@ -427,7 +429,7 @@ class KatcpTango2DeviceProxy(object):
         return cls(katcp_inspecting_client, tango_device_server, ioloop)
 
 class SensorObserver(object):
-    """The observer class attached to katcp sensor to recieve updates after the
+    """The observer class attached to KATCP sensor to recieve updates after the
     sensor strategy is set."""
     def __init__(self):
         self.updates = dict()
@@ -443,7 +445,7 @@ class SensorObserver(object):
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
 def get_katcp_address(server_name):
-    """Gets the katcp address of a running katcp proxy form the tango-db device
+    """Gets the KATCP address of a running KATCP device form the tango-db device
     properties
 
     Parameters
@@ -456,7 +458,7 @@ def get_katcp_address(server_name):
     Returns
     -------
     katcp_address : str
-        Address of a running katcp proxy
+        Address of a running KATCP device
         e.g. 'localhost:50000'
 
     """
@@ -467,8 +469,14 @@ def get_katcp_address(server_name):
             'katcp_address')['katcp_address'][0]
     return katcp_address
 
-def get_request_client(timeout=60.0):
+def get_katcp_request_data(katcp_connect_timeout=60.0):
     """Inspects the KATCP device for requests using a temporary BlockingClient.
+
+    Parameters
+    ----------
+    katcp_connect_timeout: float
+        Client connection timeout to a KATCP device
+
 
     Returns
     -------
@@ -484,7 +492,7 @@ def get_request_client(timeout=60.0):
     client = BlockingClient(katcp_host, katcp_port)
     try:
         client.start()
-        client.wait_connected(timeout=timeout)
+        client.wait_connected(timeout=katcp_connect_timeout)
         help_m = Message.request('help')
         reply, informs = client.blocking_request(help_m)
     finally:
@@ -506,7 +514,7 @@ def get_tango_device_server():
         Tango device that has the results of the translated KATCP server
 
     """
-    requests_dict = get_request_client()
+    requests_dict = get_katcp_request_data()
 
     # Declare a Tango Device class for specifically adding commands prior
     # running the device server
