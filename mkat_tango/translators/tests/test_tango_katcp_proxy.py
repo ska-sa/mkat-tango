@@ -33,7 +33,7 @@ from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       add_tango_server_attribute_list,
                                                       create_command2request_handler,
                                                       TangoDeviceServerBase,
-                                                      get_request_client)
+                                                      get_katcp_request_data)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
@@ -567,7 +567,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
                         ) as mock_get_katcp_address:
             mock_get_katcp_address.return_value = '{}:{}'.format(
                     katcp_server_host, katcp_server_port)
-            req_dict = get_request_client()
+            req_dict = get_katcp_request_data()
         command_list = [command.cmd_name for command in
                         self.device.command_list_query()]
         reqname2tangoname_list = []
@@ -615,7 +615,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
 
     def test_commad_handler_without_inputs(self):
         req = 'time-result'
-        req_doc = 'time result'
+        req_doc = 'Return the current time in ms since the Unix Epoch'
         self._test_command2request_handler(req, req_doc)
 
     def _test_command(self, req, expected_result, *args):
