@@ -334,7 +334,7 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         f.result(timeout=timeout)
 
-    def do_request(self, req, do_request_timeout=5.0, *args):
+    def do_request(self, req, katcp_request_timeout=5.0, *args):
         """Execute a KATCP request using a command handler.
 
         Parameters
@@ -343,7 +343,7 @@ class KatcpTango2DeviceProxy(object):
             request name
         args : list
             request parameters in string format
-        do_request_timeout : float
+        katcp_request_timeout : float
             KATCP request timeout
 
         Returns
@@ -364,7 +364,7 @@ class KatcpTango2DeviceProxy(object):
             else:
                 f.set_result([reply, informs])
         self.ioloop.add_callback(_wait_synced)
-        reply, informs = f.result(timeout=do_request_timeout)
+        reply, informs = f.result(timeout=katcp_request_timeout)
         self.replies = reply.arguments
         self.informs = []
         for inf in informs:
