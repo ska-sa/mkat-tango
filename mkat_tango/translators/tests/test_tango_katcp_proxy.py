@@ -197,7 +197,7 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.katcp_server = KatcpTestDevice(server_host, server_port)
-        cls.katcp_server.start()
+        start_thread_with_cleanup(cls, cls.katcp_server)
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
         cls.properties = dict(katcp_address=katcp_server_host + ':' +
@@ -442,15 +442,13 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
     def _update_katcp_server_sensor_values(self, katcp_device_server):
         """Method that makes updates to all the katcp device server sensors.
 
-        Input Parameters
-        ----------------
-
+        Parameters
+        ----------
         katcp_device_server : KATCP DeviceServer
             The katcp device server for which sensor updates are applied to.
 
         Returns
-        ------
-
+        -------
         katcp_device_server : KATCP DeviveServer
             The same katcp server but with new sensor value updates.
 
@@ -500,8 +498,8 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """Keeps polling tango attribute from running device until the a value that
         is not None is found, otherwise timeout error exception is raised.
 
-        Input Parameters
-        ----------------
+        Parameters
+        ----------
 
         attr_name : str
             Name of tango attribute name to poll.
@@ -594,8 +592,10 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
 
         """
         command = create_command2request_handler(req_name, req_doc)
-        doc_in = command.func_dict['__tango_command__'][1][0][1]
-        doc_out = command.func_dict['__tango_command__'][1][1][1]
+        # The format of the command attribute __tango_command__ is a tuple
+        # (req_name, [[dtype_in, doc_in,], [dtype_out, doc_out], {}])
+        doc_in = command.__tango_command__[1][0][1]
+        doc_out = command.__tango_command__[1][1][1]
         self.assertEqual(command.func_name, katcpname2tangoname(req_name),
                 'The command name is not tango format as expected')
         if with_parameters:
