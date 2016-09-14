@@ -239,12 +239,6 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
             if sens_name not in sensors.keys():
                 self.katcp_server.remove_sensor(sens_name)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.katcp_server.stop()
-        super(_test_KatcpTango2DeviceProxyCommands, cls).tearDownClass()
-
-
 class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
     def test_connections(self):
         """Testing if both the TANGO client proxy and the KATCP inspecting clients
