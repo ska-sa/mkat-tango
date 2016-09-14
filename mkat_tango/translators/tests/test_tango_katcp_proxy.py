@@ -500,7 +500,6 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
 
         Parameters
         ----------
-
         attr_name : str
             Name of tango attribute name to poll.
         timeout : int [defualt = 1 ]seconds
