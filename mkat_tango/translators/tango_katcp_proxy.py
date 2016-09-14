@@ -183,10 +183,10 @@ def create_command2request_handler(req_name, req_doc):
         Tango device server command
     """
     if 'Parameters' in req_doc:
-        def cmd_handler(self, in_args):
+        def cmd_handler(self, request_args):
             MODULE_LOGGER.info("Executing request {}".format(req_name))
             reply = self.tango_katcp_proxy.do_request(
-                    req_name, *in_args)
+                    req_name, request_args)
             MODULE_LOGGER.info(reply.arguments)
             return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
@@ -334,14 +334,14 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         f.result(timeout=timeout)
 
-    def do_request(self, req, katcp_request_timeout=5.0, *args):
+    def do_request(self, req, request_args, katcp_request_timeout=5.0):
         """Execute a KATCP request using a command handler.
 
         Parameters
         ----------
         req : str
             request name
-        args : list
+        request_args : list
             request parameters in string format
         katcp_request_timeout : float
             KATCP request timeout
@@ -358,7 +358,7 @@ class KatcpTango2DeviceProxy(object):
         def _wait_synced():
             try:
                 reply, informs = yield self.katcp_inspecting_client.simple_request(
-                                                req, *args)
+                                                req, *request_args)
             except Exception as exc:
                 f.set_exception(exc)
             else:

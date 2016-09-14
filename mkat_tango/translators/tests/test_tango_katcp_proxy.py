@@ -24,13 +24,16 @@ from PyTango.server import DeviceMeta
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
-from katcp.testutils import start_thread_with_cleanup
+from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
+from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcore.testutils import cleanup_tempfile
 
-from mkat_tango.translators.tango_katcp_proxy import TangoDeviceServerBase
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       remove_tango_server_attribute_list,
-                                                      add_tango_server_attribute_list)
+                                                      add_tango_server_attribute_list,
+                                                      create_command2request_handler,
+                                                      TangoDeviceServerBase,
+                                                      get_katcp_request_data)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
@@ -60,6 +63,10 @@ sensors = {
             "track-stack-size",
             "The number of track samples available in the ACU sample stack",
             "", [0, 3000]),
+        'add-result': Sensor.float(
+            "add-result", "Last ?add result.", "", [-10000, 10000]),
+        'time-result': Sensor.timestamp(
+            "time-result", "Last ?time result.", "", [0.00, 1000000000.00]),
         'gps-nmea': Sensor.string(
             "gps-nmea", "GPS NMEA string details received", ""),
         'ntp-timestamp': Sensor.timestamp(
@@ -74,8 +81,11 @@ default_attributes = {
     'State', 'Status', 'NumErrorTranslatingSensors',
     'ErrorTranslatingSensors', 'Replies', 'Informs'}
 
+default_commands = {'Init', 'Status', 'State'}
+
 server_host = ""
 server_port = 0
+
 
 class KatcpTestDevice(DeviceServer):
 
@@ -86,6 +96,30 @@ class KatcpTestDevice(DeviceServer):
         """Setup some server sensors."""
         for sensor in sensors.values():
             self.add_sensor(sensor)
+
+    @request(Float(), Float())
+    @return_reply(Float())
+    def request_add(self, req, x, y):
+        """Add two numbers
+
+        Input Parameters
+        ----------------
+        x : kattypes.Float
+        y : kattypes.Float
+
+        """
+        result = x + y
+        self.get_sensor('add-result').set_value(result)
+        return ("ok", result)
+
+    @request()
+    @return_reply(Timestamp())
+    def request_time(self, req):
+        """Return the current time in ms since the Unix Epoch."""
+        result = time.time()
+        self.get_sensor('time-result').set_value(result)
+        return ("ok", result)
+
 
 class KatcpTestDeviceValidSensorsOnly(DeviceServer):
 
@@ -100,8 +134,10 @@ class KatcpTestDeviceValidSensorsOnly(DeviceServer):
                 continue
             self.add_sensor(sensor)
 
+
 class TangoDeviceServer(TangoDeviceServerBase):
     __metaclass__ = DeviceMeta
+
 
 class _test_KatcpTango2DeviceProxy(DeviceTestCase):
     longMessage = True
@@ -129,7 +165,7 @@ class _test_KatcpTango2DeviceProxy(DeviceTestCase):
         # Using these two lines for state consistency for tango ds, will be replaced.
         self.in_ioloop(self.katcp_ic.until_data_synced)()
         # TODO (KM 2016-06-23): Need to make use of the Tango device interface change
-           # event instead of sleeping to allow the tango device server be configured.
+        # event instead of sleeping to allow the tango device server be configured.
         time.sleep(0.5)
 
         def cleanup_refs():
@@ -151,6 +187,57 @@ class _test_KatcpTango2DeviceProxy(DeviceTestCase):
     def tearDownClass(cls):
         cls.katcp_server.stop()
         super(_test_KatcpTango2DeviceProxy, cls).tearDownClass()
+
+
+class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
+                                           unittest.TestCase):
+    longMessage = True
+
+    @classmethod
+    def setUpClassWithCleanup(cls):
+        cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
+        cls.katcp_server = KatcpTestDevice(server_host, server_port)
+        start_thread_with_cleanup(cls, cls.katcp_server)
+        address = cls.katcp_server.bind_address
+        katcp_server_host, katcp_server_port = address
+        cls.properties = dict(katcp_address=katcp_server_host + ':' +
+                              str(katcp_server_port))
+        with mock.patch('mkat_tango.translators.tango_katcp_proxy.get_katcp_address'
+                        ) as mock_get_katcp_address:
+            mock_get_katcp_address.return_value = '{}:{}'.format(
+                    katcp_server_host, katcp_server_port)
+            cls.TangoDeviceServer = get_tango_device_server()
+            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
+                                                 db=cls.tango_db,
+                                                 properties=cls.properties)
+        start_thread_with_cleanup(cls, cls.tango_context)
+
+    def setUp(self):
+        super(_test_KatcpTango2DeviceProxyCommands, self).setUp()
+        self.device = self.tango_context.device
+        self.instance = self.TangoDeviceServer.instances[self.device.name()]
+        self.ioloop = self.instance.tango_katcp_proxy.ioloop
+        self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
+        self.katcp_ic.katcp_client.wait_protocol(timeout=5.0)
+        self.ioloop_wrapper = IOLoopThreadWrapper(self.ioloop)
+        self.in_ioloop = self.ioloop_wrapper.decorate_callable
+        # Using these two lines for state consistency for tango ds, will be replaced.
+        self.in_ioloop(self.katcp_ic.until_data_synced)()
+        # TODO (KM 2016-06-23): Need to make use of the Tango device interface change
+           # event instead of sleeping to allow the tango device server be configured.
+        time.sleep(0.5)
+
+        def cleanup_refs():
+            del self.instance
+        self.addCleanup(cleanup_refs)
+        self.addCleanup(self._reset_katcp_server)
+
+    def _reset_katcp_server(self):
+        """For removing any sensors that were added during testing
+        """
+        for sens_name in self.katcp_server._sensors.keys():
+            if sens_name not in sensors.keys():
+                self.katcp_server.remove_sensor(sens_name)
 
 class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
     def test_connections(self):
@@ -348,14 +435,17 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
 
     def _update_katcp_server_sensor_values(self, katcp_device_server):
         """Method that makes updates to all the katcp device server sensors.
-        Input Parameters
-        ----------------
+
+        Parameters
+        ----------
         katcp_device_server : KATCP DeviceServer
             The katcp device server for which sensor updates are applied to.
+
         Returns
-        ------
+        -------
         katcp_device_server : KATCP DeviveServer
             The same katcp server but with new sensor value updates.
+
         """
         for sensor in katcp_device_server.get_sensors():
             if sensor.stype in ['integer']:
@@ -401,14 +491,16 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
             self, attr_name, timeout=1, poll_period=0.025):
         """Keeps polling tango attribute from running device until the a value that
         is not None is found, otherwise timeout error exception is raised.
-        Input Parameters
-        ----------------
+
+        Parameters
+        ----------
         attr_name : str
             Name of tango attribute name to poll.
         timeout : int [defualt = 1 ]seconds
             Suspension time after which a RuntimeError is raise.
         poll_period : int [defualt = 0.025 ]seconds
             Period of sampling the value of the device attribute.
+
         """
         stoptime = time.time() + timeout
         value = getattr(self.device, attr_name)
@@ -450,3 +542,95 @@ class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
         # TODO NM 2016-08-31 For some reason None is returned instead of an
         # empty list, PyTango bug?
         self.assertEqual(self.device.ErrorTranslatingSensors, None)
+
+
+class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
+
+    def test_inspection_of_requests(self):
+        """Testing if the katcp blocking client succesfully obtained the katcp
+        requests and whether translation was successful.
+        """
+        is_katcp_server_running = self.katcp_server.running()
+        self.assertEqual(is_katcp_server_running, True,
+                         "Katcp device server not running")
+        katcp_server_host, katcp_server_port = self.katcp_server.bind_address
+        with mock.patch('mkat_tango.translators.tango_katcp_proxy.get_katcp_address'
+                        ) as mock_get_katcp_address:
+            mock_get_katcp_address.return_value = '{}:{}'.format(
+                    katcp_server_host, katcp_server_port)
+            req_dict = get_katcp_request_data()
+        command_list = [command.cmd_name for command in
+                        self.device.command_list_query()]
+        reqname2tangoname_list = []
+        for req in req_dict.keys():
+            katcp_tango_name = katcpname2tangoname(req)
+            reqname2tangoname_list.append(katcp_tango_name)
+            self.assertIn(katcp_tango_name, command_list)
+        for def_command in default_commands:
+            command_list.remove(def_command)
+        self.assertEqual(set(command_list), set(reqname2tangoname_list),
+                         "The command list and the request list do not match")
+
+    def _test_command2request_handler(self, req_name, req_doc, with_parameters=False):
+        """Testing the tango command handler with/without request parameters.
+
+        Parameters
+        ----------
+        req_name : str
+            KATCP request name
+        req_doc : str
+            KATCP request docstring
+        with_parameters : bool
+            Represent whether or not the request takes in parameters
+
+        """
+        command = create_command2request_handler(req_name, req_doc)
+        # The format of the command attribute __tango_command__ is a tuple
+        # (req_name, [[dtype_in, doc_in,], [dtype_out, doc_out], {}])
+        doc_in = command.__tango_command__[1][0][1]
+        doc_out = command.__tango_command__[1][1][1]
+        self.assertEqual(command.func_name, katcpname2tangoname(req_name),
+                'The command name is not tango format as expected')
+        if with_parameters:
+            self.assertEqual(doc_in, req_doc)
+            self.assertEqual(doc_out, '')
+        else:
+            self.assertEqual(doc_in, 'No input parameters')
+            self.assertEqual(doc_out, req_doc)
+
+    def test_commad_handler_with_inputs(self):
+        req = 'add-result'
+        # The command handler at these instance checks for the presence of the
+        # word Parameters in the doc string of the request to create a command
+        # handler with request parameters.
+        req_doc = 'Parameters are x and y'
+        self._test_command2request_handler(req, req_doc, with_parameters=True)
+
+    def test_commad_handler_without_inputs(self):
+        req = 'time-result'
+        req_doc = 'Return the current time in ms since the Unix Epoch'
+        self._test_command2request_handler(req, req_doc)
+
+    def _test_command(self, req, expected_result, *args):
+        """Testing weather the katcp user defined request can be executed by the Tango
+        proxy"""
+        sensor_value = self.katcp_server.get_sensor(req)
+        self.assertNotEqual(sensor_value.value(), expected_result,
+                'The initial value of the sensor is simalar to the test input result')
+        command = getattr(self.instance, req.split('-')[0])
+        if len(args) > 0:
+            reply = command(map(str, *args))
+        else:
+            reply = command()
+        self.assertEqual(reply[0], 'ok', 'Request unsuccessful')
+        sensor_value = self.katcp_server.get_sensor(req)
+        self.assertEqual(sensor_value.value(),
+                getattr(self.device, katcpname2tangoname(req)),
+                'Sensor value does not match attribute value after executing a command.')
+
+    def test_add_command(self):
+        req = 'add-result'
+        input_x = 8.0
+        input_y = 8.0
+        expected_result = input_x + input_y
+        self._test_command(req, expected_result, [input_x, input_y])
