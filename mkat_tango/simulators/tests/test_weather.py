@@ -82,7 +82,7 @@ class test_Weather(DeviceTestCase):
         self.assertEqual(attributes, self.expected_attributes)
 
     def test_varying_attributes_min_interval(self):
-        # Test that attributes to not change within the minimum model update period
+        # Test that attributes do not change within the minimum model update period
 
         self.maxDiff = None
         model = self.instance.model
