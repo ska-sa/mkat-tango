@@ -1,0 +1,2 @@
+TAG, DEVICE,    DESCRIPTION,    SEVERITY,       RECEIVERS,      FORMULA,
+CSV_ALARM,  mkat/panic/kataware, ANC implements this sensor giving 10-min mean wind speed over all wind sensors, ALARM, cam@ska.ac.za kmadisa@ska.ac.za, (mkat/proxies/anc/mean_wind_speed.value > 11.1 or mkat/proxies/anc/mean_wind_speed.value < 1.5),
