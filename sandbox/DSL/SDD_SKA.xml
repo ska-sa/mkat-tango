@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Element>																<!-- Possible -->
+	<ElementId>..........</ElementId>
+	<ElementName>..........</ElementName> 								 <!-- Possible -->
+	<ElementLocation>
+		<GeographicalLocation latitude="....." longitude="....."></GeographicalLocation>
+		<LocationDescription>
+			<!-- This parameter is used to indicate the position of product e.g. "Spiral/Core" -->
+		</LocationDescription>
+	</ElementLocation>
+	<ElementLMC>
+		<NetworkDetails IpAddress = "...">								<!-- Possible -->
+			<PhysicalAddress>..........</PhysicalAddress>		
+		</NetworkDetails>
+	</ElementLMC>
+	
+	<!-- Current understanding is that any of the SubElement, Unit, Assembly, SubAssembly, Component could be LRU -->
+	
+	<ElementHierarchy>													<!-- NOT Possible -->
+
+		<Hierarchy Level = "1" type = "SubElement" LRU = "TRUE/FALSE">
+			
+			<ID>..........</ID>
+			<Name>..........</Name>
+			<Description>..........</Description>
+			<Manufacturer>..........</Manufacturer>
+			<ManufacturerURL>..........</ManufacturerURL>
+			<ModelNumber>...........</ModelNumber>
+			<ModelName>..........</ModelName>
+			<ModelURL>..........</ModelURL>
+			
+			<Hierarchy Level  = "2" type = "Unit" LRU = "TRUE/FALSE">
+				
+				<ID>..........</ID>
+				<Name>..........</Name>
+				<Description>..........</Description>
+				<Manufacturer>..........</Manufacturer>
+				<ManufacturerURL>..........</ManufacturerURL>
+				<ModelNumber>...........</ModelNumber>
+				<ModelName>..........</ModelName>
+				<ModelURL>..........</ModelURL>
+			
+				<Hierarchy Level = "3" type = "Assembly" LRU = "TRUE/FALSE">
+					<ID>..........</ID>
+					<Name>..........</Name>
+					<Description>..........</Description>
+					<Manufacturer>..........</Manufacturer>
+					<ManufacturerURL>..........</ManufacturerURL>
+					<ModelNumber>...........</ModelNumber>
+					<ModelName>..........</ModelName>
+					<ModelURL>..........</ModelURL>
+				
+					<Hierarchy Level = "4" type = "SubAssembly" LRU = "TRUE/FALSE">
+					
+						<ID>..........</ID>
+						<Name>..........</Name>
+						<Description>..........</Description>
+						<Manufacturer>..........</Manufacturer>
+						<ManufacturerURL>..........</ManufacturerURL>
+						<ModelNumber>...........</ModelNumber>
+						<ModelName>..........</ModelName>
+						<ModelURL>..........</ModelURL>
+						
+						<Hierarchy Level = "5" type = "Component" LRU = "TRUE/FALSE">
+						
+							<ID>..........</ID>
+							<Name>..........</Name>
+							<Description>..........</Description>
+							<Manufacturer>..........</Manufacturer>
+							<ManufacturerURL>..........</ManufacturerURL>
+							<ModelNumber>...........</ModelNumber>
+							<ModelName>..........</ModelName>
+							<ModelURL>..........</ModelURL>
+						
+						</Hierarchy>
+
+						<!-- SubAssembly could comprise of multiple components -->
+						
+						<Hierarchy Level = "5" type = "Component" LRU = "TRUE/FALSE"> . . . </Hierarchy>
+						
+					</Hierarchy>
+				
+					<!-- Assembly could comprise of multiple subassemblies -->
+				
+					<Hierarchy Level = "4" type = "SubAssembly" LRU = "TRUE/FALSE"> . . . </Hierarchy>
+				
+				</Hierarchy>
+				
+				<!-- Unit could comprise of multiple Assemblies -->
+				
+				<Hierarchy Level = "3" type = "Assembly" LRU = "TRUE/FALSE"> . . . </Hierarchy>
+			
+			</Hierarchy>
+			
+			<!-- SubElement could comprise of multiple units -->
+			
+			<Hierarchy Level = "2" type = "Unit" LRU = "TRUE/FALSE"> . . . </Hierarchy>
+		
+		</Hierarchy>
+		
+		<!-- Element could comprise of multiple SubElements -->
+		
+		<Hierarchy Level = "1" type = "SubElement" LRU = "TRUE/FALSE"> . . . </Hierarchy>
+		
+	</ElementHierarchy>
+	
+	<MonitoringPointsList>												<!-- Possible -->
+		<!-- Monitoring type indicates whether TM should subscribe/monitor it -->
+		<MonitoringPoint id = "..." name = "..." mandatory = "TRUE/FALSE"> <!-- Possible -->
+			<Description>..........</Description>
+			<DataType>..........</DataType>									<!-- Possible -->
+			<Size>															<!-- Possible, has to be inferred from the datatype -->
+				<!-- Size of the datatype. e.g."int" could be of 16 bytes, 32 bytes. Could be clubbed with DataType tag -->
+			</Size>
+			<RWType>														<!-- NOT Possible -->
+				<!-- Read Write Type. Possible values Read/Write/Read_Write -->
+			</RWType>
+			<PossibleValues>												<!-- Possible -->
+				<!-- PossibleValues and MinValue/MaxValue are mutually ecxculsive -->
+				<PossibleValue>..........</PossibleValue>
+				<PossibleValue>..........</PossibleValue>
+			</PossibleValues>
+			<ValueRange>													<!-- Possible -->
+				<MinValue>..........</MinValue>
+				<MaxValue>..........</MaxValue>
+			</ValueRange>
+			
+			<SamplingFrequency>												<!-- NOT Possible, maybe a part of testing -->
+				<DefaultValue>..........</DefaultValue>
+				<MaxValue>..........</MaxValue>
+			</SamplingFrequency>
+			<LoggingLevel>
+				<!-- please specify set of values -->
+			</LoggingLevel>
+		</MonitoringPoint>
+		<MonitoringPoint> . . . </MonitoringPoint>
+	</MonitoringPointsList>
+	
+	<CommandList>															<!-- Possible -->
+		<Command>
+			<CommandID>..........</CommandID>
+			<CommandName>..........</CommandName>							<!-- Possible -->
+			<CommandDescription>..........</CommandDescription>
+			<CommandType>
+				<!-- Possible values : 1. Common and 2. Product Specific -->
+			</CommandType>
+			<Timeout>..........</Timeout>
+			<MaxRetry>..........</MaxRetry>
+			<!-- Time for Execution and Timeout would be same for a command -->
+			<TimeForExecution>
+				<!-- Time required for command execution in worst case scenario -->
+			</TimeForExecution>
+			
+			<AvailableInModes>
+				<!-- Mode is SCM specific -->
+				<Mode>..........</Mode>
+				<Mode>. . .</Mode>
+			</AvailableInModes>
+			<CommandParameters>											<!-- Possible -->
+				<Parameter>
+					<ParameterID>..........</ParameterID>
+					<ParameterName>..........</ParameterName>			<!-- Possible -->
+					<ParameterDataType>..........</ParameterDataType>	<!-- Possible -->
+				</Parameter>
+				<Parameter> . . . </Parameter>
+			</CommandParameters>
+
+			<CommandValidationRuleList>									<!-- What does this contain? Possible but in a different semantic -->
+				<CommandValidationRule>
+					<CommandValidationRuleID>..........</CommandValidationRuleID>
+					<CommandValidationRuleName>..........</CommandValidationRuleName>
+					<CommandValidationRuleDescription>..........</CommandValidationRuleDescription>
+				</CommandValidationRule>
+
+				<CommandValidationRule> . . . </CommandValidationRule>
+			</CommandValidationRuleList>
+			
+			<ResponseList>												<!-- Possible -->
+				<Response>
+					<ResponseID>..........</ResponseID>
+					<ResponseName>..........</ResponseName>				<!-- Possible -->
+					<ResponseType>ACK/NACK/IntermediateResponse/FinalResponse</ResponseType>
+					<ResponseDescription>..........</ResponseDescription>
+					<ResponseParameters>								<!-- Possible -->
+						<Parameter>
+							<ParameterID>..........</ParameterID>
+							<ParameterName>..........</ParameterName>	<!-- Possible -->
+							<ParameterValue>..........</ParameterValue>	<!-- Possible -->
+						</Parameter>
+						<Parameter> . . . </Parameter>
+					</ResponseParameters>
+				</Response>
+				<Response> . . . </Response>
+			</ResponseList>
+
+		</Command>
+		<Command> . . . </Command>
+	</CommandList>
+	
+	<EventList>															<!-- Possible -->
+		<Event>
+			<EventID>...........</EventID>
+			<EventName>..........</EventName>							<!-- Possible -->
+			<ActionsRequiredFromTM>
+				<Action mandatory = "TRUE/FALSE">
+					<ActionName>..........</ActionName>
+					<ActionDescription>..........</ActionDescription>	<!-- Possible -->
+				</Action>
+				<Action> . . . </Action>
+			</ActionsRequiredFromTM>	
+		</Event>
+		<Event> . . . </Event>
+	</EventList>
+	
+	<AlarmList>															<!-- Possible -->
+		<Alarm>
+			<AlarmID>...........</AlarmID>
+			<AlarmName>..........</AlarmName>							<!-- Possible -->
+			<AlarmDescription>............</AlarmDescription>
+			<AlarmType>													<!-- Possible, but SKA might require an ENum -->
+				<!-- Possible values 1. Common and 2. Product Specific -->
+			</AlarmType>
+			<AlarmCause>...........</AlarmCause>						<!-- Possible -->
+			<SeverityLevel>............</SeverityLevel>					<!-- Possible -->
+					
+			<PossibleActions>											<!-- Possible -->
+				<Action mandatory = "TRUE/FALSE">
+					<ActionID>............</ActionID>
+					<ActionName>..........</ActionName>					
+					<ActionDescription>..........</ActionDescription>	<!-- Possible -->
+				</Action>
+				<Action> . . </Action>
+			</PossibleActions>
+			
+			<ImpactOnOtherProducts>										<!-- NOT Possible -->	
+				<ImpactPossibility>Yes/No</ImpactPossibility>
+				<ListOfProductsAffected>
+					<ProductID>............</ProductID>
+				</ListOfProductsAffected>
+			</ImpactOnOtherProducts>
+			
+			<!-- AlarmSuppressionMechanism could be clubbed with PossibleActions -->
+			<AlarmSuppressionMechanism>..........</AlarmSuppressionMechanism>
+		</Alarm>
+
+		<Alarm> . . . </Alarm>
+
+	</AlarmList>
+	
+	
+	<!-- Possible Recovery actions TM can perform on product/ LMC failure -->
+	<RecoveryAction>							<!-- Possible, all actions are part of other M&C items like Command, response, alarm event. -->
+		<Action id = ". . .">
+			<Description>..........</Description>
+		</Action>
+		<Action>..........</Action>
+	</RecoveryAction>
+
+	<!-- SubscribeParameters Tag contains list of parameters that the product requires from TM of other products for, e.g. Dish waits for the beam former status from the CSP -->
+	<SubscribeParameters>									<!-- Possible, Subscription of all M&C items is feasible, not only the "parameter" -->
+		<Parameter>
+			<ProductID>..........</ProductID>
+			<ParameterName>..........</ParameterName>
+		</Parameter>
+	</SubscribeParameters>
+	
+	<StartupSequence>											<!-- NOT Possible -->
+		<!-- TBD -->
+	</StartupSequence>
+	
+	<CapabilityList>											<!-- NOT Possible -->
+		<Capability id = ". . .">
+			<Name>..........</Name>
+			<MaxInstance>..........</MaxInstance>
+			<Description>..........</Description>
+			<InputParameters>
+				<Parameter>
+					<Name>..........</Name>
+					<DataType size = ". . .">..........</DataType>
+					<PossibleValues>
+						<PossibleValue>..........</PossibleValue>
+						<PossibleValue>..........</PossibleValue>
+					</PossibleValues>
+					<ValueRange>
+						<MinValue>..........</MinValue>
+						<MaxValue>..........</MaxValue>
+					</ValueRange>
+				</Parameter>
+			</InputParameters>
+			<Dependencies>
+				<!-- TBD -->
+			</Dependencies>
+		</Capability>
+		<Capability>..........</Capability>
+	</CapabilityList>
+	
+	<ConfigParameters>											<!-- Possible, We have it in the form of dataPoints -->
+		<ConfigParameter name = ". . ." defaultValue = ". . .">
+			<DataType>..........</DataType>
+			<Size>..........</Size>
+			<PossibleValues>
+				<PossibleValue>..........</PossibleValue>
+				<PossibleValue> . . . </PossibleValue>
+			</PossibleValues>
+			<ValueRange>
+				<MinValue>..........</MinValue>
+				<MaxValue>..........</MaxValue>
+			</ValueRange>
+		</ConfigParameter>
+		<ConfigParameter> . . . </ConfigParameter>
+	</ConfigParameters>
+	
+	<SKAControlModel>									<!-- NOT Possible in latest version -->
+		
+		<ProductType>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</ProductType>
+		
+		<ControlMode>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</ControlMode>
+		
+		<OperatingMode>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</OperatingMode>
+		
+		<OperatingState>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</OperatingState>
+		
+		<HealthStatus>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</HealthStatus>
+		
+		<UsageStatus>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</UsageStatus>
+		
+		<!-- For each capability Product should specify CapabilityHealthStatus -->
+		<CapabilityHealthStatus>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</CapabilityHealthStatus>
+		
+		<!-- For each SubArray in which product participates, product should specify the SubArray State -->
+		<SubArrayState>
+			<SupportedValues>
+				<SupportedValue>..........</SupportedValue>
+				<SupportedValue> . . . </SupportedValue>
+			</SupportedValues>
+		</SubArrayState>
+		
+	</SKAControlModel>
+	
+	<!-- State machine indicates the transition of the Product/Element from One operating states to another. Representation would be similar to SCXML developed by W3C for representing state machine -->
+	
+	<StateMachine>												<!-- Possible -->
+		<OperatingState id = "OperatingState_1">
+			<Transition event = "event_1" condition = "x == 1" target = "new_operating_state_1" />		<!-- Possible, but transitions are encapsulated within Command Block, "condition" not there yet -->
+			<Transition event = "event_2" target = "new_operating_state_2" />
+		</OperatingState>
+		<OperatingState id = "OperatingState_2">..........</OperatingState>	
+	</StateMachine>
+	
+	<LogFilePath>..........</LogFilePath>
+	
+	<ProductVersion version_id = ". . ." >						<!-- NOT Possible -->
+		<TMCompatibleVersions>
+			<TMCompatibleVersion>..........</TMCompatibleVersion>
+			<TMCompatibleVersion>..........</TMCompatibleVersion>
+		</TMCompatibleVersions>
+	</ProductVersion>
+	
+	<DiagnosticQueries>											<!-- NOT Possible -->
+		<!-- TBD --> 
+	</DiagnosticQueries>
+	
+	<TestProcedure>												<!-- Possible, Testing FW is provided to support this. Test Configs can be separated from SDD -->
+		<!-- Test procedure is a set of commands which could be sent to TM. It also contains expected response along with time delay -->
+	</TestProcedure>
+</Element>
