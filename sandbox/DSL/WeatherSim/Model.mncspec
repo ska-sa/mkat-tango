@@ -1,0 +1,59 @@
+/*
+ * This is an example model
+ */
+Model WeatherSimulatorDevice
+InterfaceDescription WeatherSim_ID
+{
+	dataPoints{float Temperature [], float Insolation [],
+			   float Pressure [], float Rainfall [],
+			   float Wind_Speed [], float Wind_Direction [],
+			   float Relative_Humidity []}
+
+	commands{ON[], OFF[], RESET[]}
+
+	responses{RES_ON[string msg], RES_OFF[string msg], RES_RESET[string msg]}
+
+	operatingStates{ON[], OFF[], ALARM[], STANDBY[]}
+}
+ControlNode WeatherSimulator_CN
+{
+	Associated Interface Description : WeatherSim_ID
+	
+	DataPointBlock{DataPoint WeatherSimulatorDevice.WeatherSim_ID.Temperature{
+					DataPointHandling{DataPointValidation[Max Value = 55 Min Value = -10]}}
+				   
+				   DataPoint WeatherSimulatorDevice.WeatherSim_ID.Insolation{
+				   	DataPointHandling{DataPointValidation[Max Value = 1200 Min Value = 0]}}
+				   		
+				   DataPoint WeatherSimulatorDevice.WeatherSim_ID.Pressure{
+				   	DataPointHandling{DataPointValidation[Max Value = 1100 Min Value = 500]}}
+				   		
+				   DataPoint WeatherSimulatorDevice.WeatherSim_ID.Rainfall{
+				   	DataPointHandling{DataPointValidation[Max Value = 4 Min Value = 0]}}
+				   		
+				   DataPoint WeatherSimulatorDevice.WeatherSim_ID.Wind_Speed{
+				   	DataPointHandling{DataPointValidation[Max Value = 30 Min Value = 0]}}
+
+				   DataPoint WeatherSimulatorDevice.WeatherSim_ID.Wind_Direction{
+				   	DataPointHandling{DataPointValidation[Max Value = 360 Min Value = 0]}}
+
+				   DataPoint WeatherSimulatorDevice.WeatherSim_ID.Relative_Humidity{
+				   	DataPointHandling{DataPointValidation[Max Value = 100 Min Value = 0]}}
+	}
+	CommandResponseBlock{Command WeatherSimulatorDevice.WeatherSim_ID.ON {
+							Transitions{currentState WeatherSimulatorDevice.WeatherSim_ID.OFF => nextState WeatherSimulatorDevice.WeatherSim_ID.ON}
+							ResponseBlock{expectedResponse WeatherSimulatorDevice.WeatherSim_ID.RES_ON {
+						 	ResponseValidation {parameter WeatherSimulatorDevice.WeatherSim_ID.RES_OFF.msg []}}}}
+
+						 Command WeatherSimulatorDevice.WeatherSim_ID.OFF {
+						 	Transitions{currentState WeatherSimulatorDevice.WeatherSim_ID.ON => nextState WeatherSimulatorDevice.WeatherSim_ID.OFF}
+						 	ResponseBlock{expectedResponse WeatherSimulatorDevice.WeatherSim_ID.RES_OFF {
+						 	ResponseValidation {parameter WeatherSimulatorDevice.WeatherSim_ID.RES_OFF.msg []}}}}
+						 	
+						 Command WeatherSimulatorDevice.WeatherSim_ID.RESET {
+						 	Transitions{currentState WeatherSimulatorDevice.WeatherSim_ID.ON => nextState WeatherSimulatorDevice.WeatherSim_ID.STANDBY
+						 				currentState WeatherSimulatorDevice.WeatherSim_ID.ALARM => nextState WeatherSimulatorDevice.WeatherSim_ID.STANDBY}
+						 	ResponseBlock{expectedResponse WeatherSimulatorDevice.WeatherSim_ID.RES_RESET {
+						 	ResponseValidation {parameter WeatherSimulatorDevice.WeatherSim_ID.RES_RESET.msg []}}}}
+	}
+}
