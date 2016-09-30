@@ -34,11 +34,13 @@ class Xmi_Parser(object):
             self.sim_description_data()
         else:
             raise IOError("No XMI file specified.")
-        print self.device_properties
-        print self.device_attributes
-        print self.device_commands
+        import IPython; IPython.embed()
 
     def sim_description_data(self):
+        """This methods adds all the simulator description data from the xmi
+        tree to appropriate data structures.
+
+        """
         try:
             tree = ET.parse(self.xmi_file)
             root = tree.getroot()
@@ -60,50 +62,103 @@ class Xmi_Parser(object):
             MODULE_LOGGER.info(str(nierr))
 
     def command_descriptio_data(self, description_data):
-        command = {}
-        command['name'] = description_data.attrib['name']
-        command['description'] = description_data.attrib['description']
+        """Extract command description data from the xmi tree element.
+
+        Parameters
+        ---------
+        description_data: xml.etree.ElementTree.Element
+            XMI tree element with command data
+
+        Returns
+        -------
+        command_data: dict
+            Dictionary of command data as prescribed in the SIMDD
+
+        """
+        command_data = {}
+        command_data['name'] = description_data.attrib['name']
+        command_data['description'] = description_data.attrib['description']
         input_parameter = description_data.find('argin')
-        command['arginDescription'] = input_parameter.attrib['description']
-        command['arginType'] = self._get_arg_type(input_parameter)
+        command_data['arginDescription'] = input_parameter.attrib['description']
+        command_data['arginType'] = self._get_arg_type(input_parameter)
         output_parameter = description_data.find('argout')
-        command['argoutDescription'] = output_parameter.attrib['description']
-        command['argoutType'] = self._get_arg_type(output_parameter)
-        return command
+        command_data['argoutDescription'] = output_parameter.attrib['description']
+        command_data['argoutType'] = self._get_arg_type(output_parameter)
+        return command_data
 
     def attributes_description_data(self, description_data):
-        attribute = {}
+        """Extract attribute description data from the xmi tree element.
+
+        Parameters
+        ---------
+        description_data: xml.etree.ElementTree.Element
+            XMI tree element with attribute data
+
+        Returns
+        -------
+        attribute_data: dict
+            Dictionary of attribute data as prescribed in the SIMDD
+
+        """
+        attribute_data = {}
         attribute_properties = description_data.find('properties')
-        attribute['name'] = description_data.attrib['name']
-        attribute['dataShape'] = description_data.attrib['attType']
-        attribute['readWriteProperty'] = description_data.attrib['rwType']
-        attribute['displayLevel'] = description_data.attrib['displayLevel']
-        attribute['polledPeriod'] = description_data.attrib['polledPeriod']
-        attribute['description'] = attribute_properties.attrib['description']
-        attribute['label'] = attribute_properties.attrib['label']
-        attribute['unit'] = attribute_properties.attrib['unit']
-        attribute['dataType'] = self._get_arg_type(description_data)
-        attribute['minValue'] = attribute_properties.attrib['minValue']
-        attribute['maxValue'] = attribute_properties.attrib['maxValue']
-        attribute['minAlarm'] = attribute_properties.attrib['minAlarm']
-        attribute['maxAlarm'] = attribute_properties.attrib['maxAlarm']
-        attribute['minWarning'] = attribute_properties.attrib['minWarning']
-        attribute['maxWarning'] = attribute_properties.attrib['maxWarning']
-        return attribute
+        attribute_data['name'] = description_data.attrib['name']
+        attribute_data['dataShape'] = description_data.attrib['attType']
+        attribute_data['readWriteProperty'] = description_data.attrib['rwType']
+        attribute_data['displayLevel'] = description_data.attrib['displayLevel']
+        attribute_data['polledPeriod'] = description_data.attrib['polledPeriod']
+        attribute_data['description'] = attribute_properties.attrib['description']
+        attribute_data['label'] = attribute_properties.attrib['label']
+        attribute_data['unit'] = attribute_properties.attrib['unit']
+        attribute_data['dataType'] = self._get_arg_type(description_data)
+        attribute_data['minValue'] = attribute_properties.attrib['minValue']
+        attribute_data['maxValue'] = attribute_properties.attrib['maxValue']
+        attribute_data['minAlarm'] = attribute_properties.attrib['minAlarm']
+        attribute_data['maxAlarm'] = attribute_properties.attrib['maxAlarm']
+        attribute_data['minWarning'] = attribute_properties.attrib['minWarning']
+        attribute_data['maxWarning'] = attribute_properties.attrib['maxWarning']
+        return attribute_data
 
     def device_property_description_data(self, description_data):
-        device_property = {}
-        device_property['name'] = description_data.attrib['name']
-        device_property['description'] = description_data.attrib['description']
-        device_property['type'] = self._get_arg_type(description_data)
-        device_property['defaultPropValue'] = description_data.find(
-                                                'DefaultPropValue').text
-        return device_property
+        """Extract device property description data from the xmi tree element.
 
-    def _get_arg_type(self, parameter):
-        if parameter.tag in ['attributes', 'dynamicAttributes']:
-            pogo_type = parameter.find('dataType').attrib.values()[0]
+        Parameters
+        ---------
+        description_data: xml.etree.ElementTree.Element
+            XMI tree element with device property data
+
+        Returns
+        -------
+        device_property_data: dict
+            Dictionary of device proerty data as prescribed in the SIMDD
+
+        """
+        device_property_data = {}
+        device_property_data['name'] = description_data.attrib['name']
+        device_property_data['description'] = description_data.attrib['description']
+        device_property_data['type'] = self._get_arg_type(description_data)
+        device_property_data['defaultPropValue'] = description_data.find(
+                                                'DefaultPropValue').text
+        return device_property_data
+
+    def _get_arg_type(self, description_data):
+        """Extract argument data type from the xmi tree element.
+
+        Parameters
+        ---------
+        description_data: xml.etree.ElementTree.Element
+            XMI tree element with device_property or attribute or command data
+
+        Returns
+        -------
+        arg_type: tango._tango.CmdArgType
+            Tango argument type
+
+        """
+
+        if description_data.tag in ['attributes', 'dynamicAttributes']:
+            pogo_type = description_data.find('dataType').attrib.values()[0]
         else:
-            pogo_type = parameter.find('type').attrib.values()[0]
+            pogo_type = description_data.find('type').attrib.values()[0]
         arg_type = POGO2TANGO_TYPE[pogo_type]
         return arg_type
