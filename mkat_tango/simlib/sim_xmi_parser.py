@@ -154,7 +154,6 @@ class Xmi_Parser(object):
             Tango argument type
 
         """
-
         if description_data.tag in ['attributes', 'dynamicAttributes']:
             pogo_type = description_data.find('dataType').attrib.values()[0]
         else:
