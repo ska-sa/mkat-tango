@@ -129,7 +129,7 @@ class Xmi_Parser(object):
         Returns
         -------
         device_property_data: dict
-            Dictionary of device proerty data as prescribed in the SIMDD
+            Dictionary of device property data as prescribed in the SIMDD
 
         """
         device_property_data = {}
