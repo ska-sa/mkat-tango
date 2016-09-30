@@ -622,6 +622,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
             reply = command(map(str, *args))
         else:
             reply = command()
+        import IPython; IPython.embed()
         self.assertEqual(reply[0], 'ok', 'Request unsuccessful')
         sensor_value = self.katcp_server.get_sensor(req)
         self.assertEqual(sensor_value.value(),
@@ -637,5 +638,9 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
 
     def test_time_command(self):
         req = 'time-result'
-        expected_result = time.time
-        self._test_command(req, expected_result())
+        expected_result = 99999.0
+
+        with mock.patch('mkat_tango.translators.tests.test_tango_katcp_proxy.time.time'
+                        ) as mock_time:
+            mock_time.return_value = expected_result
+            self._test_command(req, expected_result)
