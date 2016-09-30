@@ -187,7 +187,7 @@ def create_command2request_handler(req_name, req_doc):
         def cmd_handler(self, request_args):
             MODULE_LOGGER.info("Executing request {}".format(req_name))
             reply = self.tango_katcp_proxy.do_request(
-                    req_name, request_args=request_args)
+                    req_name, request_args)
             MODULE_LOGGER.info(reply.arguments)
             return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
@@ -196,7 +196,7 @@ def create_command2request_handler(req_name, req_doc):
     else:
         def cmd_handler(self):
             MODULE_LOGGER.info("Executing request {}".format(req_name))
-            reply = self.tango_katcp_proxy.do_request(req_name, request_args=[])
+            reply = self.tango_katcp_proxy.do_request(req_name)
             MODULE_LOGGER.info(reply.arguments)
             return reply.arguments
         cmd_handler.__name__ = katcpname2tangoname(req_name)
@@ -354,6 +354,8 @@ class KatcpTango2DeviceProxy(object):
 
         """
         f = Future()            # Should be a thread-safe future
+        if request_args is None:
+            request_args = []
 
         @tornado.gen.coroutine
         def _wait_synced():
