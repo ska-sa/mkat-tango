@@ -622,7 +622,6 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
             reply = command(map(str, *args))
         else:
             reply = command()
-        import IPython; IPython.embed()
         self.assertEqual(reply[0], 'ok', 'Request unsuccessful')
         sensor_value = self.katcp_server.get_sensor(req)
         self.assertEqual(sensor_value.value(),
