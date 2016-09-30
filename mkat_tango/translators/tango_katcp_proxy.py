@@ -335,7 +335,7 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         f.result(timeout=timeout)
 
-    def do_request(self, req, request_args, katcp_request_timeout=5.0):
+    def do_request(self, req, request_args=[], katcp_request_timeout=5.0):
         """Execute a KATCP request using a command handler.
 
         Parameters
