@@ -61,26 +61,22 @@ class Xmi_Parser(object):
         Xmi_Parser attributes.
 
         """
-        try:
-            tree = ET.parse(self.xmi_file)
-            root = tree.getroot()
-            device_class = root.find('classes')
-            self.device_class_name = device_class.attrib['name']
-            for class_description_data in device_class:
-                if class_description_data.tag in ['commands']:
-                    command_info = self.command_description_data(class_description_data)
-                    self.device_commands.append(command_info)
-                elif class_description_data.tag in ['dynamicAttributes', 'attributes']:
-                    attribute_info = self.attributes_description_data(
-                                                class_description_data)
-                    self.device_attributes.append(attribute_info)
-                elif class_description_data.tag in ['deviceProperties']:
-                    device_property_info = self.device_property_description_data(
-                                                           class_description_data)
-                    self.device_properties.append(device_property_info)
-        except IOError:
-            MODULE_LOGGER.info("No such file or directory: " + self.xmi_file,
-                               exc_info=True)
+        tree = ET.parse(self.xmi_file)
+        root = tree.getroot()
+        device_class = root.find('classes')
+        self.device_class_name = device_class.attrib['name']
+        for class_description_data in device_class:
+            if class_description_data.tag in ['commands']:
+                command_info = self.command_description_data(class_description_data)
+                self.device_commands.append(command_info)
+            elif class_description_data.tag in ['dynamicAttributes', 'attributes']:
+                attribute_info = self.attributes_description_data(
+                                            class_description_data)
+                self.device_attributes.append(attribute_info)
+            elif class_description_data.tag in ['deviceProperties']:
+                device_property_info = self.device_property_description_data(
+                                                       class_description_data)
+                self.device_properties.append(device_property_info)
 
     def command_description_data(self, description_data):
         """Extract command description data from the xmi tree element.
@@ -202,6 +198,3 @@ class Xmi_Parser(object):
             pogo_type = description_data.find('type').attrib.values()[0]
         arg_type = POGO2TANGO_TYPE[pogo_type]
         return arg_type
-
-if __name__ == '__main__':
-    Xmi_Parser('/home/athanaseus/Downloads/Weather.xmi')
