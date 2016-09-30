@@ -486,9 +486,10 @@ def get_katcp_request_data(katcp_connect_timeout=60.0):
         are keys = request_name and values = request_documentation
 
     """
-    # Extract the server_name/ or equivalent executable (i.e.tango_katcp_proxy.py
-    # or /usr/local/bin/mkat-tango-katcpdevice2tango-DS) from the
-    # command line arguments passed, where sys.argv[1] is the server instance.
+    # Extract the server_name or equivalent executable
+    # (i.e.tango_katcp_proxy.py -> tango_katcp_proxy or
+    # /usr/local/bin/mkat-tango-katcpdevice2tango-DS -> mkat-tango-katcpdevice2tango-DS)
+    # from the command line arguments passed, where sys.argv[1] is the server instance.
     executable_name = os.path.split(sys.argv[0].split('.')[0])[1]
     server_name = executable_name + '/' + sys.argv[1]
     katcp_address = get_katcp_address(server_name)
