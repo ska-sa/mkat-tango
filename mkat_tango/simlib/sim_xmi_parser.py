@@ -34,7 +34,6 @@ class Xmi_Parser(object):
             self.sim_description_data()
         else:
             raise IOError("No XMI file specified.")
-        import IPython; IPython.embed()
 
     def sim_description_data(self):
         """This methods adds all the simulator description data from the xmi
