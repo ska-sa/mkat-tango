@@ -48,7 +48,7 @@ class Xmi_Parser(object):
             self.description_data = device_class.find('description')
             for description_data in device_class:
                 if description_data.tag in ['commands']:
-                    command = self.command_descriptio_data(description_data)
+                    command = self.command_description_data(description_data)
                     self.device_commands.append(command)
                 elif description_data.tag in ['dynamicAttributes', 'attributes']:
                     attribute = self.attributes_description_data(description_data)
@@ -60,7 +60,7 @@ class Xmi_Parser(object):
         except IOError as nierr:
             MODULE_LOGGER.info(str(nierr))
 
-    def command_descriptio_data(self, description_data):
+    def command_description_data(self, description_data):
         """Extract command description data from the xmi tree element.
 
         Parameters
