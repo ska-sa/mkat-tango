@@ -56,7 +56,7 @@ class Xmi_Parser(object):
         self.sim_description_data()
 
     def sim_description_data(self):
-        """This method staores all the simulator description data from the xmi
+        """This method stores all the simulator description data from the xmi
         tree into appropriate data structures (dict) and then append it to the
         Xmi_Parser attributes.
 
@@ -185,6 +185,10 @@ class Xmi_Parser(object):
         ----------
         description_data: xml.etree.ElementTree.Element
             XMI tree element with device_property or attribute or command data
+
+            Expected element tag(s) are (i.e. description_data.tag)
+            ['dataType'] for attributes and dynamicAttributes
+            ['type'] for commands and deviceProperties
 
         Returns
         -------
