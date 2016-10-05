@@ -28,7 +28,8 @@ class Xmi_Parser(object):
         self.xmi_file = xmi_file
         self.device_class_name = ''
         self.device_attributes = []
-        """The Data structure format is a list containing attribute info in a dict.
+        """The Data structure format is a list containing attribute info in a dict
+
         e.g.[{'name': 'wind_speed', 'dataShape': 'Scalar',
             'dataType': tango._tango.CmdArgType.DevDouble,
             'description': 'Wind speed in central telescope area.',
@@ -39,7 +40,7 @@ class Xmi_Parser(object):
 
         """
         self.device_commands = []
-        """The Data structure format is a list containing command info in a dict.
+        """The Data structure format is a list containing command info in a dict
         e.g.[{'name': 'On', 'arginDescription': '',
             'arginType': tango._tango.CmdArgType.DevVoid,
             'argoutDescription': 'ok | Device ON',
@@ -49,16 +50,27 @@ class Xmi_Parser(object):
         """
         self.device_properties = []
         """The Data structure format is a list containing device property info in a
-            dict. e.g.[{'name': 'katcp_address', 'defaultPropValue': '127.0.0.1',
+            dict
+
+        e.g.[{'name': 'katcp_address', 'defaultPropValue': '127.0.0.1',
                   'description': '', 'type': tango._tango.CmdArgType.DevString},
 
         """
         self.sim_description_data()
 
     def sim_description_data(self):
-        """This method stores all the simulator description data from the xmi
-        tree into appropriate data structures (dict) and then append it to the
-        Xmi_Parser attributes.
+        """Stores all the simulator description data from the xmi tree into
+        appropriate attribute, command and device property data structures
+
+        Loops through the xmi tree class elements and appends description
+        information of dynamic/attributes into `self.device_attributes`,
+        commands into `self.device_commands`, and device_properties into
+        `self.device_properties`.
+
+        Notes
+        =====
+        - Data structures, are type list with dictionary elements keyed with
+          description data and values must be the corresponding data value.
 
         """
         tree = ET.parse(self.xmi_file)
