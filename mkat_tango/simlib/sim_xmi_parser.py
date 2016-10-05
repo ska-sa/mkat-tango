@@ -37,24 +37,21 @@ class Xmi_Parser(object):
             'maxValue': '30', 'maxWarning': '15', 'minAlarm': '', 'minValue': '0',
             'minWarning': '','name': 'wind_speed', 'polledPeriod': '3000',
             'readWriteProperty': 'READ', 'unit': 'm/s'}, ...]
-
         """
         self.device_commands = []
         """The Data structure format is a list containing command info in a dict
+
         e.g.[{'name': 'On', 'arginDescription': '',
             'arginType': tango._tango.CmdArgType.DevVoid,
             'argoutDescription': 'ok | Device ON',
             'argoutType': tango._tango.CmdArgType.DevString,
             'description': 'Turn On Device'}, ...]
-
         """
         self.device_properties = []
-        """The Data structure format is a list containing device property info in a
-            dict
+        """Data structure format is a list containing device property info in a dict
 
         e.g.[{'name': 'katcp_address', 'defaultPropValue': '127.0.0.1',
                   'description': '', 'type': tango._tango.CmdArgType.DevString},
-
         """
         self.sim_description_data()
 
