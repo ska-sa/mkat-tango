@@ -62,7 +62,6 @@ class Xmi_Parser(object):
         """
         Read simulator description data from xmi file into `self.device_properties`
         
-        
         Stores all the simulator description data from the xmi tree into
         appropriate attribute, command and device property data structures.
         Loops through the xmi tree class elements and appends description
