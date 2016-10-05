@@ -56,9 +56,11 @@ class Xmi_Parser(object):
         self.sim_description_data()
 
     def sim_description_data(self):
-        """Stores all the simulator description data from the xmi tree into
-        appropriate attribute, command and device property data structures
-
+        """
+        Read simulator description data from xmi file into `self.device_properties`
+        
+        Stores all the simulator description data from the xmi tree into
+        appropriate attribute, command and device property data structures.
         Loops through the xmi tree class elements and appends description
         information of dynamic/attributes into `self.device_attributes`,
         commands into `self.device_commands`, and device_properties into
