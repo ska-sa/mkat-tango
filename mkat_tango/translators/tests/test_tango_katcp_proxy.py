@@ -634,3 +634,12 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         input_y = 8.0
         expected_result = input_x + input_y
         self._test_command(req, expected_result, [input_x, input_y])
+
+    def test_time_command(self):
+        req = 'time-result'
+        expected_result = 99999.0
+
+        with mock.patch('mkat_tango.translators.tests.test_tango_katcp_proxy.time.time'
+                        ) as mock_time:
+            mock_time.return_value = expected_result
+            self._test_command(req, expected_result)

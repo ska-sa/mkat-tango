@@ -13,8 +13,9 @@
 import sys
 import weakref
 import logging
-import tornado
+import os
 
+import tornado
 import PyTango
 
 from concurrent.futures import Future
@@ -334,7 +335,7 @@ class KatcpTango2DeviceProxy(object):
         self.ioloop.add_callback(_wait_synced)
         f.result(timeout=timeout)
 
-    def do_request(self, req, request_args, katcp_request_timeout=5.0):
+    def do_request(self, req, request_args=None, katcp_request_timeout=5.0):
         """Execute a KATCP request using a command handler.
 
         Parameters
@@ -353,6 +354,8 @@ class KatcpTango2DeviceProxy(object):
 
         """
         f = Future()            # Should be a thread-safe future
+        if request_args is None:
+            request_args = []
 
         @tornado.gen.coroutine
         def _wait_synced():
@@ -485,7 +488,12 @@ def get_katcp_request_data(katcp_connect_timeout=60.0):
         are keys = request_name and values = request_documentation
 
     """
-    server_name = sys.argv[0].split('.')[0] + '/' + sys.argv[1]
+    # Extract the server_name or equivalent executable
+    # (i.e.tango_katcp_proxy.py -> tango_katcp_proxy or
+    # /usr/local/bin/mkat-tango-katcpdevice2tango-DS -> mkat-tango-katcpdevice2tango-DS)
+    # from the command line arguments passed, where sys.argv[1] is the server instance.
+    executable_name = os.path.split(sys.argv[0].split('.')[0])[1]
+    server_name = executable_name + '/' + sys.argv[1]
     katcp_address = get_katcp_address(server_name)
     katcp_host, katcp_port = katcp_address.split(':')
     katcp_port = int(katcp_port)
