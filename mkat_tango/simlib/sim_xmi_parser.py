@@ -1,4 +1,5 @@
 import time
+import weakref
 import logging
 
 import xml.etree.ElementTree as ET
@@ -310,3 +311,61 @@ class Populate_Model_Quantities(model.Model):
         sim_attribute_quantities['mean'] = (max_value - min_value)/2
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
         return sim_attribute_quantities
+
+
+class TangoDeviceServer(Device):
+    __metaclass__ = DeviceMeta
+    instances = weakref.WeakValueDictionary()
+
+    def init_device(self):
+        super(TangoDeviceServer, self).init_device()
+        name = self.get_name()
+        self.instances[name] = self
+        self.model = Populate_Model_Quantities()
+        self.set_state(DevState.ON)
+
+    def initialize_dynamic_attributes(self):
+        """The device method that sets up attributes during run time"""
+        model_sim_quants = self.model.sim_quantities
+        attribute_list = set([attr for attr in model_sim_quants.keys()])
+
+        for attribute_name in attribute_list:
+            model.MODULE_LOGGER.info("Added dynamic weather {} attribute"
+                                     .format(attribute_name))
+            meta_data = model_sim_quants[attribute_name].meta
+            attr_dtype = meta_data.pop('dataType')
+            rw_type = meta_data.pop('rwType')
+            rw_type = getattr(AttrWriteType, rw_type)
+            attr = Attr(attribute_name, attr_dtype, rw_type)
+            attr_props = UserDefaultAttrProp()
+            for prop in meta_data.keys():
+                attr_prop = getattr(attr_props, 'set_' + prop, None)
+                if attr_prop:
+                    attr_prop(meta_data[prop])
+            attr.set_default_properties(attr_props)
+            self.add_attribute(attr, self.read_attributes)
+
+    def always_executed_hook(self):
+        self.model.update()
+
+    def read_attributes(self, attr):
+        """Method reading an attribute value
+
+        Arguments
+        ==========
+
+        attr : PyTango.DevAttr
+            The attribute to read from.
+
+        """
+        name = attr.get_name()
+        value, update_time = self.model.quantity_state[name]
+        quality = AttrQuality.ATTR_VALID
+        self.info_stream("Reading attribute %s", name)
+        attr.set_value_date_quality(value, update_time, quality)
+
+def main():
+    server_run([TangoDeviceServer])
+
+if __name__ == "__main__":
+    main()
