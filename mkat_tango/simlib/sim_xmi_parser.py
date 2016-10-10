@@ -3,12 +3,20 @@ import logging
 
 import xml.etree.ElementTree as ET
 
+from functools import partial
+from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality
 from PyTango import (DevDouble, DevShort, DevUShort, DevState,
                      DevLong, DevULong, DevLong64, DevULong64,
                      DevBoolean, DevString, DevVoid, DevEnum,
-                     DevVarDoubleArray, DevVarStringArray)
+                     DevVarDoubleArray, DevVarStringArray, DevEnum)
+from PyTango.server import Device, DeviceMeta, server_run
+
+from mkat_tango.simlib import quantities
+from mkat_tango.simlib import model
 
 MODULE_LOGGER = logging.getLogger(__name__)
+
+CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
 
 POGO2TANGO_TYPE = {
         'pogoDsl:VoidType': DevVoid,
@@ -19,6 +27,27 @@ POGO2TANGO_TYPE = {
         'pogoDsl:StringArrayType': DevVarStringArray,
         'pogoDsl:StateType': DevState,
         'pogoDsl:BooleanType': DevBoolean
+        }
+
+PogoUserDefaultAttrPropMap = {
+        'format': 'format',
+        'label': 'label',
+        'maxAlarm': 'max_alarm',
+        'maxValue': 'max_value',
+        'maxWarning': 'max_warning',
+        'minAlarm': 'min_alarm',
+        'deltaTime': 'delta_t',
+        'minValue': 'min_value',
+        'deltaValue': 'delta_val',
+        'minWarning': 'min_warning',
+        'description': 'description',
+        'polledPeriod': 'period',
+        'displayUnit': 'display_unit',
+        'standardUnit': 'standard_unit',
+        'unit': 'unit',
+        'name': 'name',
+        'dataType': 'dataType',
+        'rwType': 'rwType'
         }
 
 
@@ -202,3 +231,82 @@ class Xmi_Parser(object):
             pogo_type = description_data.find('type').attrib.values()[0]
         arg_type = POGO2TANGO_TYPE[pogo_type]
         return arg_type
+
+class Populate_Model_Quantities(model.Model):
+
+    def __init__(self, xmi_file="/home/athanaseus/Desktop/Weather.xmi"):
+        self.xmi_parser = Xmi_Parser(xmi_file)
+        super(Populate_Model_Quantities, self).__init__("test/Device/1")
+        self.setup_sim_quantities()
+
+    def setup_sim_quantities(self):
+        """Set up self.sim_quantities from Model with simulated quantities.
+
+        Places simulated quantities in sim_quantities dict. Keyed by name of
+        quantity, value must be instances satifying the
+        :class:`quantities.Quantity` interface
+
+        Notes
+        =====
+        - Must use self.start_time to set initial time values.
+        - Must call super method after setting up `sim_quantities`
+
+        """
+        start_time = self.start_time
+        GaussianSlewLimited = partial(
+            quantities.GaussianSlewLimited, start_time=start_time)
+        ConstantQuantity = partial(
+            quantities.ConstantQuantity, start_time=start_time)
+        for attribute_info in self.xmi_parser.device_attributes:
+            attribute_meta = {}
+            for prop in PogoUserDefaultAttrPropMap.keys():
+                attribute_meta[PogoUserDefaultAttrPropMap[prop]] = attribute_info[prop]
+            if attribute_info['dataType'] in CONSTANT_DATA_TYPES:
+                self.sim_quantities[attribute_meta['name']] = ConstantQuantity(
+                        meta=attribute_meta, start_value=True)
+            else:
+                sim_attr_quantities = self.sim_attribute_quantities(
+                    float(attribute_meta['min_value']),
+                    float(attribute_meta['max_value']))
+                self.sim_quantities[attribute_meta['name']] = GaussianSlewLimited(
+                        meta=attribute_meta, **sim_attr_quantities)
+
+    def sim_attribute_quantities(self, min_value, max_value):
+        """Simulate attribute quantities with a Guassian value distribution
+
+        Parameters
+        ==========
+        min_value : float
+            minimum attribute value to be simulated
+        max_value : float
+            maximum attribute value to be simulated
+
+        Returns
+        ======
+        sim_attribute_quantities : dict
+            Dict of Gaussian simulated quantities
+
+        Notes
+        =====
+        - Statistical approximations have been performed for the simulated quantities
+
+        Example
+        =======
+        for min_value = 0.0 and max_value = 200.0
+        max_slew_rate = (200.0 + 0.0)/10.0  # = 20,0
+        min_bound =  0.0
+        max_bound = (200.0 + 20.0*2)  # = 240
+        mean = (200 - 0.0)/2  # = 100
+        std_dev = 20.0/2  # = 10.0
+
+        """
+        sim_attribute_quantities = dict()
+        max_slew_rate = (max_value + abs(min_value))/10.0
+        sim_attribute_quantities['max_slew_rate'] = max_slew_rate
+        sim_attribute_quantities['min_bound'] = (
+                min_value - max_slew_rate*2) if min_value != 0.0 else 0.0
+        sim_attribute_quantities['max_bound'] = (
+                max_value + max_slew_rate*2) if max_value != 360.0 else 360.0
+        sim_attribute_quantities['mean'] = (max_value - min_value)/2
+        sim_attribute_quantities['std_dev'] = max_slew_rate/2
+        return sim_attribute_quantities
