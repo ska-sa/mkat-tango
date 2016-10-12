@@ -1,16 +1,18 @@
+import os
+import sys
 import time
 import weakref
 import logging
+import argparse
 
 import xml.etree.ElementTree as ET
 
 from functools import partial
-from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality
-from PyTango import (DevDouble, DevShort, DevUShort, DevState,
-                     DevLong, DevULong, DevLong64, DevULong64,
-                     DevBoolean, DevString, DevVoid, DevEnum,
+from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
+from PyTango import (DevDouble, DevShort, DevUShort, DevState, DevLong, DevULong,
+                     DevLong64, DevULong64, DevBoolean, DevString, DevVoid, DevEnum,
                      DevVarDoubleArray, DevVarStringArray, DevEnum)
-from PyTango.server import Device, DeviceMeta, server_run
+from PyTango.server import Device, DeviceMeta, server_run, device_property
 
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
@@ -235,7 +237,7 @@ class Xmi_Parser(object):
 
 class Populate_Model_Quantities(model.Model):
 
-    def __init__(self, xmi_file="/home/athanaseus/Desktop/Weather.xmi"):
+    def __init__(self, xmi_file):
         self.xmi_parser = Xmi_Parser(xmi_file)
         super(Populate_Model_Quantities, self).__init__("test/Device/1")
         self.setup_sim_quantities()
@@ -317,11 +319,15 @@ class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
     instances = weakref.WeakValueDictionary()
 
+    sim_xmi_description_file = device_property(dtype=str,
+            doc='Complete path name of thE POGO xmi file to be parsed')
+
     def init_device(self):
         super(TangoDeviceServer, self).init_device()
         name = self.get_name()
         self.instances[name] = self
-        self.model = Populate_Model_Quantities()
+        xmi_file = get_xmi_description_file_name()
+        self.model = Populate_Model_Quantities(xmi_file)
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
@@ -351,7 +357,7 @@ class TangoDeviceServer(Device):
     def read_attributes(self, attr):
         """Method reading an attribute value
 
-        Arguments
+        Parameters
         ==========
 
         attr : PyTango.DevAttr
@@ -363,6 +369,45 @@ class TangoDeviceServer(Device):
         quality = AttrQuality.ATTR_VALID
         self.info_stream("Reading attribute %s", name)
         attr.set_value_date_quality(value, update_time, quality)
+
+def get_xmi_description_file_name():
+    """Gets the xmi desciption file name from the tango-db device properties
+
+    Returns
+    =======
+    sim_xmi_description_file : str
+        POGO xmi device server description file
+        e.g. 'home/user/weather.xmi'
+
+    """
+    server_name = _get_server_name()
+    db = Database()
+    server_class = db.get_server_class_list(server_name).value_string[0]
+    device_name = db.get_device_name(server_name, server_class).value_string[0]
+    sim_xmi_description_file = db.get_device_property(device_name,
+        'sim_xmi_description_file')['sim_xmi_description_file'][0]
+    return sim_xmi_description_file
+
+def _get_server_name():
+    """Gets the server name from the command line arguments
+
+    Returns
+    =======
+    server_name : str
+        tango device server name
+
+    Note
+    ====
+    Extract the server_name or equivalent executable
+    (i.e.sim_xmi_parser.py -> sim_xmi_parser or
+    from the command line arguments passed, where sys.argv[1]
+    is the server instance.
+
+    """
+    executable_name = os.path.split(sys.argv[0].split('.')[0])[1]
+    server_name = executable_name + '/' + sys.argv[1]
+    return server_name
+
 
 def main():
     server_run([TangoDeviceServer])
