@@ -348,9 +348,11 @@ class TangoDeviceServer(Device):
             attr = Attr(attribute_name, attr_dtype, rw_type)
             attr_props = UserDefaultAttrProp()
             for prop in meta_data.keys():
-                attr_prop = getattr(attr_props, 'set_' + prop, None)
-                if attr_prop:
-                    attr_prop(meta_data[prop])
+                attr_prop_setter = getattr(attr_props, 'set_' + prop, None)
+                if attr_prop_setter:
+                    attr_prop_setter(meta_data[prop])
+                else:
+                    MODULE_LOGGER.info("No setter function for " + prop + " property")
             attr.set_default_properties(attr_props)
             self.add_attribute(attr, self.read_attributes)
 
