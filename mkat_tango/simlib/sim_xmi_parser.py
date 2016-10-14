@@ -313,6 +313,8 @@ class PopulateModelQuantities(model.Model):
         sim_attribute_quantities['max_slew_rate'] = max_slew_rate
         sim_attribute_quantities['min_bound'] = min_value
         sim_attribute_quantities['max_bound'] = max_value
+        # TODO (AR) 2016-10-14: In the future we might define a way to specify
+        # simulation defaults or simulation bounds different from the XMI bounds
         sim_attribute_quantities['mean'] = (max_value - min_value)/2
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
         return sim_attribute_quantities
