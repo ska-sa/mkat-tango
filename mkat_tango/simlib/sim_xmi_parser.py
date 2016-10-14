@@ -339,8 +339,8 @@ class TangoDeviceServer(Device):
         attribute_list = set([attr for attr in model_sim_quants.keys()])
 
         for attribute_name in attribute_list:
-            model.MODULE_LOGGER.info("Added dynamic weather {} attribute"
-                                     .format(attribute_name))
+            MODULE_LOGGER.info("Added dynamic {} attribute"
+                               .format(attribute_name))
             meta_data = model_sim_quants[attribute_name].meta
             attr_dtype = meta_data.pop('dataType')
             rw_type = meta_data.pop('rwType')
