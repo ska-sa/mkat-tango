@@ -232,9 +232,9 @@ class Xmi_Parser(object):
 
 class Populate_Model_Quantities(model.Model):
 
-    def __init__(self, xmi_file):
+    def __init__(self, xmi_file, device_name):
         self.xmi_parser = Xmi_Parser(xmi_file)
-        super(Populate_Model_Quantities, self).__init__("test/Device/1")
+        super(Populate_Model_Quantities, self).__init__(device_name)
         self.setup_sim_quantities()
 
     def setup_sim_quantities(self):
@@ -322,7 +322,7 @@ class TangoDeviceServer(Device):
         name = self.get_name()
         self.instances[name] = self
         xmi_file = get_xmi_description_file_name()
-        self.model = Populate_Model_Quantities(xmi_file)
+        self.model = Populate_Model_Quantities(xmi_file, name)
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
