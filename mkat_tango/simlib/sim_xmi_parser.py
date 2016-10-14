@@ -291,7 +291,7 @@ class Populate_Model_Quantities(model.Model):
         Example
         =======
         for min_value = 0.0 and max_value = 200.0
-        max_slew_rate = (200.0 + 0.0)/10.0  # = 20,0
+        max_slew_rate = (200.0 + 0.0)/10.0  # = 20.0
         min_bound =  0.0
         max_bound = (200.0 + 20.0*2)  # = 240
         mean = (200 - 0.0)/2  # = 100
@@ -304,6 +304,9 @@ class Populate_Model_Quantities(model.Model):
         sim_attribute_quantities['min_bound'] = (
                 min_value - max_slew_rate*2) if min_value != 0.0 else 0.0
         sim_attribute_quantities['max_bound'] = (
+                # TODO (AR) 2016-10-14 : Possibly needs to make a check
+                # against attribute unit, if degrees then simulated min and max
+                # values need to be within the range [0, 360]
                 max_value + max_slew_rate*2) if max_value != 360.0 else 360.0
         sim_attribute_quantities['mean'] = (max_value - min_value)/2
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
