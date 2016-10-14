@@ -21,7 +21,7 @@ MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
 
-PogoUserDefaultAttrPropMap = {
+POGO_USER_DEFAULT_ATTR_PROP_MAP = {
         'format': 'format',
         'label': 'label',
         'maxAlarm': 'max_alarm',
@@ -258,8 +258,8 @@ class PopulateModelQuantities(model.Model):
             quantities.ConstantQuantity, start_time=start_time)
         for attribute_info in self.xmi_parser.device_attributes:
             attribute_meta = {}
-            for prop in PogoUserDefaultAttrPropMap.keys():
-                attribute_meta[PogoUserDefaultAttrPropMap[prop]] = attribute_info[prop]
+            for prop, prop_default in POGO_USER_DEFAULT_ATTR_PROP_MAP.items():
+                attribute_meta[prop_default] = attribute_info[prop]
             if attribute_info['dataType'] in CONSTANT_DATA_TYPES:
                 self.sim_quantities[attribute_meta['name']] = ConstantQuantity(
                         meta=attribute_meta, start_value=True)
