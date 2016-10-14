@@ -344,8 +344,11 @@ class TangoDeviceServer(Device):
             MODULE_LOGGER.info("Added dynamic {} attribute"
                                .format(attribute_name))
             meta_data = model_sim_quants[attribute_name].meta
-            attr_dtype = meta_data.pop('dataType')
-            rw_type = meta_data.pop('rwType')
+            attr_dtype = meta_data['dataType']
+            # The return value of rwType is a string and it is required as a
+            # PyTango data type when passed to the Attr function.
+            # e.g. 'READ' -> PyTango.AttrWriteType.READ
+            rw_type = meta_data['rwType']
             rw_type = getattr(AttrWriteType, rw_type)
             attr = Attr(attribute_name, attr_dtype, rw_type)
             attr_props = UserDefaultAttrProp()
