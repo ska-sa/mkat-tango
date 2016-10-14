@@ -13,6 +13,7 @@ from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Datab
 from PyTango import DevState, DevBoolean, DevString, DevEnum
 from PyTango.server import Device, DeviceMeta, server_run, device_property
 
+from mkat_tango.simlib import sim_helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 
@@ -382,34 +383,13 @@ def get_xmi_description_file_name():
         e.g. 'home/user/weather.xmi'
 
     """
-    server_name = _get_server_name()
+    server_name = sim_helper_module.get_server_name()
     db = Database()
     server_class = db.get_server_class_list(server_name).value_string[0]
     device_name = db.get_device_name(server_name, server_class).value_string[0]
     sim_xmi_description_file = db.get_device_property(device_name,
         'sim_xmi_description_file')['sim_xmi_description_file'][0]
     return sim_xmi_description_file
-
-def _get_server_name():
-    """Gets the server name from the command line arguments
-
-    Returns
-    =======
-    server_name : str
-        tango device server name
-
-    Note
-    ====
-    Extract the server_name or equivalent executable
-    (i.e.sim_xmi_parser.py -> sim_xmi_parser or
-    from the command line arguments passed, where sys.argv[1]
-    is the server instance.
-
-    """
-    executable_name = os.path.split(sys.argv[0].split('.')[0])[1]
-    server_name = executable_name + '/' + sys.argv[1]
-    return server_name
-
 
 def main():
     server_run([TangoDeviceServer])
