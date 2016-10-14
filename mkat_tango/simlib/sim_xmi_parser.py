@@ -263,13 +263,16 @@ class Populate_Model_Quantities(model.Model):
                 self.sim_quantities[attribute_meta['name']] = ConstantQuantity(
                         meta=attribute_meta, start_value=True)
             else:
-                sim_attr_quantities = self.sim_attribute_quantities(
-                    float(attribute_meta['min_value']),
-                    float(attribute_meta['max_value']))
+                try:
+                    sim_attr_quantities = self.sim_attribute_quantities(
+                        float(attribute_meta['min_value']),
+                        float(attribute_meta['max_value']))
+                except ValueError:
+                    raise NotImplementedError('Attribute min or max not specified')
                 self.sim_quantities[attribute_meta['name']] = GaussianSlewLimited(
                         meta=attribute_meta, **sim_attr_quantities)
 
-    def sim_attribute_quantities(self, min_value, max_value):
+    def sim_attribute_quantities(self, min_value, max_value, slew_rate=None):
         """Simulate attribute quantities with a Guassian value distribution
 
         Parameters
@@ -278,6 +281,8 @@ class Populate_Model_Quantities(model.Model):
             minimum attribute value to be simulated
         max_value : float
             maximum attribute value to be simulated
+        slew_rate : float
+            maximum changing rate of the simulated quantities between min and max values
 
         Returns
         ======
@@ -293,21 +298,20 @@ class Populate_Model_Quantities(model.Model):
         for min_value = 0.0 and max_value = 200.0
         max_slew_rate = (200.0 + 0.0)/10.0  # = 20.0
         min_bound =  0.0
-        max_bound = (200.0 + 20.0*2)  # = 240
+        max_bound = 200.0
         mean = (200 - 0.0)/2  # = 100
         std_dev = 20.0/2  # = 10.0
 
         """
         sim_attribute_quantities = dict()
-        max_slew_rate = (max_value + abs(min_value))/10.0
+        if slew_rate:
+            max_slew_rate = slew_rate
+        else:
+            # A hard coded value is computed as follows
+            max_slew_rate = (max_value + abs(min_value))/10.0
         sim_attribute_quantities['max_slew_rate'] = max_slew_rate
-        sim_attribute_quantities['min_bound'] = (
-                min_value - max_slew_rate*2) if min_value != 0.0 else 0.0
-        sim_attribute_quantities['max_bound'] = (
-                # TODO (AR) 2016-10-14 : Possibly needs to make a check
-                # against attribute unit, if degrees then simulated min and max
-                # values need to be within the range [0, 360]
-                max_value + max_slew_rate*2) if max_value != 360.0 else 360.0
+        sim_attribute_quantities['min_bound'] = min_value
+        sim_attribute_quantities['max_bound'] = max_value
         sim_attribute_quantities['mean'] = (max_value - min_value)/2
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
         return sim_attribute_quantities
