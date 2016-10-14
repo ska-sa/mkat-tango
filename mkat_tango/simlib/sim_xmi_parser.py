@@ -315,7 +315,7 @@ class TangoDeviceServer(Device):
     instances = weakref.WeakValueDictionary()
 
     sim_xmi_description_file = device_property(dtype=str,
-            doc='Complete path name of thE POGO xmi file to be parsed')
+            doc='Complete path name of the POGO xmi file to be parsed')
 
     def init_device(self):
         super(TangoDeviceServer, self).init_device()
@@ -366,7 +366,7 @@ class TangoDeviceServer(Device):
         attr.set_value_date_quality(value, update_time, quality)
 
 def get_xmi_description_file_name():
-    """Gets the xmi desciption file name from the tango-db device properties
+    """Gets the xmi description file name from the tango-db device properties
 
     Returns
     =======
