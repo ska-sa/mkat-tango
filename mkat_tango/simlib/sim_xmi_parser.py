@@ -13,7 +13,7 @@ from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Datab
 from PyTango import DevState, DevBoolean, DevString, DevEnum
 from PyTango.server import Device, DeviceMeta, server_run, device_property
 
-from mkat_tango.simlib import sim_helper_module
+from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 
@@ -387,7 +387,7 @@ def get_xmi_description_file_name():
         e.g. 'home/user/weather.xmi'
 
     """
-    server_name = sim_helper_module.get_server_name()
+    server_name = helper_module.get_server_name()
     db = Database()
     server_class = db.get_server_class_list(server_name).value_string[0]
     device_name = db.get_device_name(server_name, server_class).value_string[0]
