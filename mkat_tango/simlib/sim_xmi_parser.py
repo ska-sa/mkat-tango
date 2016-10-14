@@ -6,12 +6,11 @@ import logging
 import argparse
 
 import xml.etree.ElementTree as ET
+import PyTango
 
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
-from PyTango import (DevDouble, DevShort, DevUShort, DevState, DevLong, DevULong,
-                     DevLong64, DevULong64, DevBoolean, DevString, DevVoid, DevEnum,
-                     DevVarDoubleArray, DevVarStringArray, DevEnum)
+from PyTango import DevState, DevBoolean, DevString, DevEnum
 from PyTango.server import Device, DeviceMeta, server_run, device_property
 
 from mkat_tango.simlib import quantities
@@ -20,17 +19,6 @@ from mkat_tango.simlib import model
 MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
-
-POGO2TANGO_TYPE = {
-        'pogoDsl:VoidType': DevVoid,
-        'pogoDsl:StringType': DevString,
-        'pogoDsl:DoubleType': DevDouble,
-        'pogoDsl:ConstStringType': DevString,
-        'pogoDsl:DoubleArrayType': DevVarDoubleArray,
-        'pogoDsl:StringArrayType': DevVarStringArray,
-        'pogoDsl:StateType': DevState,
-        'pogoDsl:BooleanType': DevBoolean
-        }
 
 PogoUserDefaultAttrPropMap = {
         'format': 'format',
@@ -232,7 +220,14 @@ class Xmi_Parser(object):
             pogo_type = description_data.find('dataType').attrib.values()[0]
         else:
             pogo_type = description_data.find('type').attrib.values()[0]
-        arg_type = POGO2TANGO_TYPE[pogo_type]
+        # pogo_type has format -> pogoDsl:DoubleType
+        # Pytango type must be of the form DevDouble
+        arg_type = pogo_type.split(':')[1].replace('Type', '')
+        # pogo_type for status turns out to be 'pogoDsl:ConnstStringType
+        # For now it will be treated as normal DevString type
+        if arg_type.find('Const') != -1:
+            arg_type = arg_type.replace('Const', '')
+        arg_type = getattr(PyTango, 'Dev' + arg_type)
         return arg_type
 
 class Populate_Model_Quantities(model.Model):
