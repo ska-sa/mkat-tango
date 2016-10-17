@@ -292,16 +292,8 @@ class PopulateModelQuantities(model.Model):
 
         Notes
         =====
-        - Statistical approximations have been performed for the simulated quantities
-
-        Example
-        =======
-        for min_value = 0.0 and max_value = 200.0
-        max_slew_rate = (200.0 + 0.0)/10.0  # = 20.0
-        min_bound =  0.0
-        max_bound = 200.0
-        mean = (200 - 0.0)/2  # = 100
-        std_dev = 20.0/2  # = 10.0
+        - Statistical simulation parameters (mean, std dev, slew rate) are derived from the 
+          min/max values of the attribute.
 
         """
         sim_attribute_quantities = dict()
