@@ -79,7 +79,7 @@ class Xmi_Parser(object):
     def sim_description_data(self):
         """
         Read simulator description data from xmi file into `self.device_properties`
-        
+
         Stores all the simulator description data from the xmi tree into
         appropriate attribute, command and device property data structures.
         Loops through the xmi tree class elements and appends description
@@ -235,7 +235,7 @@ class Xmi_Parser(object):
         # pogo_type has format -> pogoDsl:DoubleType
         # Pytango type must be of the form DevDouble
         arg_type = pogo_type.split(':')[1].replace('Type', '')
-        # pogo_type for status turns out to be 'pogoDsl:ConnstStringType
+        # pogo_type for status turns out to be 'pogoDsl:ConstStringType
         # For now it will be treated as normal DevString type
         if arg_type.find('Const') != -1:
             arg_type = arg_type.replace('Const', '')
