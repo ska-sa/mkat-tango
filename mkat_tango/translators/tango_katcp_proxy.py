@@ -23,6 +23,7 @@ from katcp import inspecting_client, ioloop_manager, Message
 from katcp.core import Sensor
 from katcp.client import BlockingClient
 
+from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
 
 from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
@@ -488,12 +489,7 @@ def get_katcp_request_data(katcp_connect_timeout=60.0):
         are keys = request_name and values = request_documentation
 
     """
-    # Extract the server_name or equivalent executable
-    # (i.e.tango_katcp_proxy.py -> tango_katcp_proxy or
-    # /usr/local/bin/mkat-tango-katcpdevice2tango-DS -> mkat-tango-katcpdevice2tango-DS)
-    # from the command line arguments passed, where sys.argv[1] is the server instance.
-    executable_name = os.path.split(sys.argv[0].split('.')[0])[1]
-    server_name = executable_name + '/' + sys.argv[1]
+    server_name = helper_module.get_server_name()
     katcp_address = get_katcp_address(server_name)
     katcp_host, katcp_port = katcp_address.split(':')
     katcp_port = int(katcp_port)
