@@ -242,11 +242,14 @@ class Xmi_Parser(object):
         arg_type = getattr(PyTango, 'Dev' + arg_type)
         return arg_type
 
-class PopulateModelQuantities(model.Model):
+class PopulateModelQuantities(object):
 
-    def __init__(self, xmi_file, device_name):
+    def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)
-        super(PopulateModelQuantities, self).__init__(device_name)
+        if sim_model:
+            self.sim_model = sim_model
+        else:
+            self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
 
     def setup_sim_quantities(self):
@@ -262,7 +265,7 @@ class PopulateModelQuantities(model.Model):
         - Must call super method after setting up `sim_quantities`
 
         """
-        start_time = self.start_time
+        start_time = self.sim_model.start_time
         GaussianSlewLimited = partial(
             quantities.GaussianSlewLimited, start_time=start_time)
         ConstantQuantity = partial(
@@ -272,8 +275,9 @@ class PopulateModelQuantities(model.Model):
             for prop, prop_default in POGO_USER_DEFAULT_ATTR_PROP_MAP.items():
                 attribute_meta[prop_default] = attribute_info[prop]
             if attribute_info['dataType'] in CONSTANT_DATA_TYPES:
-                self.sim_quantities[attribute_meta['name']] = ConstantQuantity(
-                        meta=attribute_meta, start_value=True)
+                self.sim_model.sim_quantities[
+                        attribute_meta['name']] = ConstantQuantity(
+                                    meta=attribute_meta, start_value=True)
             else:
                 try:
                     sim_attr_quantities = self.sim_attribute_quantities(
@@ -281,8 +285,9 @@ class PopulateModelQuantities(model.Model):
                         float(attribute_meta['max_value']))
                 except ValueError:
                     raise NotImplementedError('Attribute min or max not specified')
-                self.sim_quantities[attribute_meta['name']] = GaussianSlewLimited(
-                        meta=attribute_meta, **sim_attr_quantities)
+                self.sim_model.sim_quantities[
+                        attribute_meta['name']] = GaussianSlewLimited(
+                                    meta=attribute_meta, **sim_attr_quantities)
 
     def sim_attribute_quantities(self, min_value, max_value, slew_rate=None):
         """Simulate attribute quantities with a Guassian value distribution
@@ -294,7 +299,8 @@ class PopulateModelQuantities(model.Model):
         max_value : float
             maximum attribute value to be simulated
         slew_rate : float
-            maximum changing rate of the simulated quantities between min and max values
+            maximum changing rate of the simulated quantities between min
+            and max values
 
         Returns
         ======
@@ -303,8 +309,8 @@ class PopulateModelQuantities(model.Model):
 
         Notes
         =====
-        - Statistical simulation parameters (mean, std dev, slew rate) are derived from the 
-          min/max values of the attribute.
+        - Statistical simulation parameters (mean, std dev, slew rate) are
+          derived from the min/max values of the attribute.
 
         """
         sim_attribute_quantities = dict()
@@ -335,7 +341,7 @@ class TangoDeviceServer(Device):
         name = self.get_name()
         self.instances[name] = self
         xmi_file = get_xmi_description_file_name()
-        self.model = PopulateModelQuantities(xmi_file, name)
+        self.model = PopulateModelQuantities(xmi_file, name).sim_model
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
