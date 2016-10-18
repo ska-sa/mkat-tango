@@ -3,7 +3,7 @@ import sys
 
 
 def get_server_name():
-    """Gets the server name from the command line arguments
+    """Gets the TANGO server name from the command line arguments
 
     Returns
     =======
@@ -12,7 +12,7 @@ def get_server_name():
 
     Note
     ====
-    Extract the server_name or equivalent executable
+    Extract the Tango server_name or equivalent executable
     (i.e.sim_xmi_parser.py -> sim_xmi_parser or
     /usr/local/bin/mkat-tango-katcpdevice2tango-DS ->
     mkat-tango-katcpdevice2tango-DS) from the command line
