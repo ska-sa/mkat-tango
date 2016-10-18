@@ -242,11 +242,14 @@ class Xmi_Parser(object):
         arg_type = getattr(PyTango, 'Dev' + arg_type)
         return arg_type
 
-class PopulateModelQuantities():
+class PopulateModelQuantities(object):
 
-    def __init__(self, xmi_file, device_name):
+    def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)
-        self.sim_model = model.Model(device_name)
+        if sim_model:
+            self.sim_model = sim_model
+        else:
+            self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
 
     def setup_sim_quantities(self):
@@ -285,7 +288,6 @@ class PopulateModelQuantities():
                 self.sim_model.sim_quantities[
                         attribute_meta['name']] = GaussianSlewLimited(
                                     meta=attribute_meta, **sim_attr_quantities)
-        self.sim_model.setup_sim_quantities()
 
     def sim_attribute_quantities(self, min_value, max_value, slew_rate=None):
         """Simulate attribute quantities with a Guassian value distribution
