@@ -22,24 +22,34 @@ MODULE_LOGGER = logging.getLogger(__name__)
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
 
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
-        'format': 'format',
-        'label': 'label',
-        'maxAlarm': 'max_alarm',
-        'maxValue': 'max_value',
-        'maxWarning': 'max_warning',
-        'minAlarm': 'min_alarm',
-        'deltaTime': 'delta_t',
-        'minValue': 'min_value',
-        'deltaValue': 'delta_val',
-        'minWarning': 'min_warning',
-        'description': 'description',
-        'polledPeriod': 'period',
-        'displayUnit': 'display_unit',
-        'standardUnit': 'standard_unit',
-        'unit': 'unit',
-        'name': 'name',
-        'dataType': 'dataType',
-        'rwType': 'rwType'
+        'dynamicAttributes': {
+            'name': 'name',
+            'dataType': 'data_type',
+            'rwType': 'writable',
+            'polledPeriod': 'period'},
+        'evArchiveCriteria': {
+            'absChange': 'archive_event_abs_change',
+            'period': 'archive_event_period',
+            'relChange': 'archive_event_rel_change'},
+        'eventCriteria': {
+            'absChange': 'abs_change',
+            'period': 'event_period',
+            'relChange': 'event_rel_change'},
+        'properties': {
+            'maxAlarm': 'max_alarm',
+            'maxValue': 'max_value',
+            'maxWarning': 'max_warning',
+            'minAlarm': 'min_alarm',
+            'deltaTime': 'delta_t',
+            'minValue': 'min_value',
+            'deltaValue': 'delta_val',
+            'minWarning': 'min_warning',
+            'description': 'description',
+            'displayUnit': 'display_unit',
+            'standardUnit': 'standard_unit',
+            'format': 'format',
+            'label': 'label',
+            'unit': 'unit'}
         }
 
 
@@ -51,13 +61,19 @@ class Xmi_Parser(object):
         self.device_attributes = []
         """The Data structure format is a list containing attribute info in a dict
 
-        e.g.[{'name': 'wind_speed', 'dataShape': 'Scalar',
-            'dataType': tango._tango.CmdArgType.DevDouble,
-            'description': 'Wind speed in central telescope area.',
-            'displayLevel': 'EXPERT', 'label': 'Wind speed', 'maxAlarm': '25',
-            'maxValue': '30', 'maxWarning': '15', 'minAlarm': '', 'minValue': '0',
-            'minWarning': '','name': 'wind_speed', 'polledPeriod': '3000',
-            'readWriteProperty': 'READ', 'unit': 'm/s'}, ...]
+        e.g.[{'attribute': {'allocReadMember': 'true',
+            'attType': 'Scalar', 'dataType': PyTango._PyTango.CmdArgType.DevDouble,
+            'displayLevel': 'OPERATOR', 'isDynamic': 'true', 'maxX': '', 'maxY': '',
+            'name': 'temperature', 'polledPeriod': '1000', 'rwType': 'READ'},
+            'evArchiveCriteria': {'absChange': '0.5', 'period': '1000',
+            'relChange': '10'}, 'eventCriteria': {'absChange': '0.5', 'period':'1000',
+            'relChange': '10'}, 'properties': {'deltaTime': '', 'deltaValue': '',
+            'description': 'Current temperature outside near the telescope.',
+            'displayUnit': '', 'format': '', 'label': 'Outside Temperature',
+            'maxAlarm': '50', 'maxValue': '51', 'maxWarning': '45', 'minAlarm': '-9',
+            'minValue': '-10', 'minWarning': '-5', 'standardUnit': '',
+            'unit': 'Degrees Centrigrade'}}, ...]
+
         """
         self.device_commands = []
         """The Data structure format is a list containing command info in a dict
@@ -71,8 +87,9 @@ class Xmi_Parser(object):
         self.device_properties = []
         """Data structure format is a list containing device property info in a dict
 
-        e.g.[{'name': 'katcp_address', 'defaultPropValue': '127.0.0.1',
-                  'description': '', 'type': tango._tango.CmdArgType.DevString},
+        e.g.[{'deviceProperties': {'description': 'Path to the pogo generate xmi file',
+            'mandatory': 'true', 'name': 'sim_xmi_description_file',
+            'type': PyTango._PyTango.CmdArgType.DevString}}, ...]
         """
         self.sim_description_data()
 
@@ -151,7 +168,7 @@ class Xmi_Parser(object):
             XMI tree element with attribute data
 
             Expected element tag(s) are (i.e. description_data.tag)
-            ['properties']
+            'dynamicAttributes'
 
             description_data.find('properties').attrib contains
             {'deltaTime': '', 'deltaValue': '', 'description': '',
@@ -171,16 +188,25 @@ class Xmi_Parser(object):
             'polledPeriod': '0',
             'rwType': 'WRITE'}
 
+            description_data.find('eventCriteria').attrib contains
+            {'absChange': '0.5', 'period': '1000', 'relChange': '10'}
+
+            description_data.find('evArchiveCriteria').attrib contains
+            {'absChange': '0.5', 'period': '1000', 'relChange': '10'}
+
         Returns
         -------
         attribute_data: dict
             Dictionary of all attribute data required to create a tango attribute
 
         """
-        attribute_data = description_data.attrib
-        attribute_properties = description_data.find('properties')
-        attribute_data.update(attribute_properties.attrib)
-        attribute_data['dataType'] = self._get_arg_type(description_data)
+        attribute_data = dict()
+        attribute_data['dynamicAttributes'] = description_data.attrib
+        attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
+        attribute_data['properties'] = description_data.find('properties').attrib
+        attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
+        attribute_data['evArchiveCriteria'] = description_data.find(
+                                                'evArchiveCriteria').attrib
         return attribute_data
 
     def device_property_description_data(self, description_data):
@@ -204,10 +230,14 @@ class Xmi_Parser(object):
             to create a tango device property
 
         """
-        device_property_data = description_data.attrib
-        device_property_data['type'] = self._get_arg_type(description_data)
-        device_property_data['defaultPropValue'] = description_data.find(
-                                                'DefaultPropValue').text
+        device_property_data = dict()
+        device_property_data['deviceProperties'] = description_data.attrib
+        device_property_data['deviceProperties'][
+                'type'] = self._get_arg_type(description_data)
+        if description_data.find('defaultPropValue'):
+            device_property_data['deviceProperties'][
+                                 'defaultPropValue'] = description_data.find(
+                                 'defaultPropValue').text
         return device_property_data
 
     def _get_arg_type(self, description_data):
@@ -270,24 +300,33 @@ class PopulateModelQuantities(object):
             quantities.GaussianSlewLimited, start_time=start_time)
         ConstantQuantity = partial(
             quantities.ConstantQuantity, start_time=start_time)
-        for attribute_info in self.xmi_parser.device_attributes:
+        for pogo_attribute_data in self.xmi_parser.device_attributes:
             attribute_meta = {}
-            for prop, prop_default in POGO_USER_DEFAULT_ATTR_PROP_MAP.items():
-                attribute_meta[prop_default] = attribute_info[prop]
-            if attribute_info['dataType'] in CONSTANT_DATA_TYPES:
+            for default_attr_props in POGO_USER_DEFAULT_ATTR_PROP_MAP.items():
+                prop_group, default_attr_prop = default_attr_props
+                # prop_group is the dict keys (property tag) in the
+                # POGO_USER__DEFAULT_ATTR_PROP_MAP
+                # e.g [dynamicAttributes, evArchiveCriteria, eventCriteria, properties]
+                for pogo_prop, user_default_prop in default_attr_prop.items():
+                    attribute_meta[user_default_prop] = pogo_attribute_data[
+                            prop_group][pogo_prop]
+            # Also note that attributes defined as dynamicAttributes from pogo
+            if pogo_attribute_data['dynamicAttributes'][
+                    'dataType'] in CONSTANT_DATA_TYPES:
                 self.sim_model.sim_quantities[
-                        attribute_meta['name']] = ConstantQuantity(
-                                    meta=attribute_meta, start_value=True)
+                    attribute_meta['name']] = ConstantQuantity(
+                            meta=attribute_meta, start_value=True)
             else:
                 try:
                     sim_attr_quantities = self.sim_attribute_quantities(
                         float(attribute_meta['min_value']),
                         float(attribute_meta['max_value']))
                 except ValueError:
-                    raise NotImplementedError('Attribute min or max not specified')
+                    raise NotImplementedError(
+                            'Attribute min or max not specified')
                 self.sim_model.sim_quantities[
-                        attribute_meta['name']] = GaussianSlewLimited(
-                                    meta=attribute_meta, **sim_attr_quantities)
+                    attribute_meta['name']] = GaussianSlewLimited(
+                            meta=attribute_meta, **sim_attr_quantities)
 
     def sim_attribute_quantities(self, min_value, max_value, slew_rate=None):
         """Simulate attribute quantities with a Guassian value distribution
@@ -353,11 +392,11 @@ class TangoDeviceServer(Device):
             MODULE_LOGGER.info("Added dynamic {} attribute"
                                .format(attribute_name))
             meta_data = model_sim_quants[attribute_name].meta
-            attr_dtype = meta_data['dataType']
+            attr_dtype = meta_data['data_type']
             # The return value of rwType is a string and it is required as a
             # PyTango data type when passed to the Attr function.
             # e.g. 'READ' -> PyTango.AttrWriteType.READ
-            rw_type = meta_data['rwType']
+            rw_type = meta_data['writable']
             rw_type = getattr(AttrWriteType, rw_type)
             attr = Attr(attribute_name, attr_dtype, rw_type)
             attr_props = UserDefaultAttrProp()
