@@ -82,8 +82,8 @@
       <dataReadyEvent fire="true" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Rainfall in central telescope area." label="Rainfall" unit="mm" standardUnit="" displayUnit="" format="" maxValue="3.2" minValue="0" maxAlarm="3.1" minAlarm="" maxWarning="3.0" minWarning="" deltaTime="" deltaValue=""/>
-      <eventCriteria relChange="10" absChange="0.5" period="1000"/>
-      <evArchiveCriteria relChange="10" absChange=".0.5" period="1000"/>
+      <eventCriteria relChange="10" absChange="0.2" period="1000"/>
+      <evArchiveCriteria relChange="10" absChange="0.2" period="1000"/>
     </dynamicAttributes>
     <dynamicAttributes name="relativeHumidity" attType="Scalar" rwType="READ" displayLevel="EXPERT" polledPeriod="1000" maxX="" maxY="" allocReadMember="true" isDynamic="true">
       <dataType xsi:type="pogoDsl:DoubleType"/>
