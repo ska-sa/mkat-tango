@@ -18,12 +18,10 @@ node('Slave433') {
         timestamps {
             timeout(time: 30, unit: 'MINUTES') {
                 try {
-                    sh 'service tango-db restart'
-                    sh 'virtualenv venv'
-                    sh 'source venv/bin/activate'
-                    sh 'pip install --egg git+https://github.com/tango-cs/PyTango.git@develop'
-                    sh 'pip install . -U'
-                    sh 'pip install pip install nose_xunitmp nosexcover -U'
+                    sh 'sudo service tango-db restart'
+                    sh 'sudo pip install --egg git+https://github.com/tango-cs/PyTango.git@develop'
+                    sh 'sudo pip install . -U'
+                    sh 'sudo pip install pip install nose_xunitmp nosexcover -U'
                     sh 'nosetests -v --with-xunitmp --xunitmp-file=nosetests.xml  --processes=1 --process-restartworker --process-timeout=400 .'
                 } finally {
                     step([$class: 'JUnitResultArchiver', testResults: 'nosetests.xml'])
