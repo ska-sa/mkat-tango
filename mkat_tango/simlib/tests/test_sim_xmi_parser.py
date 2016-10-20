@@ -56,16 +56,9 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                          "Actual tango device attribute list differs from expected list!")
 
     def test_attribute_properties(self):
-        # `self.device.attribute_query(attr_name)` is
-        # a structure (inheriting from :class:`AttributeInfo`) containing
-        # available information for an attribute with the following members:
-        # - alarms : object containing alarm information (see AttributeAlarmInfo).
-        # - events : object containing event information (see AttributeEventInfo).
-        # Thus a sequence with desired attribute objects is defined and besides
-        # this object is the normal attribute properties, refere to
-        # POGO_USER_DEFAULT_ATTR_PROP_MAP keys dynamicAttributes and properties
-        tango_property_members = ['alarms', 'arch_event', 'ch_event', 'per_event']
         for attribute_data in self.xmi_parser.device_attributes:
+            # The properties that are tested for each the tango attributes are all
+            # in the POGO_USER_DEFAULT_ATTR_PROP_MAP dict items
             for default_attr_props in (sim_xmi_parser.
                         POGO_USER_DEFAULT_ATTR_PROP_MAP.items()):
                 # prop_group is the keys in the POGO_USER_DEFAULT_ATTR_PROP_MAP
@@ -86,27 +79,11 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                         attr_prop_value = str(attr_prop_value)
                     if not attr_prop_value:
                         # In the case where no attr_query data is not found it is
-                        # further checked in the above mentioned attribute object
+                        # further checked in the mentioned attribute object
                         # i.e. alarms and events
-                        for member in tango_property_members:
-                            if member in ['alarms']:
-                                attr_prop_value = getattr(attr_query_data.alarms,
-                                                          user_default_prop, None)
-                            else:
-                                attr_prop_value = getattr(attr_query_data.events,
-                                                          member, None)
-                                # The per_event obect has attribute period
-                                # which is defferent from the object in the
-                                # POGO_USER_DEFAULT_ATTR_PROP_MAP (event_period)
-                                # used for # setting the value
-                                if 'period' in user_default_prop:
-                                    attr_prop_value = getattr(attr_prop_value,
-                                                              'period', None)
-                                else:
-                                    attr_prop_value = getattr(attr_prop_value,
-                                                              user_default_prop, None)
-                            if attr_prop_value:
-                                break
+                        # (check `self._test_tango_property_object`)
+                        attr_prop_value = self._get_attribute_property_object_value(
+                                                 attr_query_data, user_default_prop)
                     # Here the data_type property is checked for, since Pogo
                     # expresses in as a PyTango object (e.g.`PyTango.DevDouble`)
                     # where tango device return a corresponding int value (e.g. 5)
@@ -126,3 +103,51 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                     self.assertEqual(expected_atrr_value, attr_prop_value,
                             "Non matching %s property for %s attribute" % (
                                     user_default_prop, attr_name))
+
+    def _get_attribute_property_object_value(self, attr_query_data, user_default_prop):
+        """Extracting the tango attribute property value from alarms an events objects
+
+        Parameters
+        ----------
+        attr_query_data : PyTango.AttributeInfoEx
+            data structure containing string arguments of attribute properties
+        user_default_prop : str
+            user default property as per items in `POGO_USER_DEFAULT_ATTR_PROP_MAP`
+
+        Returns
+        -------
+        attr_prop_value : str
+            tango attribute property value
+
+        Note
+        ----
+         `self.device.attribute_query(attr_name)` is
+         a structure (inheriting from :class:`AttributeInfo`) containing
+         available information for an attribute with the following members:
+         - alarms : object containing alarm information (see AttributeAlarmInfo).
+         - events : object containing event information (see AttributeEventInfo).
+         Thus a sequence with desired attribute objects is defined and besides
+         this object is the normal attribute properties, refere to
+         POGO_USER_DEFAULT_ATTR_PROP_MAP keys dynamicAttributes and properties
+
+        """
+        tango_property_members = ['alarms', 'arch_event', 'ch_event', 'per_event']
+        for member in tango_property_members:
+            if member in ['alarms']:
+                attr_prop_value = getattr(attr_query_data.alarms,
+                                          user_default_prop, None)
+            else:
+                attr_prop_value = getattr(attr_query_data.events,
+                                          member, None)
+                # The per_event obect has attribute period
+                # which is defferent from the object in the
+                # POGO_USER_DEFAULT_ATTR_PROP_MAP (event_period)
+                # used for # setting the value
+                if 'period' in user_default_prop:
+                    attr_prop_value = getattr(attr_prop_value,
+                                              'period', None)
+                else:
+                    attr_prop_value = getattr(attr_prop_value,
+                                              user_default_prop, None)
+            if attr_prop_value:
+                return attr_prop_value
