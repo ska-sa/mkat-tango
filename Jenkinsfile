@@ -19,6 +19,8 @@ node('Slave433') {
             timeout(time: 30, unit: 'MINUTES') {
                 try {
                     sh 'service tango-db restart'
+                    sh 'virtualenv venv'
+                    sh 'source venv/bin/activate'
                     sh 'pip install --egg git+https://github.com/tango-cs/PyTango.git@develop'
                     sh 'pip install . -U'
                     sh 'pip install pip install nose_xunitmp nosexcover -U'
