@@ -28,13 +28,13 @@ POGO_USER_DEFAULT_ATTR_PROP_MAP = {
             'rwType': 'writable',
             'polledPeriod': 'period'},
         'evArchiveCriteria': {
-            'absChange': 'archive_event_abs_change',
-            'period': 'archive_event_period',
-            'relChange': 'archive_event_rel_change'},
+            'absChange': 'archive_abs_change',
+            'period': 'archive_period',
+            'relChange': 'archive_rel_change'},
         'eventCriteria': {
             'absChange': 'abs_change',
             'period': 'event_period',
-            'relChange': 'event_rel_change'},
+            'relChange': 'rel_change'},
         'properties': {
             'maxAlarm': 'max_alarm',
             'maxValue': 'max_value',
