@@ -56,13 +56,13 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                          "Actual tango device attribute list differs from expected list!")
 
     def test_attribute_properties(self):
-        # `self.device.attribute_query(attr_name)` is 
+        # `self.device.attribute_query(attr_name)` is
         # a structure (inheriting from :class:`AttributeInfo`) containing
         # available information for an attribute with the following members:
         # - alarms : object containing alarm information (see AttributeAlarmInfo).
         # - events : object containing event information (see AttributeEventInfo).
         # Thus a sequence with desired attribute objects is defined and besides
-        # this object is the normal attribute properties, refere to 
+        # this object is the normal attribute properties, refere to
         # POGO_USER_DEFAULT_ATTR_PROP_MAP keys dynamicAttributes and properties
         tango_property_members = ['alarms', 'arch_event', 'ch_event', 'per_event']
         for attribute_data in self.xmi_parser.device_attributes:
