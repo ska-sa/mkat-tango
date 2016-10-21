@@ -27,7 +27,7 @@ POGO_USER_DEFAULT_ATTR_PROP_MAP = {
             'dataType': 'data_type',
             'rwType': 'writable',
             'polledPeriod': 'period'},
-        'evArchiveCriteria': {
+        'eventArchiveCriteria': {
             'absChange': 'archive_abs_change',
             'period': 'archive_period',
             'relChange': 'archive_rel_change'},
@@ -205,8 +205,8 @@ class Xmi_Parser(object):
         attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
         attribute_data['properties'] = description_data.find('properties').attrib
         attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
-        attribute_data['evArchiveCriteria'] = description_data.find(
-                                                'evArchiveCriteria').attrib
+        attribute_data['eventArchiveCriteria'] = description_data.find(
+            'evArchiveCriteria').attrib
         return attribute_data
 
     def device_property_description_data(self, description_data):
@@ -232,12 +232,11 @@ class Xmi_Parser(object):
         """
         device_property_data = dict()
         device_property_data['deviceProperties'] = description_data.attrib
-        device_property_data['deviceProperties'][
-                'type'] = self._get_arg_type(description_data)
+        device_property_data['deviceProperties']['type'] = (
+                self._get_arg_type(description_data))
         if description_data.find('defaultPropValue'):
-            device_property_data['deviceProperties'][
-                                 'defaultPropValue'] = description_data.find(
-                                 'defaultPropValue').text
+            device_property_data['deviceProperties']['defaultPropValue'] = (
+                 description_data.find('defaultPropValue').text)
         return device_property_data
 
     def _get_arg_type(self, description_data):
@@ -381,13 +380,13 @@ class TangoDeviceServer(Device):
         self.instances[name] = self
         xmi_file = get_xmi_description_file_name()
         self.model = PopulateModelQuantities(xmi_file, name).sim_model
+        self.varing_attributes = []
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
         """The device method that sets up attributes during run time"""
         model_sim_quants = self.model.sim_quantities
         attribute_list = set([attr for attr in model_sim_quants.keys()])
-
         for attribute_name in attribute_list:
             MODULE_LOGGER.info("Added dynamic {} attribute"
                                .format(attribute_name))
