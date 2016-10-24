@@ -10,8 +10,7 @@ from devicetest import TangoTestContext
 from katcore.testutils import cleanup_tempfile
 from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.simlib import sim_xmi_parser
-from mkat_tango.translators.tests.test_tango_inspecting_client import (
-                ClassCleanupUnittestMixin)
+from mkat_tango.testutils import ClassCleanupUnittestMixin
 
 LOGGER = logging.getLogger(__name__)
 
