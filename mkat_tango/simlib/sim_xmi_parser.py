@@ -130,9 +130,9 @@ class Xmi_Parser(object):
             }
         }]
         """
-        self.sim_description_data()
+        self.parse_xmi_file()
 
-    def sim_description_data(self):
+    def parse_xmi_file(self):
         """
         Read simulator description data from xmi file into `self.device_properties`
 
@@ -155,18 +155,19 @@ class Xmi_Parser(object):
         self.device_class_name = device_class.attrib['name']
         for class_description_data in device_class:
             if class_description_data.tag in ['commands']:
-                command_info = self.command_description_data(class_description_data)
+                command_info = (
+                    self.extract_command_description_data(class_description_data))
                 self.device_commands.append(command_info)
             elif class_description_data.tag in ['dynamicAttributes', 'attributes']:
-                attribute_info = self.attributes_description_data(
+                attribute_info = self.extract_attributes_description_data(
                                             class_description_data)
                 self.device_attributes.append(attribute_info)
             elif class_description_data.tag in ['deviceProperties']:
-                device_property_info = self.device_property_description_data(
+                device_property_info = self.extract_device_property_description_data(
                                                        class_description_data)
                 self.device_properties.append(device_property_info)
 
-    def command_description_data(self, description_data):
+    def extract_command_description_data(self, description_data):
         """Extract command description data from the xmi tree element.
 
         Parameters
@@ -200,7 +201,7 @@ class Xmi_Parser(object):
         command_data['argoutType'] = self._get_arg_type(output_parameter)
         return command_data
 
-    def attributes_description_data(self, description_data):
+    def extract_attributes_description_data(self, description_data):
         """Extract attribute description data from the xmi tree element.
 
         Parameters
@@ -275,7 +276,7 @@ class Xmi_Parser(object):
             'evArchiveCriteria').attrib
         return attribute_data
 
-    def device_property_description_data(self, description_data):
+    def extract_device_property_description_data(self, description_data):
         """Extract device property description data from the xmi tree element.
 
         Parameters
@@ -340,8 +341,33 @@ class Xmi_Parser(object):
         arg_type = getattr(PyTango, 'Dev' + arg_type)
         return arg_type
 
-class PopulateModelQuantities(object):
 
+    def _reformat_device_attr_metadata(self):
+        """Extracts all the necessary attribute metadata from the device_attribute data
+        structure.
+
+        Returns
+        -------
+        attributes: dict
+            A dictionary of all the device attributes specified in the POGO
+            generated XMI file. The key represents the name of the attribute
+            and the value is a dictionary of all the attribute's metadata.
+        """
+        attributes = {}
+
+        for pogo_attribute_data in self.device_attributes:
+            attribute_meta = {}
+            for (prop_group, default_attr_props) in (
+                    POGO_USER_DEFAULT_ATTR_PROP_MAP.items()):
+                for pogo_prop, user_default_prop in default_attr_props.items():
+                    attribute_meta[user_default_prop] = (
+                            pogo_attribute_data[prop_group][pogo_prop])
+            attributes[attribute_meta['name']] = attribute_meta
+        return attributes
+
+class PopulateModelQuantities(object):
+    """
+    """
     def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)
         if sim_model:
@@ -368,33 +394,24 @@ class PopulateModelQuantities(object):
             quantities.GaussianSlewLimited, start_time=start_time)
         ConstantQuantity = partial(
             quantities.ConstantQuantity, start_time=start_time)
-        for pogo_attribute_data in self.xmi_parser.device_attributes:
-            attribute_meta = {}
-            for default_attr_props in POGO_USER_DEFAULT_ATTR_PROP_MAP.items():
-                prop_group, default_attr_prop = default_attr_props
-                # prop_group is the dict keys (property tag) in the
-                # POGO_USER__DEFAULT_ATTR_PROP_MAP
-                # e.g [dynamicAttributes, evArchiveCriteria, eventCriteria, properties]
-                for pogo_prop, user_default_prop in default_attr_prop.items():
-                    attribute_meta[user_default_prop] = pogo_attribute_data[
-                            prop_group][pogo_prop]
-            # Also note that attributes defined as dynamicAttributes from pogo
-            if pogo_attribute_data['dynamicAttributes'][
-                    'dataType'] in CONSTANT_DATA_TYPES:
-                self.sim_model.sim_quantities[
-                    attribute_meta['name']] = ConstantQuantity(
-                            meta=attribute_meta, start_value=True)
+        attributes = self.xmi_parser._reformat_device_attr_metadata()
+
+        for attr_name, attr_props in attributes.items():
+            if attr_props['data_type'] in CONSTANT_DATA_TYPES:
+                        self.sim_model.sim_quantities[
+                        attr_props['name']] = ConstantQuantity(
+                                meta=attr_props, start_value=True)
             else:
                 try:
                     sim_attr_quantities = self.sim_attribute_quantities(
-                        float(attribute_meta['min_value']),
-                        float(attribute_meta['max_value']))
+                            float(attr_props['min_value']),
+                            float(attr_props['max_value']))
                 except ValueError:
                     raise NotImplementedError(
                             'Attribute min or max not specified')
                 self.sim_model.sim_quantities[
-                    attribute_meta['name']] = GaussianSlewLimited(
-                            meta=attribute_meta, **sim_attr_quantities)
+                        attr_props['name']] = GaussianSlewLimited(
+                                meta=attr_props, **sim_attr_quantities)
 
     def sim_attribute_quantities(self, min_value, max_value, slew_rate=None):
         """Simulate attribute quantities with a Guassian value distribution
@@ -449,7 +466,6 @@ class TangoDeviceServer(Device):
         self.instances[name] = self
         xmi_file = get_xmi_description_file_name()
         self.model = PopulateModelQuantities(xmi_file, name).sim_model
-        self.varing_attributes = []
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
