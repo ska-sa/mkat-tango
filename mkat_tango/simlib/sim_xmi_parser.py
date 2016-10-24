@@ -61,35 +61,74 @@ class Xmi_Parser(object):
         self.device_attributes = []
         """The Data structure format is a list containing attribute info in a dict
 
-        e.g.[{'attribute': {'allocReadMember': 'true',
-            'attType': 'Scalar', 'dataType': PyTango._PyTango.CmdArgType.DevDouble,
-            'displayLevel': 'OPERATOR', 'isDynamic': 'true', 'maxX': '', 'maxY': '',
-            'name': 'temperature', 'polledPeriod': '1000', 'rwType': 'READ'},
-            'evArchiveCriteria': {'absChange': '0.5', 'period': '1000',
-            'relChange': '10'}, 'eventCriteria': {'absChange': '0.5', 'period':'1000',
-            'relChange': '10'}, 'properties': {'deltaTime': '', 'deltaValue': '',
-            'description': 'Current temperature outside near the telescope.',
-            'displayUnit': '', 'format': '', 'label': 'Outside Temperature',
-            'maxAlarm': '50', 'maxValue': '51', 'maxWarning': '45', 'minAlarm': '-9',
-            'minValue': '-10', 'minWarning': '-5', 'standardUnit': '',
-            'unit': 'Degrees Centrigrade'}}, ...]
+        e.g.
+        [{
+            "attribute": {
+                "displayLevel": "OPERATOR",
+                "maxX": "",
+                "maxY": "",
+                "attType": "Scalar",
+                "polledPeriod": "1000",
+                "dataType": DevDouble,
+                "isDynamic": "true",
+                "rwType": "READ",
+                "allocReadMember": "true",
+                "name": "temperature"
+            },
+            "eventCriteria": {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            },
+            "evArchiveCriteria": {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            },
+            "properties": {
+                "description": "Current temperature outside near the telescope.",
+                "deltaValue": "",
+                "maxAlarm": "50",
+                "maxValue": "51",
+                "minValue": "-10",
+                "standardUnit": "",
+                "minAlarm": "-9",
+                "maxWarning": "45",
+                "unit": "Degrees Centrigrade",
+                "displayUnit": "",
+                "format": "",
+                "deltaTime": "",
+                "label": "Outside Temperature",
+                "minWarning": "-5"
+           }
+        }]
 
         """
         self.device_commands = []
         """The Data structure format is a list containing command info in a dict
 
-        e.g.[{'name': 'On', 'arginDescription': '',
-            'arginType': tango._tango.CmdArgType.DevVoid,
-            'argoutDescription': 'ok | Device ON',
-            'argoutType': tango._tango.CmdArgType.DevString,
-            'description': 'Turn On Device'}, ...]
+        e.g.
+        [{
+             "name": "On",
+             "arginDescription": "",
+             "arginType": tango._tango.CmdArgType.DevVoid,
+             "argoutDescription": "ok | Device ON",
+             "argoutType": tango._tango.CmdArgType.DevString,
+             "description": "Turn On Device"
+        }]
         """
         self.device_properties = []
         """Data structure format is a list containing device property info in a dict
 
-        e.g.[{'deviceProperties': {'description': 'Path to the pogo generate xmi file',
-            'mandatory': 'true', 'name': 'sim_xmi_description_file',
-            'type': PyTango._PyTango.CmdArgType.DevString}}, ...]
+        e.g.
+        [{
+            "deviceProperties": {
+                "type": DevString,
+                "mandatory": "true",
+                "description": "Path to the pogo generate xmi file",
+                "name": "sim_xmi_description_file"
+            }
+        }]
         """
         self.sim_description_data()
 
@@ -137,12 +176,14 @@ class Xmi_Parser(object):
             expected element tag(s) are (i.e. description_data.tag)
             ['argin', 'argout'] and
             description_data.attrib contains
-            {'description': 'Turn On Device',
-            'displayLevel': 'OPERATOR',
-            'execMethod': 'on',
-            'isDynamic': 'false',
-            'name': 'On',
-            'polledPeriod': '0'}
+            {
+                "description": "Turn On Device",
+                "displayLevel": "OPERATOR",
+                "isDynamic": "false",
+                "execMethod": "on",
+                "polledPeriod": "0",
+                "name": "On"
+            }
 
         Returns
         -------
@@ -171,28 +212,53 @@ class Xmi_Parser(object):
             'dynamicAttributes'
 
             description_data.find('properties').attrib contains
-            {'deltaTime': '', 'deltaValue': '', 'description': '',
-             'displayUnit': '', 'format': '', 'label': '',
-             'maxAlarm': '', 'maxValue': '', 'maxWarning': '',
-             'minAlarm': '', 'minValue': '', 'minWarning': '',
-             'standardUnit': '', 'unit': ''} and
+            {
+                "description": "",
+                "deltaValue": "",
+                "maxAlarm": "",
+                "maxValue": "",
+                "minValue": "",
+                "standardUnit": "",
+                "minAlarm": "",
+                "maxWarning": "",
+                "unit": "",
+                "displayUnit": "",
+                "format": "",
+                "deltaTime": "",
+                "label": "",
+                "minWarning": ""
+            }
+
+            and
 
             description_data.attrib contains
-            {'allocReadMember': 'false',
-            'attType': 'Scalar',
-            'displayLevel': 'OPERATOR',
-            'isDynamic': 'false',
-            'maxX': '',
-            'maxY': '',
-            'name': 'Constant',
-            'polledPeriod': '0',
-            'rwType': 'WRITE'}
+            {
+                "maxX": "",
+                "maxY": "",
+                "attType": "Scalar",
+                "polledPeriod": "0",
+                "displayLevel": "OPERATOR",
+                "isDynamic": "false",
+                "rwType": "WRITE",
+                "allocReadMember": "false",
+                "name": "Constant"
+            }
+
+
 
             description_data.find('eventCriteria').attrib contains
-            {'absChange': '0.5', 'period': '1000', 'relChange': '10'}
+            {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            }
 
             description_data.find('evArchiveCriteria').attrib contains
-            {'absChange': '0.5', 'period': '1000', 'relChange': '10'}
+            {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            }
 
         Returns
         -------
@@ -221,7 +287,10 @@ class Xmi_Parser(object):
             ['DefaultPropValue']
 
             description_data.attrib contains
-            {'description': '', 'name': 'katcp_address'}
+            {
+                'description': '',
+                'name': 'katcp_address'
+            }
 
         Returns
         -------
