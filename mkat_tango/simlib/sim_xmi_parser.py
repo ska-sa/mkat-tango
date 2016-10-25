@@ -349,9 +349,39 @@ class Xmi_Parser(object):
         Returns
         -------
         attributes: dict
-            A dictionary of all the device attributes specified in the POGO
-            generated XMI file. The key represents the name of the attribute
-            and the value is a dictionary of all the attribute's metadata.
+            A dictionary of all the device attributes together with their
+            metadata specified in the POGO generated XMI file. The key 
+            represents the name of the attribute and the value is a dictionary
+            of all the attribute's metadata.
+
+            e.g.
+            {'input_comms_ok': {
+                'abs_change': '',
+                'archive_abs_change': '',
+                'archive_period': '1000',
+                'archive_rel_change': '',
+                'data_type': PyTango._PyTango.CmdArgType.DevBoolean,
+                'delta_t': '',
+                'delta_val': '',
+                'description': 'Communications with all weather sensors are nominal.',
+                'display_unit': '',
+                'event_period': '1000',
+                'format': '',
+                'label': 'Input communication OK',
+                'max_alarm': '',
+                'max_value': '',
+                'max_warning': '',
+                'min_alarm': '',
+                'min_value': '',
+                'min_warning': '',
+                'name': 'input_comms_ok',
+                'period': '1000',
+                'rel_change': '',
+                'standard_unit': '',
+                'unit': '',
+                'writable': 'READ'},
+            }
+
         """
         attributes = {}
 

@@ -43,9 +43,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
-        # Shot sleeping time to allow the tango device to configure
-        #time.sleep(0.5)
-        
+                
     def test_attribute_list(self):
         attributes = set(self.device.get_attribute_list())
         expected_attributes = []
@@ -56,59 +54,53 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
 
     def test_attribute_properties(self):
         attribute_list = self.device.get_attribute_list()
-        
-        for attribute_data in self.xmi_parser.device_attributes:
-            # The properties that are tested for each the tango attributes are all
-            # in the POGO_USER_DEFAULT_ATTR_PROP_MAP dict items
-            for default_attr_props in (sim_xmi_parser.
-                        POGO_USER_DEFAULT_ATTR_PROP_MAP.items()):
-                # prop_group is the keys in the POGO_USER_DEFAULT_ATTR_PROP_MAP
-                # that also match that in `self.xmi_parser.device_attributes`
-                prop_group, default_attr_prop = default_attr_props
-                attr_name = attribute_data['dynamicAttributes']['name']
-                #print 'attr_name= ' + attr_name
-                #print self.device.get_attribute_config('temperature')
-                #print hasattr(self.device, attr_name)
-                #self.assertEqual(hasattr(self.device, attr_name), True,
-                 #                "Device does not have an attribute %s" % (attr_name))
-                self.assertIn(attr_name, attribute_list,
-                        "Device does not have the attribute %s" % (attr_name))
-                attr_query_data = self.device.attribute_query(attr_name)
-                for pogo_prop, user_default_prop in default_attr_prop.items():
-                    expected_atrr_value = attribute_data[prop_group][pogo_prop]
-                    attr_prop_value = getattr(attr_query_data, user_default_prop, None)
-                    # Here the writable property is checked for, since Pogo
-                    # expresses in as a string (e.g. 'READ') where tango device return a
-                    # Pytango object `PyTango.AttrWriteType.READ` and taking
-                    # its string returns 'READ' which corresponds to the Pogo one.
-                    if user_default_prop in ['writable']:
-                        attr_prop_value = str(attr_prop_value)
-                    if not attr_prop_value:
-                        # In the case where no attr_query data is not found it is
-                        # further checked in the mentioned attribute object
-                        # i.e. alarms and events
-                        # (check `self._test_tango_property_object`)
-                        attr_prop_value = self._get_attribute_property_object_value(
-                                                 attr_query_data, user_default_prop)
-                    # Here the data_type property is checked for, since Pogo
-                    # expresses in as a PyTango object (e.g.`PyTango.DevDouble`)
-                    # where tango device return a corresponding int value (e.g. 5)
-                    # and taking int of `PyTango.DevDouble` returns 5.
-                    if user_default_prop in ['data_type']:
-                        expected_atrr_value = int(expected_atrr_value)
-                    # For some reason tango device attribute properties not
-                    # stated are assigned a string 'Not Specified' or even 'No
-                    # writable Specified'
-                    if 'No' in str(attr_prop_value):
-                        attr_prop_value = ''
-                    # Pogo doesn't seem to populate the format as expected i.e.
-                    # format = '', and tango  device return (e.g. %6.2f for
-                    # floating points)
-                    if user_default_prop in ['format']:
-                        attr_prop_value = ''
-                    self.assertEqual(expected_atrr_value, attr_prop_value,
-                            "Non matching %s property for %s attribute" % (
-                                    user_default_prop, attr_name))
+        attribute_data = self.xmi_parser._reformat_device_attr_metadata()
+
+        for attr_name, attr_metadata in attribute_data.items():
+            self.assertIn(attr_name, attribute_list,
+                    "Device does not have the attribute %s" % (attr_name))
+            attr_query_data = self.device.attribute_query(attr_name)
+
+            for attr_parameter in attr_metadata:
+                expected_attr_value = attr_metadata[attr_parameter]
+                attr_prop_value = getattr(attr_query_data, attr_parameter, None)
+                # Here the writable property is checked for, since Pogo
+                # expresses in as a string (e.g. 'READ') where tango device return a
+                # Pytango object `PyTango.AttrWriteType.READ` and taking
+                # its string returns 'READ' which corresponds to the Pogo one.
+                if attr_parameter in ['writable']:
+                    attr_prop_value = str(attr_prop_value)
+
+                if not attr_prop_value:
+                    # In the case where no attr_query data is not found it is
+                    # further checked in the mentioned attribute object
+                    # i.e. alarms and events
+                    # (check `self._test_tango_property_object`)
+                    attr_prop_value = self._get_attribute_property_object_value(
+                            attr_query_data, attr_parameter)
+
+                # Here the data_type property is checked for, since Pogo
+                # expresses in as a PyTango object (e.g.`PyTango.DevDouble`)
+                # where tango device return a corresponding int value (e.g. 5)
+                # and taking int of `PyTango.DevDouble` returns 5.
+                if attr_parameter in ['data_type']:
+                    expected_attr_value = int(expected_attr_value)
+
+                # For some reason tango device attribute properties not
+                # stated are assigned a string 'Not Specified' or even 'No
+                # writable Specified'
+                if 'No' in str(attr_prop_value):
+                    attr_prop_value = ''
+
+                # Pogo doesn't seem to populate the format as expected i.e.
+                # format = '', and tango  device return (e.g. %6.2f for
+                # floating points)
+                if attr_parameter in ['format']:
+                    attr_prop_value = ''
+
+                self.assertEqual(expected_attr_value, attr_prop_value,
+                        "Non matching %s property for %s attribute" % (
+                            attr_parameter, attr_name))        
 
     def _get_attribute_property_object_value(self, attr_query_data, user_default_prop):
         """Extracting the tango attribute property value from alarms an events objects
