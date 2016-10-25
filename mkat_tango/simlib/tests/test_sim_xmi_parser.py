@@ -45,7 +45,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
         # Shot sleeping time to allow the tango device to configure
         #time.sleep(0.5)
-
+        
     def test_attribute_list(self):
         attributes = set(self.device.get_attribute_list())
         expected_attributes = []
@@ -55,6 +55,8 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                          "Actual tango device attribute list differs from expected list!")
 
     def test_attribute_properties(self):
+        attribute_list = self.device.get_attribute_list()
+        
         for attribute_data in self.xmi_parser.device_attributes:
             # The properties that are tested for each the tango attributes are all
             # in the POGO_USER_DEFAULT_ATTR_PROP_MAP dict items
@@ -64,8 +66,13 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                 # that also match that in `self.xmi_parser.device_attributes`
                 prop_group, default_attr_prop = default_attr_props
                 attr_name = attribute_data['dynamicAttributes']['name']
-                self.assertEqual(hasattr(self.device, attr_name), True,
-                                 "Device does not have an attribute %s" % (attr_name))
+                #print 'attr_name= ' + attr_name
+                #print self.device.get_attribute_config('temperature')
+                #print hasattr(self.device, attr_name)
+                #self.assertEqual(hasattr(self.device, attr_name), True,
+                 #                "Device does not have an attribute %s" % (attr_name))
+                self.assertIn(attr_name, attribute_list,
+                        "Device does not have the attribute %s" % (attr_name))
                 attr_query_data = self.device.attribute_query(attr_name)
                 for pogo_prop, user_default_prop in default_attr_prop.items():
                     expected_atrr_value = attribute_data[prop_group][pogo_prop]
