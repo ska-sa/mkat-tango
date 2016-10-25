@@ -29,7 +29,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch('mkat_tango.simlib.sim_xmi_parser.get_xmi_description_file_name'
+        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
             cls.properties = dict(sim_xmi_description_file=cls.xmi_file)
@@ -44,7 +44,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
         # Shot sleeping time to allow the tango device to configure
-        time.sleep(0.5)
+        #time.sleep(0.5)
 
     def test_attribute_list(self):
         attributes = set(self.device.get_attribute_list())
@@ -65,7 +65,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                 prop_group, default_attr_prop = default_attr_props
                 attr_name = attribute_data['dynamicAttributes']['name']
                 self.assertEqual(hasattr(self.device, attr_name), True,
-                                 "Device does not a attribute %s" % (attr_name))
+                                 "Device does not have an attribute %s" % (attr_name))
                 attr_query_data = self.device.attribute_query(attr_name)
                 for pogo_prop, user_default_prop in default_attr_prop.items():
                     expected_atrr_value = attribute_data[prop_group][pogo_prop]
