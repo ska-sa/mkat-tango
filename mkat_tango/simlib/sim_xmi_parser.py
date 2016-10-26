@@ -342,7 +342,7 @@ class Xmi_Parser(object):
         return arg_type
 
 
-    def _reformat_device_attr_metadata(self):
+    def get_reformatted_device_attr_metadata(self):
         """Extracts all the necessary attribute metadata from the device_attribute data
         structure.
 
@@ -424,7 +424,7 @@ class PopulateModelQuantities(object):
             quantities.GaussianSlewLimited, start_time=start_time)
         ConstantQuantity = partial(
             quantities.ConstantQuantity, start_time=start_time)
-        attributes = self.xmi_parser._reformat_device_attr_metadata()
+        attributes = self.xmi_parser.get_reformatted_device_attr_metadata()
 
         for attr_name, attr_props in attributes.items():
             if attr_props['data_type'] in CONSTANT_DATA_TYPES:

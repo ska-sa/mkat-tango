@@ -12,9 +12,82 @@ from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.simlib import sim_xmi_parser
 from mkat_tango.testutils import ClassCleanupUnittestMixin
 
+import PyTango
+
 LOGGER = logging.getLogger(__name__)
 
 default_attributes = {'State', 'Status'}
+
+expected_attribute_data_structure = [{
+    "attribute": {
+        "displayLevel": '',
+        "maxX": '',
+        "maxY": '',
+        "attType": '',
+        "polledPeriod": '',
+        "dataType": '',
+        "isDynamic": '',
+        "rwType": '',
+        "allocReadMember": '',
+        "name": ''
+    },
+    "eventCriteria": {
+        "relChange": '',
+        "absChange": '',
+        "period": ''
+    },
+    "evArchiverCriteria": {
+        "relChange": '',
+        "absChange": '',
+        "period": ''
+    },
+    "properties": {
+        "description": '',
+        "deltaValue": '',
+        "maxAlarm": '',
+        "maxValue": '',
+        "minValue": '',
+        "standardUnit": '',
+        "minAlarm": '',
+        "maxWarning": '',
+        "unit": '',
+        "displayUnit": '',
+        "format": '',
+        "deltaTime": '',
+        "label": '',
+        "minWarning": ''
+    }
+    }]
+
+expected_mandatory_attr_parameters = [
+        expected_attribute_data_structure[0]['attribute'],
+        expected_attribute_data_structure[0]['properties']]
+expected_mandatory_cmd_parameters = [
+    {
+        "name": 'State',
+        "arginDescription": 'none',
+        "arginType": PyTango._PyTango.CmdArgType.DevVoid,
+        "argoutDescription": 'Device state',
+        "argoutType": PyTango.utils.DevState,
+        "description": 'This command gets the device state (stored in its device_state data member) and returns it to the caller.',
+        "displayLevel": 'OPERATOR',
+        "polledPeriod": '0',
+        "execMethod": 'dev_state',
+        "isDynamic": ''
+    },
+    {
+        "arginDescription": 'none',
+        "arginType": PyTango._PyTango.CmdArgType.DevVoid,
+        "argoutDescription": 'Device status',
+        "argoutType": PyTango._PyTango.CmdArgType.DevString,
+        "description": 'This command gets the device status (stored in its device_status data member) and returns it to the caller.',
+        "displayLevel": 'OPERATOR',
+        "execMethod": 'dev_status',
+        "name": 'Status',
+        "polledPeriod": '0',
+        "isDynamic": ''
+     }
+]
 
 
 class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
@@ -43,8 +116,11 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
-                
+
     def test_attribute_list(self):
+        """ Testing whether the attributes specified in the POGO generated xmi file
+        are added to the TANGO device
+        """
         attributes = set(self.device.get_attribute_list())
         expected_attributes = []
         for attribute_data in self.xmi_parser.device_attributes:
@@ -54,7 +130,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
 
     def test_attribute_properties(self):
         attribute_list = self.device.get_attribute_list()
-        attribute_data = self.xmi_parser._reformat_device_attr_metadata()
+        attribute_data = self.xmi_parser.get_reformatted_device_attr_metadata()
 
         for attr_name, attr_metadata in attribute_data.items():
             self.assertIn(attr_name, attribute_list,
@@ -100,7 +176,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
 
                 self.assertEqual(expected_attr_value, attr_prop_value,
                         "Non matching %s property for %s attribute" % (
-                            attr_parameter, attr_name))        
+                            attr_parameter, attr_name))
 
     def _get_attribute_property_object_value(self, attr_query_data, user_default_prop):
         """Extracting the tango attribute property value from alarms an events objects
@@ -149,3 +225,86 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                                               user_default_prop, None)
             if attr_prop_value:
                 return attr_prop_value
+
+class test_XMIParser(unittest.TestCase):
+    longMessage = True
+
+    def setUp(self):
+        super(test_XMIParser, self).setUp()
+        self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
+                                'weather_sim.xmi')
+        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'                                                 ) as mock_get_xmi_description_file_name:
+             mock_get_xmi_description_file_name.return_value = self.xmi_file
+
+        self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
+
+    def test_object_instantiation(self):
+        with self.assertRaises(TypeError):
+            sim_xmi_parser.Xmi_Parser()
+        self.assertEquals(True, hasattr(self.xmi_parser, 'device_attributes'),
+            'The object has not device attribute list')
+        self.assertEquals(True, hasattr(self.xmi_parser, 'device_commands'),
+            'The object has no device command list')
+        self.assertEquals(True, hasattr(self.xmi_parser, 'device_properties'),
+                    'The object has no device properties list')
+
+    def test_default_parsed_device_spec(self):
+        """Testing that a default POGO generated xmi has no attributes or
+        properties but just two default commands.
+        """
+        attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
+                'relativeHumidity', 'wind_direction', 'input_comms_ok',
+                'wind_speed']
+        self.assertEqual(set(self.xmi_parser.get_reformatted_device_attr_metadata()),
+                set(attr_list),
+                "The are some unexpected attributes in the list")
+
+        default_device_commands = ['State', 'Status']
+        parsed_commands = []
+        for parsed_command in self.xmi_parser.device_commands:
+            parsed_commands.append(parsed_command['name'])
+
+        #self.assertEquals(2, len(parsed_commands),
+         #       'The default attributes are less than or more than two')
+        self.assertNotEqual(set(parsed_commands), set(default_device_commands),
+                "The are some unexpected commands in the list")
+        #self.assertEqual(self.xmi_parser.device_properties, [],
+         #       "There are unexpected properties in the list")
+
+        parsed_commands = self.xmi_parser.device_commands
+        parsed_commands_properties = expected_mandatory_cmd_parameters[0].keys()
+
+        for cmd_props in parsed_commands:
+            if cmd_props['name'] not in ['State', 'Status']:
+                self.assertEquals(set(parsed_commands_properties), set(cmd_props.keys()),
+                    "One of the commands dont have the mandatory properties")
+
+    def test_parsed_attributes(self):
+        pass
+
+    def test_parsed_commands(self):
+        parsed_commands = self.xmi_parser.device_commands
+        parsed_commands_properties = expected_mandatory_cmd_parameters[0].keys()
+
+        for cmd_props in parsed_commands:
+            if cmd_props['name'] not in ['State', 'Status']:
+                self.assertEquals(set(parsed_commands_properties), set(cmd_props.keys()),
+                    "The command %s doesn't have all the mandatory properties" % (cmd_props['name']))
+
+        cmd_on_info = None
+        for cmd_props in parsed_commands:
+            if cmd_props['name'] in ['On']:
+                cmd_on_info = cmd_props
+                break
+        self.assertEqual(cmd_on_info['description'], 'Turn On Device')
+        self.assertEqual(cmd_on_info['execMethod'], 'on')
+        self.assertEqual(cmd_on_info['displayLevel'], 'OPERATOR')
+        self.assertEqual(cmd_on_info['polledPeriod'], '0')
+        self.assertEqual(cmd_on_info['isDynamic'], 'false')
+        self.assertEqual(cmd_on_info['arginDescription'], '')
+        self.assertEqual(cmd_on_info['arginType'], PyTango.CmdArgType.DevVoid)
+        self.assertEqual(cmd_on_info['argoutDescription'], 'ok | Device ON')
+        self.assertEqual(cmd_on_info['argoutType'], PyTango.CmdArgType.DevString)
+
+    def test_parsed_device_properties(self):
+        pass
