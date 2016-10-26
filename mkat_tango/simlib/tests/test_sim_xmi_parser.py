@@ -16,7 +16,7 @@ import PyTango
 
 LOGGER = logging.getLogger(__name__)
 
-default_attributes = {'State', 'Status'}
+default_pogo_commands = {'State', 'Status'}
 
 expected_attribute_data_structure = [{
     "attribute": {
@@ -62,7 +62,7 @@ expected_attribute_data_structure = [{
 expected_mandatory_attr_parameters = [
         expected_attribute_data_structure[0]['attribute'],
         expected_attribute_data_structure[0]['properties']]
-expected_mandatory_cmd_parameters = [
+expected_mandatory_user_defined_cmd_parameters = [
     {
         "name": 'State',
         "arginDescription": 'none',
@@ -249,13 +249,10 @@ class test_XMIParser(unittest.TestCase):
                     'The object has no device properties list')
 
     def test_default_parsed_device_spec(self):
-        """Testing that a default POGO generated xmi has no attributes or
-        properties but just two default commands.
-        """
         attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
                 'relativeHumidity', 'wind_direction', 'input_comms_ok',
                 'wind_speed']
-        self.assertEqual(set(self.xmi_parser.get_reformatted_device_attr_metadata()),
+        self.assertEqual(set(self.xmi_parser.get_reformatted_device_attr_metadata().keys()),
                 set(attr_list),
                 "The are some unexpected attributes in the list")
 
@@ -272,7 +269,7 @@ class test_XMIParser(unittest.TestCase):
          #       "There are unexpected properties in the list")
 
         parsed_commands = self.xmi_parser.device_commands
-        parsed_commands_properties = expected_mandatory_cmd_parameters[0].keys()
+        parsed_commands_properties = expected_mandatory_user_defined_cmd_parameters[0].keys()
 
         for cmd_props in parsed_commands:
             if cmd_props['name'] not in ['State', 'Status']:
@@ -280,11 +277,38 @@ class test_XMIParser(unittest.TestCase):
                     "One of the commands dont have the mandatory properties")
 
     def test_parsed_attributes(self):
-        pass
+         expected_attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
+                      'relativeHumidity', 'wind_direction', 'input_comms_ok',
+                      'wind_speed']
+         parsed_attr_list = self.xmi_parser.get_reformatted_device_attr_metadata().keys()
+
+         self.assertEquals(set(expected_attr_list), set(parsed_attr_list),
+                 'There are missing attributes')
+
+         parsed_pressure_attr_prop = self.xmi_parser.get_reformatted_device_attr_metadata()['pressure']
+         self.assertEquals(parsed_pressure_attr_prop['name'], 'pressure')
+         self.assertEquals(parsed_pressure_attr_prop['data_type'], PyTango.CmdArgType.DevDouble)
+         self.assertEquals(parsed_pressure_attr_prop['period'], '1000')
+         self.assertEquals(parsed_pressure_attr_prop['writable'], 'READ')
+         self.assertEquals(parsed_pressure_attr_prop['description'], 'Barometric pressure in central telescope area.')
+         self.assertEquals(parsed_pressure_attr_prop['label'], 'Barometric pressure')
+         self.assertEquals(parsed_pressure_attr_prop['unit'], 'mbar')
+         self.assertEquals(parsed_pressure_attr_prop['standard_unit'], '')
+         self.assertEquals(parsed_pressure_attr_prop['display_unit'], '')
+         self.assertEquals(parsed_pressure_attr_prop['format'], '')
+         self.assertEquals(parsed_pressure_attr_prop['max_value'], '1100')
+         self.assertEquals(parsed_pressure_attr_prop['min_value'], '500')
+         self.assertEquals(parsed_pressure_attr_prop['max_alarm'], '1000')
+         self.assertEquals(parsed_pressure_attr_prop['min_alarm'], '')
+         self.assertEquals(parsed_pressure_attr_prop['max_warning'], '900')
+         self.assertEquals(parsed_pressure_attr_prop['min_warning'], '')
+         self.assertEquals(parsed_pressure_attr_prop['delta_t'], '')
+         self.assertEquals(parsed_pressure_attr_prop['delta_val'], '')
+
 
     def test_parsed_commands(self):
         parsed_commands = self.xmi_parser.device_commands
-        parsed_commands_properties = expected_mandatory_cmd_parameters[0].keys()
+        parsed_commands_properties = expected_mandatory_user_defined_cmd_parameters[0].keys()
 
         for cmd_props in parsed_commands:
             if cmd_props['name'] not in ['State', 'Status']:
