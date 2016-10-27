@@ -16,7 +16,7 @@ import PyTango
 
 LOGGER = logging.getLogger(__name__)
 
-default_pogo_commands = {'State', 'Status'}
+default_pogo_commands = ['State', 'Status']
 
 expected_attribute_data_structure = [{
     "attribute": {
@@ -69,7 +69,8 @@ expected_mandatory_user_defined_cmd_parameters = [
         "arginType": PyTango._PyTango.CmdArgType.DevVoid,
         "argoutDescription": 'Device state',
         "argoutType": PyTango.utils.DevState,
-        "description": 'This command gets the device state (stored in its device_state data member) and returns it to the caller.',
+        "description": 'This command gets the device state (stored in its '
+            'device_state data member) and returns it to the caller.',
         "displayLevel": 'OPERATOR',
         "polledPeriod": '0',
         "execMethod": 'dev_state',
@@ -80,7 +81,8 @@ expected_mandatory_user_defined_cmd_parameters = [
         "arginType": PyTango._PyTango.CmdArgType.DevVoid,
         "argoutDescription": 'Device status',
         "argoutType": PyTango._PyTango.CmdArgType.DevString,
-        "description": 'This command gets the device status (stored in its device_status data member) and returns it to the caller.',
+        "description": 'This command gets the device status'
+            '(stored in its device_status data member) and returns it to the caller.',
         "displayLevel": 'OPERATOR',
         "execMethod": 'dev_status',
         "name": 'Status',
@@ -233,7 +235,8 @@ class test_XMIParser(unittest.TestCase):
         super(test_XMIParser, self).setUp()
         self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
                                 'weather_sim.xmi')
-        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'                                                 ) as mock_get_xmi_description_file_name:
+        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'
+                ) as mock_get_xmi_description_file_name:
              mock_get_xmi_description_file_name.return_value = self.xmi_file
 
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
@@ -252,8 +255,8 @@ class test_XMIParser(unittest.TestCase):
         attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
                 'relativeHumidity', 'wind_direction', 'input_comms_ok',
                 'wind_speed']
-        self.assertEqual(set(self.xmi_parser.get_reformatted_device_attr_metadata().keys()),
-                set(attr_list),
+        parsed_attr_list = self.xmi_parser.get_reformatted_device_attr_metadata().keys()
+        self.assertEqual(set(parsed_attr_list),set(attr_list),
                 "The are some unexpected attributes in the list")
 
         default_device_commands = ['State', 'Status']
@@ -269,7 +272,8 @@ class test_XMIParser(unittest.TestCase):
          #       "There are unexpected properties in the list")
 
         parsed_commands = self.xmi_parser.device_commands
-        parsed_commands_properties = expected_mandatory_user_defined_cmd_parameters[0].keys()
+        parsed_commands_properties = (
+                expected_mandatory_user_defined_cmd_parameters[0].keys())
 
         for cmd_props in parsed_commands:
             if cmd_props['name'] not in ['State', 'Status']:
@@ -290,7 +294,8 @@ class test_XMIParser(unittest.TestCase):
          self.assertEquals(parsed_pressure_attr_prop['data_type'], PyTango.CmdArgType.DevDouble)
          self.assertEquals(parsed_pressure_attr_prop['period'], '1000')
          self.assertEquals(parsed_pressure_attr_prop['writable'], 'READ')
-         self.assertEquals(parsed_pressure_attr_prop['description'], 'Barometric pressure in central telescope area.')
+         self.assertEquals(parsed_pressure_attr_prop['description'], 
+                 'Barometric pressure in central telescope area.')
          self.assertEquals(parsed_pressure_attr_prop['label'], 'Barometric pressure')
          self.assertEquals(parsed_pressure_attr_prop['unit'], 'mbar')
          self.assertEquals(parsed_pressure_attr_prop['standard_unit'], '')
@@ -307,16 +312,23 @@ class test_XMIParser(unittest.TestCase):
 
 
     def test_parsed_commands(self):
-        parsed_commands = self.xmi_parser.device_commands
-        parsed_commands_properties = expected_mandatory_user_defined_cmd_parameters[0].keys()
+        parsed_cmds = self.xmi_parser.device_commands
+        parsed_cmds_properties = expected_mandatory_user_defined_cmd_parameters[0].keys()
+        expected_cmd_list = ['On', 'Off'] + default_pogo_commands
+        parsed_cmd_list = []
+        for cmd_info in parsed_cmds:
+            parsed_cmd_list.append(cmd_info['name'])
 
-        for cmd_props in parsed_commands:
+        self.assertEquals(set(expected_cmd_list), set(parsed_cmd_list),
+                'There are some missing commands')
+        for cmd_props in parsed_cmds:
             if cmd_props['name'] not in ['State', 'Status']:
-                self.assertEquals(set(parsed_commands_properties), set(cmd_props.keys()),
+                self.assertEquals(set(parsed_cmds_properties), set(cmd_props.keys()),
                     "The command %s doesn't have all the mandatory properties" % (cmd_props['name']))
-
+        "Pick one command (not a default command) to test if its property information "
+        "has been parsed correctly" 
         cmd_on_info = None
-        for cmd_props in parsed_commands:
+        for cmd_props in parsed_cmds:
             if cmd_props['name'] in ['On']:
                 cmd_on_info = cmd_props
                 break
