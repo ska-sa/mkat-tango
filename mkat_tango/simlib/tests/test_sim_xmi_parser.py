@@ -2,6 +2,7 @@ import time
 import mock
 import logging
 import unittest
+import random
 
 import pkg_resources
 
@@ -18,51 +19,18 @@ LOGGER = logging.getLogger(__name__)
 
 default_pogo_commands = ['State', 'Status']
 
-expected_attribute_data_structure = [{
-    "attribute": {
-        "displayLevel": '',
-        "maxX": '',
-        "maxY": '',
-        "attType": '',
-        "polledPeriod": '',
-        "dataType": '',
-        "isDynamic": '',
-        "rwType": '',
-        "allocReadMember": '',
-        "name": ''
-    },
-    "eventCriteria": {
-        "relChange": '',
-        "absChange": '',
-        "period": ''
-    },
-    "evArchiverCriteria": {
-        "relChange": '',
-        "absChange": '',
-        "period": ''
-    },
-    "properties": {
-        "description": '',
-        "deltaValue": '',
-        "maxAlarm": '',
-        "maxValue": '',
-        "minValue": '',
-        "standardUnit": '',
-        "minAlarm": '',
-        "maxWarning": '',
-        "unit": '',
-        "displayUnit": '',
-        "format": '',
-        "deltaTime": '',
-        "label": '',
-        "minWarning": ''
-    }
-    }]
+expected_mandatory_attr_parameters = frozenset([
+    "display_level", "max_dim_x", "max_dim_y", "dformat", "period",
+    "data_type", "writable", "name", "description", "delta_val",
+    "max_alarm", "max_value", "min_value", "standard_unit", "min_alarm",
+    "max_warning", "unit", "display_unit","format", "delta_t", "label",
+    "min_warning"])
 
-expected_mandatory_attr_parameters = [
-        expected_attribute_data_structure[0]['attribute'],
-        expected_attribute_data_structure[0]['properties']]
-expected_mandatory_user_defined_cmd_parameters = [
+expected_mandatory_cmd_parameters = frozenset([
+    "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
+    "description", "displayLevel", "polledPeriod", "execMethod"])
+
+expected_mandatory_default_cmds = [
     {
         "name": 'State',
         "arginDescription": 'none',
@@ -74,7 +42,6 @@ expected_mandatory_user_defined_cmd_parameters = [
         "displayLevel": 'OPERATOR',
         "polledPeriod": '0',
         "execMethod": 'dev_state',
-        "isDynamic": ''
     },
     {
         "arginDescription": 'none',
@@ -87,9 +54,50 @@ expected_mandatory_user_defined_cmd_parameters = [
         "execMethod": 'dev_status',
         "name": 'Status',
         "polledPeriod": '0',
-        "isDynamic": ''
      }
 ]
+
+pressure_attr_info = {
+        'name': 'pressure',
+        'data_type': PyTango.CmdArgType.DevDouble,
+        'period': '1000',
+        'writable': 'READ',
+        'description': 'Barometric pressure in central telescope area.',
+        'label': 'Barometric pressure',
+        'unit': 'mbar',
+        'standard_unit': '',
+        'display_unit': '',
+        'display_level': 'EXPERT',
+        'format': '',
+        'max_value': '1100',
+        'min_value': '500',
+        'max_alarm': '1000',
+        'min_alarm': '',
+        'max_warning': '900',
+        'min_warning': '',
+        'delta_t': '',
+        'delta_val': '',
+        'dformat': PyTango.AttrDataFormat.SCALAR,
+        'max_dim_y': '',
+        'max_dim_x': '',
+        'abs_change': '0.5',
+        'rel_change': '10',
+        'event_period': '1000',
+        'archive_abs_change': '0.5',
+        'archive_period': '1000',
+        'archive_rel_change': '10'}
+
+on_cmd_info = {
+        'name': 'On',
+        'description': 'Turn On Device',
+        'execMethod': 'on',
+        'displayLevel': 'OPERATOR',
+        'polledPeriod': '0',
+        'isDynamic': 'false',
+        'arginDescription': '',
+        'arginType': PyTango.CmdArgType.DevVoid,
+        'argoutDescription': 'ok | Device ON',
+        'argoutType': PyTango.CmdArgType.DevString}
 
 
 class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
@@ -125,6 +133,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         """
         attributes = set(self.device.get_attribute_list())
         expected_attributes = []
+        default_attributes = {'State', 'Status'}
         for attribute_data in self.xmi_parser.device_attributes:
             expected_attributes.append(attribute_data['dynamicAttributes']['name'])
         self.assertEqual(set(expected_attributes),  attributes - default_attributes,
@@ -228,6 +237,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
             if attr_prop_value:
                 return attr_prop_value
 
+
 class test_XMIParser(unittest.TestCase):
     longMessage = True
 
@@ -251,96 +261,65 @@ class test_XMIParser(unittest.TestCase):
         self.assertEquals(True, hasattr(self.xmi_parser, 'device_properties'),
                     'The object has no device properties list')
 
-    def test_default_parsed_device_spec(self):
-        attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
-                'relativeHumidity', 'wind_direction', 'input_comms_ok',
-                'wind_speed']
-        parsed_attr_list = self.xmi_parser.get_reformatted_device_attr_metadata().keys()
-        self.assertEqual(set(parsed_attr_list),set(attr_list),
-                "The are some unexpected attributes in the list")
-
-        default_device_commands = ['State', 'Status']
-        parsed_commands = []
-        for parsed_command in self.xmi_parser.device_commands:
-            parsed_commands.append(parsed_command['name'])
-
-        #self.assertEquals(2, len(parsed_commands),
-         #       'The default attributes are less than or more than two')
-        self.assertNotEqual(set(parsed_commands), set(default_device_commands),
-                "The are some unexpected commands in the list")
-        #self.assertEqual(self.xmi_parser.device_properties, [],
-         #       "There are unexpected properties in the list")
-
-        parsed_commands = self.xmi_parser.device_commands
-        parsed_commands_properties = (
-                expected_mandatory_user_defined_cmd_parameters[0].keys())
-
-        for cmd_props in parsed_commands:
-            if cmd_props['name'] not in ['State', 'Status']:
-                self.assertEquals(set(parsed_commands_properties), set(cmd_props.keys()),
-                    "One of the commands dont have the mandatory properties")
-
     def test_parsed_attributes(self):
-         expected_attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
+
+        parsed_attrs = self.xmi_parser.get_reformatted_device_attr_metadata()
+        expected_attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
                       'relativeHumidity', 'wind_direction', 'input_comms_ok',
                       'wind_speed']
-         parsed_attr_list = self.xmi_parser.get_reformatted_device_attr_metadata().keys()
-
-         self.assertEquals(set(expected_attr_list), set(parsed_attr_list),
+        parsed_attr_list = parsed_attrs.keys()
+        self.assertGreater(len(parsed_attr_list), 0, 
+                "There is no attribute information parsed")
+        self.assertEquals(set(expected_attr_list), set(parsed_attr_list),
                  'There are missing attributes')
 
-         parsed_pressure_attr_prop = self.xmi_parser.get_reformatted_device_attr_metadata()['pressure']
-         self.assertEquals(parsed_pressure_attr_prop['name'], 'pressure')
-         self.assertEquals(parsed_pressure_attr_prop['data_type'], PyTango.CmdArgType.DevDouble)
-         self.assertEquals(parsed_pressure_attr_prop['period'], '1000')
-         self.assertEquals(parsed_pressure_attr_prop['writable'], 'READ')
-         self.assertEquals(parsed_pressure_attr_prop['description'], 
-                 'Barometric pressure in central telescope area.')
-         self.assertEquals(parsed_pressure_attr_prop['label'], 'Barometric pressure')
-         self.assertEquals(parsed_pressure_attr_prop['unit'], 'mbar')
-         self.assertEquals(parsed_pressure_attr_prop['standard_unit'], '')
-         self.assertEquals(parsed_pressure_attr_prop['display_unit'], '')
-         self.assertEquals(parsed_pressure_attr_prop['format'], '')
-         self.assertEquals(parsed_pressure_attr_prop['max_value'], '1100')
-         self.assertEquals(parsed_pressure_attr_prop['min_value'], '500')
-         self.assertEquals(parsed_pressure_attr_prop['max_alarm'], '1000')
-         self.assertEquals(parsed_pressure_attr_prop['min_alarm'], '')
-         self.assertEquals(parsed_pressure_attr_prop['max_warning'], '900')
-         self.assertEquals(parsed_pressure_attr_prop['min_warning'], '')
-         self.assertEquals(parsed_pressure_attr_prop['delta_t'], '')
-         self.assertEquals(parsed_pressure_attr_prop['delta_val'], '')
+        # Test if any one of the parsed attributes have all the mandatory parameter
+        random_parsed_attr = random.choice(expected_attr_list)
+        random_parsed_attr_info = parsed_attrs[random_parsed_attr]
+        for param in expected_mandatory_attr_parameters:
+            self.assertIn(param, random_parsed_attr_info.keys(),
+                    "The parsed attribute '%s' does not the mandotory parameter "
+                    "'%s' " % (random_parsed_attr, param))
+        # Pick one attribute and test if its property information
+        # has been parsed correctly.
 
+        parsed_pressure_attr_info = parsed_attrs['pressure']
+
+        # Compare the values of the attribute properties captured in the POGO generated
+        # xmi file and the ones in the parsed attribute data structure.
+        for prop in parsed_pressure_attr_info:
+            self.assertEquals(parsed_pressure_attr_info[prop], pressure_attr_info[prop],
+                    "The expected value for the parameter '%s' does not match "
+                    "with the actual value" % (prop))
 
     def test_parsed_commands(self):
-        parsed_cmds = self.xmi_parser.device_commands
-        parsed_cmds_properties = expected_mandatory_user_defined_cmd_parameters[0].keys()
-        expected_cmd_list = ['On', 'Off'] + default_pogo_commands
-        parsed_cmd_list = []
-        for cmd_info in parsed_cmds:
-            parsed_cmd_list.append(cmd_info['name'])
 
+        parsed_cmds = self.xmi_parser.get_reformatted_cmd_metadata()
+        expected_cmd_list = ['On', 'Off'] + default_pogo_commands
+        parsed_cmd_list = parsed_cmds.keys()
+        self.assertGreater(len(parsed_cmd_list), len(default_pogo_commands),
+                "There are missing commands in the parsed list")
         self.assertEquals(set(expected_cmd_list), set(parsed_cmd_list),
                 'There are some missing commands')
-        for cmd_props in parsed_cmds:
-            if cmd_props['name'] not in ['State', 'Status']:
-                self.assertEquals(set(parsed_cmds_properties), set(cmd_props.keys()),
-                    "The command %s doesn't have all the mandatory properties" % (cmd_props['name']))
-        "Pick one command (not a default command) to test if its property information "
-        "has been parsed correctly" 
-        cmd_on_info = None
-        for cmd_props in parsed_cmds:
-            if cmd_props['name'] in ['On']:
-                cmd_on_info = cmd_props
-                break
-        self.assertEqual(cmd_on_info['description'], 'Turn On Device')
-        self.assertEqual(cmd_on_info['execMethod'], 'on')
-        self.assertEqual(cmd_on_info['displayLevel'], 'OPERATOR')
-        self.assertEqual(cmd_on_info['polledPeriod'], '0')
-        self.assertEqual(cmd_on_info['isDynamic'], 'false')
-        self.assertEqual(cmd_on_info['arginDescription'], '')
-        self.assertEqual(cmd_on_info['arginType'], PyTango.CmdArgType.DevVoid)
-        self.assertEqual(cmd_on_info['argoutDescription'], 'ok | Device ON')
-        self.assertEqual(cmd_on_info['argoutType'], PyTango.CmdArgType.DevString)
+
+        # Test if any one of the parsed commands have all the mandatory parameter
+        random_parsed_cmd = random.choice(expected_cmd_list)
+        random_parsed_cmd_info = parsed_cmds[random_parsed_cmd]
+
+        for param in expected_mandatory_cmd_parameters:
+            self.assertIn(param, random_parsed_cmd_info.keys(),
+                    "The parsed attribute '%s' does not the mandotory parameter "
+                    "'%s' " % (random_parsed_cmd, param))
+
+        # Pick one command (not a default command) and test if its property information "
+        # has been parsed correctly"
+        self.assertIn('On', parsed_cmds.keys(),
+                "The 'On' command is not in the parsed command list")
+        cmd_on_info = parsed_cmds['On']
+        for prop in cmd_on_info:
+            self.assertEqual(cmd_on_info[prop], on_cmd_info[prop],
+                    "The expected value for the command paramater '%s' "
+                    "does not match with the actual value" % (prop))
 
     def test_parsed_device_properties(self):
         pass

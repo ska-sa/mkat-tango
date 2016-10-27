@@ -10,7 +10,7 @@ import PyTango
 
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
-from PyTango import DevState, DevBoolean, DevString, DevEnum
+from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat
 from PyTango.server import Device, DeviceMeta, server_run, device_property
 
 from mkat_tango import helper_module
@@ -20,13 +20,21 @@ from mkat_tango.simlib import model
 MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
+POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
+        'Image': AttrDataFormat.IMAGE,
+        'Scalar': AttrDataFormat.SCALAR,
+        'Spectrum': AttrDataFormat.SPECTRUM}
 
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
         'dynamicAttributes': {
             'name': 'name',
+            'displayLevel': 'display_level',
             'dataType': 'data_type',
             'rwType': 'writable',
-            'polledPeriod': 'period'},
+            'polledPeriod': 'period',
+            'attType': 'dformat',
+            'maxX': 'max_dim_x',
+            'maxY': 'max_dim_y'},
         'eventArchiveCriteria': {
             'absChange': 'archive_abs_change',
             'period': 'archive_period',
@@ -269,6 +277,11 @@ class Xmi_Parser(object):
         """
         attribute_data = dict()
         attribute_data['dynamicAttributes'] = description_data.attrib
+
+        attType =  attribute_data['dynamicAttributes']['attType']
+        if attType in POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP.keys():
+            attribute_data['dynamicAttributes']['attType'] = (
+                    POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP[attType])
         attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
         attribute_data['properties'] = description_data.find('properties').attrib
         attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
@@ -394,6 +407,30 @@ class Xmi_Parser(object):
                             pogo_attribute_data[prop_group][pogo_prop])
             attributes[attribute_meta['name']] = attribute_meta
         return attributes
+
+    def get_reformatted_cmd_metadata(self):
+        """ TODO
+
+        Returns
+        -------
+        commands : dict
+            A dictionary of all the device commands together with their
+            metadata specified in the POGO generated XMI file. The key 
+            represents the name of the command and the value is a dictionary
+            of all the attribute's metadata.
+
+            e.g. { 'cmd_name': {cmd_properties}
+
+                 }
+        """
+        commands = {}
+
+        for cmd_info in self.device_commands:
+            commands[cmd_info['name']] = cmd_info
+
+        return commands
+
+
 
 class PopulateModelQuantities(object):
     """
