@@ -318,8 +318,27 @@ class test_XMIParser(unittest.TestCase):
         cmd_on_info = parsed_cmds['On']
         for prop in cmd_on_info:
             self.assertEqual(cmd_on_info[prop], on_cmd_info[prop],
-                    "The expected value for the command paramater '%s' "
-                    "does not match with the actual value" % (prop))
+                "The expected value for the command paramater '%s' "
+                "does not match with the actual value" % (prop))
 
     def test_parsed_device_properties(self):
+        #TODO (KM)
         pass
+
+
+    def test_model_populator(self):
+
+        device_name = 'tango/device/instance'
+        with self.assertRaises(sim_xmi_parser.SimModelException):
+            sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
+                    sim_model='some_model')
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name)
+
+        self.assertEqual(device_name, pmq.sim_model.name,
+                "The device name and the model name do not match.")
+        expected_quantities_list = ['insolation', 'temperature', 'pressure', 'rainfall',
+                        'relativeHumidity', 'wind_direction', 'input_comms_ok',
+                        'wind_speed']
+        actual_quantities_list = pmq.sim_model.sim_quantities.keys()
+        self.assertEqual(set(expected_quantities_list), set(actual_quantities_list),
+                "The are quantities missing in the model")

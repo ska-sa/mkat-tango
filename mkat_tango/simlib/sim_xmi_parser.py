@@ -438,7 +438,12 @@ class PopulateModelQuantities(object):
     def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)
         if sim_model:
-            self.sim_model = sim_model
+            if isinstance(sim_model, model.Model):
+                self.sim_model = sim_model
+            else:
+                raise SimModelException("The sim_model object passed is not an "
+                    "instance of the class mkat_tango.simlib.model.Model")
+
         else:
             self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
@@ -519,6 +524,9 @@ class PopulateModelQuantities(object):
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
         return sim_attribute_quantities
 
+class SimModelException(Exception):
+    def __init__(self, message):
+        super(SimModelException, self).__init__(message)
 
 class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
