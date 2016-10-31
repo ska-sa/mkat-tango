@@ -25,10 +25,11 @@ POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
         'Scalar': AttrDataFormat.SCALAR,
         'Spectrum': AttrDataFormat.SPECTRUM}
 
+# TODO(KM 31-10-2016): Need to xmi attributes properties that are currently
+# not being handled by the parser e.g. displayLevel, enumLabels etc.
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
         'dynamicAttributes': {
             'name': 'name',
-            #'displayLevel': 'display_level',
             'dataType': 'data_type',
             'rwType': 'writable',
             'polledPeriod': 'period',
@@ -138,6 +139,7 @@ class Xmi_Parser(object):
             }
         }]
         """
+        # TODO(KM 31-10-2016): Need to also parse the class properties.
         self.parse_xmi_file()
 
     def parse_xmi_file(self):
@@ -293,6 +295,9 @@ class Xmi_Parser(object):
 
         attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
         attribute_data['properties'] = description_data.find('properties').attrib
+        # TODO(KM 31-10-2016): Events information is not mandatory for attributes, need
+        # to handle this properly as it raises an AttributeError error when trying to
+        # parse an xmi file with an attribute with not event information specified.
         attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
         attribute_data['eventArchiveCriteria'] = description_data.find(
             'evArchiveCriteria').attrib
@@ -365,8 +370,8 @@ class Xmi_Parser(object):
 
 
     def get_reformatted_device_attr_metadata(self):
-        """Extracts all the necessary attribute metadata from the device_attribute data
-        structure.
+        """Converts the device_attributes data structure into a dictionary
+        to make searching easier.
 
         Returns
         -------
@@ -418,7 +423,8 @@ class Xmi_Parser(object):
         return attributes
 
     def get_reformatted_cmd_metadata(self):
-        """ TODO
+        """Converts the device_commands data structure into a dictionary that
+        makes searching easier.
 
         Returns
         -------
@@ -439,10 +445,39 @@ class Xmi_Parser(object):
 
         return commands
 
+    def get_reformatted_properties_metadata(self):
+        """Creates a dictionary of the device properties and their metadata.
 
+        Returns
+        -------
+        device_properties: dict
+            A dictionary of all the device properties together with their
+            metadata specified in the POGO generated XMI file. The keys
+            represent the name of the device property and the value is a
+            dictionary of all the property's metadata.
+
+            e.g. { 'device_property_name' : {device_property_metadata}
+
+                 }
+
+        """
+        device_properties = {}
+        for properties_info in self.device_properties:
+            device_properties[properties_info['deviceProperties']['name']] = (
+                    properties_info['deviceProperties'])
+
+        return device_properties
 
 class PopulateModelQuantities(object):
-    """
+    """A generic class that is used to populate/update model quantities from the
+    TANGO device information captured in the POGO generated xmi file.
+
+
+    Attributes:
+        xmi_parser         The Xmi_Parser object which reads an xmi file and
+                           parses it into device attributes, commands, and properties.
+        sim_model          An instance of the Model class which is used for simulation
+                           of simple attributes.
     """
     def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)

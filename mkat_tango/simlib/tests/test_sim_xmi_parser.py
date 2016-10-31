@@ -2,7 +2,6 @@ import time
 import mock
 import logging
 import unittest
-import random
 
 import pkg_resources
 
@@ -17,7 +16,9 @@ import PyTango
 
 LOGGER = logging.getLogger(__name__)
 
-default_pogo_commands = ['State', 'Status']
+default_pogo_commands = ['State', 'Status']  # TODO(KM 31-10-2016): Might need to move
+                                             # this list to the testutils module as it
+                                             # seems to be used in many tests.
 
 expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
@@ -30,7 +31,11 @@ expected_mandatory_cmd_parameters = frozenset([
     "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
     "description", "displayLevel", "polledPeriod", "execMethod"])
 
-expected_mandatory_default_cmds = [
+expected_mandatory_device_property_parameters = frozenset([
+    "type", "mandatory", "description", "name"])
+
+
+expected_mandatory_default_cmds_info = [
     {
         "name": 'State',
         "arginDescription": 'none',
@@ -57,7 +62,9 @@ expected_mandatory_default_cmds = [
      }
 ]
 
-pressure_attr_info = {
+# The desired information for the atttribute pressure when the weather_sim xmi file is
+# parsed by the Xmi_Parser.
+expected_pressure_attr_info = {
         'name': 'pressure',
         'data_type': PyTango.CmdArgType.DevDouble,
         'period': '1000',
@@ -86,7 +93,8 @@ pressure_attr_info = {
         'archive_period': '1000',
         'archive_rel_change': '10'}
 
-on_cmd_info = {
+# The desired information for the 'On' command when the weather_sim xmi file is parsed
+expected_on_cmd_info = {
         'name': 'On',
         'description': 'Turn On Device',
         'execMethod': 'on',
@@ -98,8 +106,15 @@ on_cmd_info = {
         'argoutDescription': 'ok | Device ON',
         'argoutType': PyTango.CmdArgType.DevString}
 
+# The expected information that would be obtained for the device property when the
+# weather_sim xmi file is parsed by the Xmi_Parser.
+expected_sim_xmi_file_device_property_info = {
+        'name': 'sim_xmi_description_file',
+        'mandatory': 'true',
+        'description': 'Path to the pogo generated xmi file',
+        'type': PyTango.CmdArgType.DevString}
 
-class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
+class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
     longMessage = True
 
     @classmethod
@@ -121,7 +136,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
             start_thread_with_cleanup(cls, cls.tango_context)
 
     def setUp(self):
-        super(test_SimXmiParser, self).setUp()
+        super(test_SimXmiDeviceIntegration, self).setUp()
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
@@ -136,7 +151,8 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
         for attribute_data in self.xmi_parser.device_attributes:
             expected_attributes.append(attribute_data['dynamicAttributes']['name'])
         self.assertEqual(set(expected_attributes),  attributes - default_attributes,
-                         "Actual tango device attribute list differs from expected list!")
+                         "Actual tango device attribute list differs from expected "
+                         "list!")
 
     def test_attribute_properties(self):
         attribute_list = self.device.get_attribute_list()
@@ -157,7 +173,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                 if attr_parameter in ['writable']:
                     attr_prop_value = str(attr_prop_value)
 
-                if attr_prop_value == None:                 # None and 0 behaves the same way in an if statement.
+                if attr_prop_value == None:
                     # In the case where no attr_query data is not found it is
                     # further checked in the mentioned attribute object
                     # i.e. alarms and events
@@ -236,98 +252,126 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
             if attr_prop_value:
                 return attr_prop_value
 
-
-class test_XMIParser(unittest.TestCase):
+class test_GenericSetup(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
-        super(test_XMIParser, self).setUp()
+        super(test_GenericSetup, self).setUp()
         self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                'weather_sim.xmi')
-        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'
-                ) as mock_get_xmi_description_file_name:
-             mock_get_xmi_description_file_name.return_value = self.xmi_file
-
+                                                'weather_sim.xmi')
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
 
-    def test_object_instantiation(self):
-        with self.assertRaises(TypeError):
-            sim_xmi_parser.Xmi_Parser()
-        self.assertEquals(True, hasattr(self.xmi_parser, 'device_attributes'),
-            'The object has not device attribute list')
-        self.assertEquals(True, hasattr(self.xmi_parser, 'device_commands'),
-            'The object has no device command list')
-        self.assertEquals(True, hasattr(self.xmi_parser, 'device_properties'),
-                    'The object has no device properties list')
-
+class test_XmiParser(test_GenericSetup):
     def test_parsed_attributes(self):
-
-        parsed_attrs = self.xmi_parser.get_reformatted_device_attr_metadata()
+        """Testing that the attribute information parsed matches with the one captured
+        in the XMI file.
+        """
+        actual_parsed_attrs = self.xmi_parser.get_reformatted_device_attr_metadata()
         expected_attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
                       'relativeHumidity', 'wind_direction', 'input_comms_ok',
                       'wind_speed']
-        parsed_attr_list = parsed_attrs.keys()
-        self.assertGreater(len(parsed_attr_list), 0, 
+        actual_parsed_attr_list = actual_parsed_attrs.keys()
+        self.assertGreater(len(actual_parsed_attr_list), 0,
                 "There is no attribute information parsed")
-        self.assertEquals(set(expected_attr_list), set(parsed_attr_list),
+        self.assertEquals(set(expected_attr_list), set(actual_parsed_attr_list),
                  'There are missing attributes')
 
-        # Test if any one of the parsed attributes have all the mandatory parameter
-        random_parsed_attr = random.choice(expected_attr_list)
-        random_parsed_attr_info = parsed_attrs[random_parsed_attr]
-        for param in expected_mandatory_attr_parameters:
-            self.assertIn(param, random_parsed_attr_info.keys(),
-                    "The parsed attribute '%s' does not the mandotory parameter "
-                    "'%s' " % (random_parsed_attr, param))
-        # Pick one attribute and test if its property information
-        # has been parsed correctly.
+        # Test if all the parsed attributes have the mandatory properties
+        for attribute_metadata in actual_parsed_attrs.values():
+            for param in expected_mandatory_attr_parameters:
+                self.assertIn(param, attribute_metadata.keys(),
+                        "The parsed attribute '%s' does not the mandotory parameter "
+                        "'%s' " % (attribute_metadata['name'], param))
 
-        parsed_pressure_attr_info = parsed_attrs['pressure']
+        # Using the made up pressure attribute expected results as we haven't generated
+        # the full test data for the other attributes.
+        self.assertIn('pressure', actual_parsed_attrs.keys(),
+                "The attribute pressure is not in the parsed attribute list")
+        actual_parsed_pressure_attr_info = actual_parsed_attrs['pressure']
 
         # Compare the values of the attribute properties captured in the POGO generated
         # xmi file and the ones in the parsed attribute data structure.
-        for prop in parsed_pressure_attr_info:
-            self.assertEquals(parsed_pressure_attr_info[prop], pressure_attr_info[prop],
+        for prop in expected_pressure_attr_info:
+            self.assertEquals(actual_parsed_pressure_attr_info[prop],
+                    expected_pressure_attr_info[prop],
                     "The expected value for the parameter '%s' does not match "
                     "with the actual value" % (prop))
 
     def test_parsed_commands(self):
-
-        parsed_cmds = self.xmi_parser.get_reformatted_cmd_metadata()
+        """Testing that the command information in the xmi parser object matches
+        with the one captured in the XMI file generated using POGO.
+        """
+        actual_parsed_cmds = self.xmi_parser.get_reformatted_cmd_metadata()
         expected_cmd_list = ['On', 'Off'] + default_pogo_commands
-        parsed_cmd_list = parsed_cmds.keys()
-        self.assertGreater(len(parsed_cmd_list), len(default_pogo_commands),
+        actual_parsed_cmd_list = actual_parsed_cmds.keys()
+        self.assertGreater(len(actual_parsed_cmd_list), len(default_pogo_commands),
                 "There are missing commands in the parsed list")
-        self.assertEquals(set(expected_cmd_list), set(parsed_cmd_list),
+        self.assertEquals(set(expected_cmd_list), set(actual_parsed_cmd_list),
                 'There are some missing commands')
 
-        # Test if any one of the parsed commands have all the mandatory parameter
-        random_parsed_cmd = random.choice(expected_cmd_list)
-        random_parsed_cmd_info = parsed_cmds[random_parsed_cmd]
+        # Test if all the parsed commands have the mandatory properties
+        for command_metadata in actual_parsed_cmds.values():
+            for param in expected_mandatory_cmd_parameters:
+                self.assertIn(param, command_metadata.keys(),
+                        "The parsed command '%s' does not the mandatory parameter "
+                        "'%s' " % (command_metadata['name'], param))
 
-        for param in expected_mandatory_cmd_parameters:
-            self.assertIn(param, random_parsed_cmd_info.keys(),
-                    "The parsed attribute '%s' does not the mandotory parameter "
-                    "'%s' " % (random_parsed_cmd, param))
-
-        # Pick one command (not a default command) and test if its property information "
-        # has been parsed correctly"
-        self.assertIn('On', parsed_cmds.keys(),
+        # Test the 'On' command using the made up expected results as we haven't
+        # generated the full test data for the other commands.
+        self.assertIn('On', actual_parsed_cmds.keys(),
                 "The 'On' command is not in the parsed command list")
-        cmd_on_info = parsed_cmds['On']
-        for prop in cmd_on_info:
-            self.assertEqual(cmd_on_info[prop], on_cmd_info[prop],
+        actual_on_cmd_info = actual_parsed_cmds['On']
+        for prop in expected_on_cmd_info:
+            self.assertEqual(expected_on_cmd_info[prop], actual_on_cmd_info[prop],
                 "The expected value for the command paramater '%s' "
                 "does not match with the actual value" % (prop))
 
     def test_parsed_device_properties(self):
-        #TODO (KM)
-        pass
+        """Testing that the device property information captured in the XMI file
+        generating using POGO is parsed correctly with no data loss.
+        """
+        actual_parsed_dev_properties = self.xmi_parser.get_reformatted_properties_metadata()
+        expected_device_properties_list = ['sim_xmi_description_file']
+        actual_parsed_dev_props_list = actual_parsed_dev_properties.keys()
+        self.assertEqual(set(expected_device_properties_list),
+                set(actual_parsed_dev_props_list),
+                "The device property list do not match")
 
+        # Test if all the parsed device properties have the mandatoy parameters
+        for dev_prop_metadata in actual_parsed_dev_properties.values():
+            for param in expected_mandatory_device_property_parameters:
+                self.assertIn(param, dev_prop_metadata.keys(),
+                        "The parsed device property '%s' does not have the "
+                        "mandatory parameter '%s' " % (
+                            dev_prop_metadata['name'], param))
+
+        # Test the 'sim_xmi_description_file' device property as is the only device
+        # property we have for our device
+        self.assertIn('sim_xmi_description_file', actual_parsed_dev_properties.keys(),
+                "The 'sim_xmi_description_file' device property is not in the parsed "
+                "device properties' list")
+        actual_dev_prop_info = actual_parsed_dev_properties['sim_xmi_description_file']
+        for prop in expected_sim_xmi_file_device_property_info:
+            self.assertEqual(expected_sim_xmi_file_device_property_info[prop],
+                    actual_dev_prop_info[prop],
+                    "The expected value for the device property parameter '%s' "
+                    "does not match with the actual value" % (prop))
+
+
+class test_PopModelQuantities(test_GenericSetup):
+    #def setUp(self):
+     #   super(test_PopModelQuantities, self).setUp()
+      #  self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
+        #                                        'weather_sim.xmi')
+        #self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
 
     def test_model_populator(self):
-
+        """Testing that the model quantities that are added to the model match with
+        the attributes specified in the XMI file.
+        """
         device_name = 'tango/device/instance'
+        # Ensure that the SimModelException is raised when an instance of
+        # PopulateModelQuantities is created with the Model instance.
         with self.assertRaises(sim_xmi_parser.SimModelException):
             sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
                     sim_model='some_model')
