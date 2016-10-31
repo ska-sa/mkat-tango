@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 default_pogo_commands = ['State', 'Status']
 
 expected_mandatory_attr_parameters = frozenset([
-    "display_level", "max_dim_x", "max_dim_y", "dformat", "period",
+    "max_dim_x", "max_dim_y", "data_format", "period",
     "data_type", "writable", "name", "description", "delta_val",
     "max_alarm", "max_value", "min_value", "standard_unit", "min_alarm",
     "max_warning", "unit", "display_unit","format", "delta_t", "label",
@@ -67,7 +67,6 @@ pressure_attr_info = {
         'unit': 'mbar',
         'standard_unit': '',
         'display_unit': '',
-        'display_level': 'EXPERT',
         'format': '',
         'max_value': '1100',
         'min_value': '500',
@@ -77,9 +76,9 @@ pressure_attr_info = {
         'min_warning': '',
         'delta_t': '',
         'delta_val': '',
-        'dformat': PyTango.AttrDataFormat.SCALAR,
-        'max_dim_y': '',
-        'max_dim_x': '',
+        'data_format': PyTango.AttrDataFormat.SCALAR,
+        'max_dim_y': 0,
+        'max_dim_x': 1,
         'abs_change': '0.5',
         'rel_change': '10',
         'event_period': '1000',
@@ -158,7 +157,7 @@ class test_SimXmiParser(ClassCleanupUnittestMixin, unittest.TestCase):
                 if attr_parameter in ['writable']:
                     attr_prop_value = str(attr_prop_value)
 
-                if not attr_prop_value:
+                if attr_prop_value == None:                 # None and 0 behaves the same way in an if statement.
                     # In the case where no attr_query data is not found it is
                     # further checked in the mentioned attribute object
                     # i.e. alarms and events

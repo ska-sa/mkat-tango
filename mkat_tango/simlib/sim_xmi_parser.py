@@ -28,11 +28,11 @@ POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
         'dynamicAttributes': {
             'name': 'name',
-            'displayLevel': 'display_level',
+            #'displayLevel': 'display_level',
             'dataType': 'data_type',
             'rwType': 'writable',
             'polledPeriod': 'period',
-            'attType': 'dformat',
+            'attType': 'data_format',
             'maxX': 'max_dim_x',
             'maxY': 'max_dim_y'},
         'eventArchiveCriteria': {
@@ -282,6 +282,15 @@ class Xmi_Parser(object):
         if attType in POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP.keys():
             attribute_data['dynamicAttributes']['attType'] = (
                     POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP[attType])
+
+        attribute_data['dynamicAttributes']['maxX'] = (1
+                if attribute_data['dynamicAttributes']['maxX'] == ''
+                else int(attribute_data['dynamicAttributes']['maxX']))
+        attribute_data['dynamicAttributes']['maxY'] = (0
+                if attribute_data['dynamicAttributes']['maxY'] == ''
+                else int(attribute_data['dynamicAttributes']['maxY']))
+
+
         attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
         attribute_data['properties'] = description_data.find('properties').attrib
         attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
