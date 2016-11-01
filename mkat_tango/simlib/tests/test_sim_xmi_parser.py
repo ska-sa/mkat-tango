@@ -201,8 +201,8 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
 
                 # Pogo doesn't seem to populate the value for the format parameter
                 # as expected i.e. format = '', and tango  device return (e.g. %6.2f for
-                # floating points). TANGO library assigns a default value according to the
-                # attributes data type.
+                # floating points). TANGO library assigns a default value according to
+                # the attributes data type.
                 # '%6.2f' is the default for attributes that have a data type of
                 # DevDouble and DevFloat, and for DevInt its '%d', and for DevString
                 # and DevEnum it uses '%s'.
@@ -277,8 +277,8 @@ class test_XmiParser(GenericSetup):
         """
         actual_parsed_attrs = self.xmi_parser.get_reformatted_device_attr_metadata()
         expected_attr_list = ['insolation', 'temperature', 'pressure', 'rainfall',
-                      'relativeHumidity', 'wind_direction', 'input_comms_ok',
-                      'wind_speed']
+                              'relativeHumidity', 'wind_direction', 'input_comms_ok',
+                              'wind_speed']
         actual_parsed_attr_list = actual_parsed_attrs.keys()
         self.assertGreater(len(actual_parsed_attr_list), 0,
                 "There is no attribute information parsed")
@@ -339,7 +339,8 @@ class test_XmiParser(GenericSetup):
         """Testing that the device property information captured in the XMI file
         generating using POGO is parsed correctly with no data loss.
         """
-        actual_parsed_dev_properties = self.xmi_parser.get_reformatted_properties_metadata()
+        actual_parsed_dev_properties = (
+                self.xmi_parser.get_reformatted_properties_metadata())
         expected_device_properties_list = ['sim_xmi_description_file']
         actual_parsed_dev_props_list = actual_parsed_dev_properties.keys()
         self.assertEqual(set(expected_device_properties_list),
@@ -354,7 +355,7 @@ class test_XmiParser(GenericSetup):
                         "mandatory parameter '%s' " % (
                             dev_prop_metadata['name'], param))
 
-        # Test the 'sim_xmi_description_file' device property as is the only device
+        # Test the 'sim_xmi_description_file' device property as it is the only device
         # property we have for our device
         self.assertIn('sim_xmi_description_file', actual_parsed_dev_properties.keys(),
                 "The 'sim_xmi_description_file' device property is not in the parsed "
@@ -375,7 +376,7 @@ class test_PopModelQuantities(GenericSetup):
         """
         device_name = 'tango/device/instance'
         # Ensure that the SimModelException is raised when an instance of
-        # PopulateModelQuantities is created with the Model instance.
+        # PopulateModelQuantities is created without the Model instance.
         with self.assertRaises(sim_xmi_parser.SimModelException):
             sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
                     sim_model='some_model')
@@ -384,8 +385,8 @@ class test_PopModelQuantities(GenericSetup):
         self.assertEqual(device_name, pmq.sim_model.name,
                 "The device name and the model name do not match.")
         expected_quantities_list = ['insolation', 'temperature', 'pressure', 'rainfall',
-                        'relativeHumidity', 'wind_direction', 'input_comms_ok',
-                        'wind_speed']
+                                    'relativeHumidity', 'wind_direction',
+                                    'input_comms_ok', 'wind_speed']
         actual_quantities_list = pmq.sim_model.sim_quantities.keys()
         self.assertEqual(set(expected_quantities_list), set(actual_quantities_list),
                 "The are quantities missing in the model")

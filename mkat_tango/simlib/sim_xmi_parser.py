@@ -377,7 +377,7 @@ class Xmi_Parser(object):
         -------
         attributes: dict
             A dictionary of all the device attributes together with their
-            metadata specified in the POGO generated XMI file. The key 
+            metadata specified in the POGO generated XMI file. The key
             represents the name of the attribute and the value is a dictionary
             of all the attribute's metadata.
 
@@ -430,7 +430,7 @@ class Xmi_Parser(object):
         -------
         commands : dict
             A dictionary of all the device commands together with their
-            metadata specified in the POGO generated XMI file. The key 
+            metadata specified in the POGO generated XMI file. The key
             represents the name of the command and the value is a dictionary
             of all the attribute's metadata.
 
