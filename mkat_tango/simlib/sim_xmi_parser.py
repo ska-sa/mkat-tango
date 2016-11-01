@@ -26,7 +26,7 @@ POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
         'Spectrum': AttrDataFormat.SPECTRUM}
 
 # TODO(KM 31-10-2016): Need to xmi attributes properties that are currently
-# not being handled by the parser e.g. displayLevel, enumLabels etc.
+# not being handled by the parser e.g. [displayLevel, enumLabels] etc.
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
         'dynamicAttributes': {
             'name': 'name',
@@ -469,15 +469,18 @@ class Xmi_Parser(object):
         return device_properties
 
 class PopulateModelQuantities(object):
-    """A generic class that is used to populate/update model quantities from the
-    TANGO device information captured in the POGO generated xmi file.
+    """Used to populate/update model quantities.
 
+    Populates the model quantities using the data from the TANGO device information
+    captured in the POGO generated xmi file.
 
-    Attributes:
-        xmi_parser         The Xmi_Parser object which reads an xmi file and
-                           parses it into device attributes, commands, and properties.
-        sim_model          An instance of the Model class which is used for simulation
-                           of simple attributes.
+    Attributes
+    ----------
+    xmi_parser: Xmi_Parser innstance
+        The Xmi_Parser object which reads an xmi file and parses it into device
+        attributes, commands, and properties.
+    sim_model:  Model instance
+        An instance of the Model class which is used for simulation of simple attributes.
     """
     def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)

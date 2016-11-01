@@ -16,6 +16,11 @@ import PyTango
 
 LOGGER = logging.getLogger(__name__)
 
+# These expected values are not yet complete, see comment in sim_xmi_parser.py
+# about currently unhandled attribute and command parameters.
+# Must be updated when they are implemented.
+# ['enum_labels', 'disp_level']
+
 default_pogo_commands = ['State', 'Status']  # TODO(KM 31-10-2016): Might need to move
                                              # this list to the testutils module as it
                                              # seems to be used in many tests.
@@ -194,9 +199,13 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
                 if 'No' in str(attr_prop_value):
                     attr_prop_value = ''
 
-                # Pogo doesn't seem to populate the format as expected i.e.
-                # format = '', and tango  device return (e.g. %6.2f for
-                # floating points)
+                # Pogo doesn't seem to populate the value for the format parameter
+                # as expected i.e. format = '', and tango  device return (e.g. %6.2f for
+                # floating points). TANGO library assigns a default value according to the
+                # attributes data type.
+                # '%6.2f' is the default for attributes that have a data type of
+                # DevDouble and DevFloat, and for DevInt its '%d', and for DevString
+                # and DevEnum it uses '%s'.
                 if attr_parameter in ['format']:
                     attr_prop_value = ''
 
@@ -252,16 +261,16 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
             if attr_prop_value:
                 return attr_prop_value
 
-class test_GenericSetup(unittest.TestCase):
+class GenericSetup(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
-        super(test_GenericSetup, self).setUp()
+        super(GenericSetup, self).setUp()
         self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
                                                 'weather_sim.xmi')
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
 
-class test_XmiParser(test_GenericSetup):
+class test_XmiParser(GenericSetup):
     def test_parsed_attributes(self):
         """Testing that the attribute information parsed matches with the one captured
         in the XMI file.
@@ -358,12 +367,7 @@ class test_XmiParser(test_GenericSetup):
                     "does not match with the actual value" % (prop))
 
 
-class test_PopModelQuantities(test_GenericSetup):
-    #def setUp(self):
-     #   super(test_PopModelQuantities, self).setUp()
-      #  self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-        #                                        'weather_sim.xmi')
-        #self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
+class test_PopModelQuantities(GenericSetup):
 
     def test_model_populator(self):
         """Testing that the model quantities that are added to the model match with
