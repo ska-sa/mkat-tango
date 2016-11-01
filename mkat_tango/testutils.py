@@ -1,5 +1,6 @@
 import logging
 import time
+import mock
 
 LOGGER = logging.getLogger(__name__)
 
@@ -92,3 +93,69 @@ def disable_attributes_polling(test_case, device_proxy, device_server, attribute
     new_periods = {attr: 0 for attr in attributes}
     return set_attributes_polling(
         test_case, device_proxy, device_server, new_periods)
+
+
+class ClassCleanupUnittestMixin(object):
+    """Implement class-level setup/deardown semantics that emulate addCleanup()
+
+    Subclasses can define a setUpClassWithCleanup() method that wraps addCleanup
+    such that cls.addCleanup() can be used to add cleanup methods that will be
+    called at class tear-down time.
+
+    """
+
+    _class_cleanups = []
+
+    @classmethod
+    def setUpClassWithCleanup(cls):
+        """Do class-level setup  and ensure that cleanup functions are called
+
+        It is inteded that subclasses override this class method
+
+        In this method calls to `cls.addCleanup` is forwarded to
+        `cls.addCleanupClass`, which means callables registered with
+        `cls.addCleanup()` is added to the class-level cleanup function stack.
+
+        """
+        super(ClassCleanupUnittestMixin, cls).setUpClassWithCleanup()
+
+    @classmethod
+    def addCleanupClass(cls, function, *args, **kwargs):
+        """Add a cleanup that will be called at class tear-down time"""
+        cls._class_cleanups.append((function, args, kwargs))
+
+    @classmethod
+    def doCleanupsClass(cls):
+        """Run class-level cleanups registered with `cls.addCleanupClass()`"""
+        results = []
+        while cls._class_cleanups:
+            function, args, kwargs = cls._class_cleanups.pop()
+            try:
+                function(*args, **kwargs)
+            except Exception:
+                LOGGER.exception('Exception calling class cleanup function')
+                results.append(sys.exc_info())
+
+        if results:
+            LOGGER.error('Exception(s) raised during class cleanup')
+
+    @classmethod
+    def setUpClass(cls):
+        """Call `setUpClassWithCleanup` with `cls.addCleanup` for class-level cleanup
+
+        Any exceptions raised during `cls.setUpClassWithCleanup` will result in
+        the cleanups registered up to that point being called before logging
+        the exception with traceback.
+
+        """
+        try:
+            with mock.patch.object(cls, 'addCleanup') as cls_addCleanup:
+                cls_addCleanup.side_effect = cls.addCleanupClass
+                cls.setUpClassWithCleanup()
+        except Exception:
+            LOGGER.exception('Exception during setUpClass')
+            cls.doCleanupsClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.doCleanupsClass()

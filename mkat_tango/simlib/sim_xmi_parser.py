@@ -10,7 +10,7 @@ import PyTango
 
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
-from PyTango import DevState, DevBoolean, DevString, DevEnum
+from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat
 from PyTango.server import Device, DeviceMeta, server_run, device_property
 
 from mkat_tango import helper_module
@@ -20,26 +20,45 @@ from mkat_tango.simlib import model
 MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
+POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
+        'Image': AttrDataFormat.IMAGE,
+        'Scalar': AttrDataFormat.SCALAR,
+        'Spectrum': AttrDataFormat.SPECTRUM}
 
+# TODO(KM 31-10-2016): Need to xmi attributes properties that are currently
+# not being handled by the parser e.g. [displayLevel, enumLabels] etc.
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
-        'format': 'format',
-        'label': 'label',
-        'maxAlarm': 'max_alarm',
-        'maxValue': 'max_value',
-        'maxWarning': 'max_warning',
-        'minAlarm': 'min_alarm',
-        'deltaTime': 'delta_t',
-        'minValue': 'min_value',
-        'deltaValue': 'delta_val',
-        'minWarning': 'min_warning',
-        'description': 'description',
-        'polledPeriod': 'period',
-        'displayUnit': 'display_unit',
-        'standardUnit': 'standard_unit',
-        'unit': 'unit',
-        'name': 'name',
-        'dataType': 'dataType',
-        'rwType': 'rwType'
+        'dynamicAttributes': {
+            'name': 'name',
+            'dataType': 'data_type',
+            'rwType': 'writable',
+            'polledPeriod': 'period',
+            'attType': 'data_format',
+            'maxX': 'max_dim_x',
+            'maxY': 'max_dim_y'},
+        'eventArchiveCriteria': {
+            'absChange': 'archive_abs_change',
+            'period': 'archive_period',
+            'relChange': 'archive_rel_change'},
+        'eventCriteria': {
+            'absChange': 'abs_change',
+            'period': 'event_period',
+            'relChange': 'rel_change'},
+        'properties': {
+            'maxAlarm': 'max_alarm',
+            'maxValue': 'max_value',
+            'maxWarning': 'max_warning',
+            'minAlarm': 'min_alarm',
+            'deltaTime': 'delta_t',
+            'minValue': 'min_value',
+            'deltaValue': 'delta_val',
+            'minWarning': 'min_warning',
+            'description': 'description',
+            'displayUnit': 'display_unit',
+            'standardUnit': 'standard_unit',
+            'format': 'format',
+            'label': 'label',
+            'unit': 'unit'}
         }
 
 
@@ -51,32 +70,79 @@ class Xmi_Parser(object):
         self.device_attributes = []
         """The Data structure format is a list containing attribute info in a dict
 
-        e.g.[{'name': 'wind_speed', 'dataShape': 'Scalar',
-            'dataType': tango._tango.CmdArgType.DevDouble,
-            'description': 'Wind speed in central telescope area.',
-            'displayLevel': 'EXPERT', 'label': 'Wind speed', 'maxAlarm': '25',
-            'maxValue': '30', 'maxWarning': '15', 'minAlarm': '', 'minValue': '0',
-            'minWarning': '','name': 'wind_speed', 'polledPeriod': '3000',
-            'readWriteProperty': 'READ', 'unit': 'm/s'}, ...]
+        e.g.
+        [{
+            "attribute": {
+                "displayLevel": "OPERATOR",
+                "maxX": "",
+                "maxY": "",
+                "attType": "Scalar",
+                "polledPeriod": "1000",
+                "dataType": DevDouble,
+                "isDynamic": "true",
+                "rwType": "READ",
+                "allocReadMember": "true",
+                "name": "temperature"
+            },
+            "eventCriteria": {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            },
+            "evArchiveCriteria": {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            },
+            "properties": {
+                "description": "Current temperature outside near the telescope.",
+                "deltaValue": "",
+                "maxAlarm": "50",
+                "maxValue": "51",
+                "minValue": "-10",
+                "standardUnit": "",
+                "minAlarm": "-9",
+                "maxWarning": "45",
+                "unit": "Degrees Centrigrade",
+                "displayUnit": "",
+                "format": "",
+                "deltaTime": "",
+                "label": "Outside Temperature",
+                "minWarning": "-5"
+           }
+        }]
+
         """
         self.device_commands = []
         """The Data structure format is a list containing command info in a dict
 
-        e.g.[{'name': 'On', 'arginDescription': '',
-            'arginType': tango._tango.CmdArgType.DevVoid,
-            'argoutDescription': 'ok | Device ON',
-            'argoutType': tango._tango.CmdArgType.DevString,
-            'description': 'Turn On Device'}, ...]
+        e.g.
+        [{
+             "name": "On",
+             "arginDescription": "",
+             "arginType": tango._tango.CmdArgType.DevVoid,
+             "argoutDescription": "ok | Device ON",
+             "argoutType": tango._tango.CmdArgType.DevString,
+             "description": "Turn On Device"
+        }]
         """
         self.device_properties = []
         """Data structure format is a list containing device property info in a dict
 
-        e.g.[{'name': 'katcp_address', 'defaultPropValue': '127.0.0.1',
-                  'description': '', 'type': tango._tango.CmdArgType.DevString},
+        e.g.
+        [{
+            "deviceProperties": {
+                "type": DevString,
+                "mandatory": "true",
+                "description": "Path to the pogo generate xmi file",
+                "name": "sim_xmi_description_file"
+            }
+        }]
         """
-        self.sim_description_data()
+        # TODO(KM 31-10-2016): Need to also parse the class properties.
+        self.parse_xmi_file()
 
-    def sim_description_data(self):
+    def parse_xmi_file(self):
         """
         Read simulator description data from xmi file into `self.device_properties`
 
@@ -99,18 +165,19 @@ class Xmi_Parser(object):
         self.device_class_name = device_class.attrib['name']
         for class_description_data in device_class:
             if class_description_data.tag in ['commands']:
-                command_info = self.command_description_data(class_description_data)
+                command_info = (
+                    self.extract_command_description_data(class_description_data))
                 self.device_commands.append(command_info)
             elif class_description_data.tag in ['dynamicAttributes', 'attributes']:
-                attribute_info = self.attributes_description_data(
+                attribute_info = self.extract_attributes_description_data(
                                             class_description_data)
                 self.device_attributes.append(attribute_info)
             elif class_description_data.tag in ['deviceProperties']:
-                device_property_info = self.device_property_description_data(
+                device_property_info = self.extract_device_property_description_data(
                                                        class_description_data)
                 self.device_properties.append(device_property_info)
 
-    def command_description_data(self, description_data):
+    def extract_command_description_data(self, description_data):
         """Extract command description data from the xmi tree element.
 
         Parameters
@@ -120,12 +187,14 @@ class Xmi_Parser(object):
             expected element tag(s) are (i.e. description_data.tag)
             ['argin', 'argout'] and
             description_data.attrib contains
-            {'description': 'Turn On Device',
-            'displayLevel': 'OPERATOR',
-            'execMethod': 'on',
-            'isDynamic': 'false',
-            'name': 'On',
-            'polledPeriod': '0'}
+            {
+                "description": "Turn On Device",
+                "displayLevel": "OPERATOR",
+                "isDynamic": "false",
+                "execMethod": "on",
+                "polledPeriod": "0",
+                "name": "On"
+            }
 
         Returns
         -------
@@ -142,7 +211,7 @@ class Xmi_Parser(object):
         command_data['argoutType'] = self._get_arg_type(output_parameter)
         return command_data
 
-    def attributes_description_data(self, description_data):
+    def extract_attributes_description_data(self, description_data):
         """Extract attribute description data from the xmi tree element.
 
         Parameters
@@ -151,25 +220,56 @@ class Xmi_Parser(object):
             XMI tree element with attribute data
 
             Expected element tag(s) are (i.e. description_data.tag)
-            ['properties']
+            'dynamicAttributes'
 
             description_data.find('properties').attrib contains
-            {'deltaTime': '', 'deltaValue': '', 'description': '',
-             'displayUnit': '', 'format': '', 'label': '',
-             'maxAlarm': '', 'maxValue': '', 'maxWarning': '',
-             'minAlarm': '', 'minValue': '', 'minWarning': '',
-             'standardUnit': '', 'unit': ''} and
+            {
+                "description": "",
+                "deltaValue": "",
+                "maxAlarm": "",
+                "maxValue": "",
+                "minValue": "",
+                "standardUnit": "",
+                "minAlarm": "",
+                "maxWarning": "",
+                "unit": "",
+                "displayUnit": "",
+                "format": "",
+                "deltaTime": "",
+                "label": "",
+                "minWarning": ""
+            }
+
+            and
 
             description_data.attrib contains
-            {'allocReadMember': 'false',
-            'attType': 'Scalar',
-            'displayLevel': 'OPERATOR',
-            'isDynamic': 'false',
-            'maxX': '',
-            'maxY': '',
-            'name': 'Constant',
-            'polledPeriod': '0',
-            'rwType': 'WRITE'}
+            {
+                "maxX": "",
+                "maxY": "",
+                "attType": "Scalar",
+                "polledPeriod": "0",
+                "displayLevel": "OPERATOR",
+                "isDynamic": "false",
+                "rwType": "WRITE",
+                "allocReadMember": "false",
+                "name": "Constant"
+            }
+
+
+
+            description_data.find('eventCriteria').attrib contains
+            {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            }
+
+            description_data.find('evArchiveCriteria').attrib contains
+            {
+                "relChange": "10",
+                "absChange": "0.5",
+                "period": "1000"
+            }
 
         Returns
         -------
@@ -177,13 +277,33 @@ class Xmi_Parser(object):
             Dictionary of all attribute data required to create a tango attribute
 
         """
-        attribute_data = description_data.attrib
-        attribute_properties = description_data.find('properties')
-        attribute_data.update(attribute_properties.attrib)
-        attribute_data['dataType'] = self._get_arg_type(description_data)
+        attribute_data = dict()
+        attribute_data['dynamicAttributes'] = description_data.attrib
+
+        attType =  attribute_data['dynamicAttributes']['attType']
+        if attType in POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP.keys():
+            attribute_data['dynamicAttributes']['attType'] = (
+                    POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP[attType])
+
+        attribute_data['dynamicAttributes']['maxX'] = (1
+                if attribute_data['dynamicAttributes']['maxX'] == ''
+                else int(attribute_data['dynamicAttributes']['maxX']))
+        attribute_data['dynamicAttributes']['maxY'] = (0
+                if attribute_data['dynamicAttributes']['maxY'] == ''
+                else int(attribute_data['dynamicAttributes']['maxY']))
+
+
+        attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
+        attribute_data['properties'] = description_data.find('properties').attrib
+        # TODO(KM 31-10-2016): Events information is not mandatory for attributes, need
+        # to handle this properly as it raises an AttributeError error when trying to
+        # parse an xmi file with an attribute with not event information specified.
+        attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
+        attribute_data['eventArchiveCriteria'] = description_data.find(
+            'evArchiveCriteria').attrib
         return attribute_data
 
-    def device_property_description_data(self, description_data):
+    def extract_device_property_description_data(self, description_data):
         """Extract device property description data from the xmi tree element.
 
         Parameters
@@ -195,7 +315,10 @@ class Xmi_Parser(object):
             ['DefaultPropValue']
 
             description_data.attrib contains
-            {'description': '', 'name': 'katcp_address'}
+            {
+                'description': '',
+                'name': 'katcp_address'
+            }
 
         Returns
         -------
@@ -204,10 +327,13 @@ class Xmi_Parser(object):
             to create a tango device property
 
         """
-        device_property_data = description_data.attrib
-        device_property_data['type'] = self._get_arg_type(description_data)
-        device_property_data['defaultPropValue'] = description_data.find(
-                                                'DefaultPropValue').text
+        device_property_data = dict()
+        device_property_data['deviceProperties'] = description_data.attrib
+        device_property_data['deviceProperties']['type'] = (
+                self._get_arg_type(description_data))
+        if description_data.find('defaultPropValue'):
+            device_property_data['deviceProperties']['defaultPropValue'] = (
+                 description_data.find('defaultPropValue').text)
         return device_property_data
 
     def _get_arg_type(self, description_data):
@@ -242,12 +368,129 @@ class Xmi_Parser(object):
         arg_type = getattr(PyTango, 'Dev' + arg_type)
         return arg_type
 
-class PopulateModelQuantities(object):
 
+    def get_reformatted_device_attr_metadata(self):
+        """Converts the device_attributes data structure into a dictionary
+        to make searching easier.
+
+        Returns
+        -------
+        attributes: dict
+            A dictionary of all the device attributes together with their
+            metadata specified in the POGO generated XMI file. The key
+            represents the name of the attribute and the value is a dictionary
+            of all the attribute's metadata.
+
+            e.g.
+            {'input_comms_ok': {
+                'abs_change': '',
+                'archive_abs_change': '',
+                'archive_period': '1000',
+                'archive_rel_change': '',
+                'data_type': PyTango._PyTango.CmdArgType.DevBoolean,
+                'delta_t': '',
+                'delta_val': '',
+                'description': 'Communications with all weather sensors are nominal.',
+                'display_unit': '',
+                'event_period': '1000',
+                'format': '',
+                'label': 'Input communication OK',
+                'max_alarm': '',
+                'max_value': '',
+                'max_warning': '',
+                'min_alarm': '',
+                'min_value': '',
+                'min_warning': '',
+                'name': 'input_comms_ok',
+                'period': '1000',
+                'rel_change': '',
+                'standard_unit': '',
+                'unit': '',
+                'writable': 'READ'},
+            }
+
+        """
+        attributes = {}
+
+        for pogo_attribute_data in self.device_attributes:
+            attribute_meta = {}
+            for (prop_group, default_attr_props) in (
+                    POGO_USER_DEFAULT_ATTR_PROP_MAP.items()):
+                for pogo_prop, user_default_prop in default_attr_props.items():
+                    attribute_meta[user_default_prop] = (
+                            pogo_attribute_data[prop_group][pogo_prop])
+            attributes[attribute_meta['name']] = attribute_meta
+        return attributes
+
+    def get_reformatted_cmd_metadata(self):
+        """Converts the device_commands data structure into a dictionary that
+        makes searching easier.
+
+        Returns
+        -------
+        commands : dict
+            A dictionary of all the device commands together with their
+            metadata specified in the POGO generated XMI file. The key
+            represents the name of the command and the value is a dictionary
+            of all the attribute's metadata.
+
+            e.g. { 'cmd_name': {cmd_properties}
+
+                 }
+        """
+        commands = {}
+
+        for cmd_info in self.device_commands:
+            commands[cmd_info['name']] = cmd_info
+
+        return commands
+
+    def get_reformatted_properties_metadata(self):
+        """Creates a dictionary of the device properties and their metadata.
+
+        Returns
+        -------
+        device_properties: dict
+            A dictionary of all the device properties together with their
+            metadata specified in the POGO generated XMI file. The keys
+            represent the name of the device property and the value is a
+            dictionary of all the property's metadata.
+
+            e.g. { 'device_property_name' : {device_property_metadata}
+
+                 }
+
+        """
+        device_properties = {}
+        for properties_info in self.device_properties:
+            device_properties[properties_info['deviceProperties']['name']] = (
+                    properties_info['deviceProperties'])
+
+        return device_properties
+
+class PopulateModelQuantities(object):
+    """Used to populate/update model quantities.
+
+    Populates the model quantities using the data from the TANGO device information
+    captured in the POGO generated xmi file.
+
+    Attributes
+    ----------
+    xmi_parser: Xmi_Parser innstance
+        The Xmi_Parser object which reads an xmi file and parses it into device
+        attributes, commands, and properties.
+    sim_model:  Model instance
+        An instance of the Model class which is used for simulation of simple attributes.
+    """
     def __init__(self, xmi_file, tango_device_name, sim_model=None):
         self.xmi_parser = Xmi_Parser(xmi_file)
         if sim_model:
-            self.sim_model = sim_model
+            if isinstance(sim_model, model.Model):
+                self.sim_model = sim_model
+            else:
+                raise SimModelException("The sim_model object passed is not an "
+                    "instance of the class mkat_tango.simlib.model.Model")
+
         else:
             self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
@@ -270,24 +513,24 @@ class PopulateModelQuantities(object):
             quantities.GaussianSlewLimited, start_time=start_time)
         ConstantQuantity = partial(
             quantities.ConstantQuantity, start_time=start_time)
-        for attribute_info in self.xmi_parser.device_attributes:
-            attribute_meta = {}
-            for prop, prop_default in POGO_USER_DEFAULT_ATTR_PROP_MAP.items():
-                attribute_meta[prop_default] = attribute_info[prop]
-            if attribute_info['dataType'] in CONSTANT_DATA_TYPES:
-                self.sim_model.sim_quantities[
-                        attribute_meta['name']] = ConstantQuantity(
-                                    meta=attribute_meta, start_value=True)
+        attributes = self.xmi_parser.get_reformatted_device_attr_metadata()
+
+        for attr_name, attr_props in attributes.items():
+            if attr_props['data_type'] in CONSTANT_DATA_TYPES:
+                        self.sim_model.sim_quantities[
+                        attr_props['name']] = ConstantQuantity(
+                                meta=attr_props, start_value=True)
             else:
                 try:
                     sim_attr_quantities = self.sim_attribute_quantities(
-                        float(attribute_meta['min_value']),
-                        float(attribute_meta['max_value']))
+                            float(attr_props['min_value']),
+                            float(attr_props['max_value']))
                 except ValueError:
-                    raise NotImplementedError('Attribute min or max not specified')
+                    raise NotImplementedError(
+                            'Attribute min or max not specified')
                 self.sim_model.sim_quantities[
-                        attribute_meta['name']] = GaussianSlewLimited(
-                                    meta=attribute_meta, **sim_attr_quantities)
+                        attr_props['name']] = GaussianSlewLimited(
+                                meta=attr_props, **sim_attr_quantities)
 
     def sim_attribute_quantities(self, min_value, max_value, slew_rate=None):
         """Simulate attribute quantities with a Guassian value distribution
@@ -328,6 +571,9 @@ class PopulateModelQuantities(object):
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
         return sim_attribute_quantities
 
+class SimModelException(Exception):
+    def __init__(self, message):
+        super(SimModelException, self).__init__(message)
 
 class TangoDeviceServer(Device):
     __metaclass__ = DeviceMeta
@@ -348,16 +594,15 @@ class TangoDeviceServer(Device):
         """The device method that sets up attributes during run time"""
         model_sim_quants = self.model.sim_quantities
         attribute_list = set([attr for attr in model_sim_quants.keys()])
-
         for attribute_name in attribute_list:
             MODULE_LOGGER.info("Added dynamic {} attribute"
                                .format(attribute_name))
             meta_data = model_sim_quants[attribute_name].meta
-            attr_dtype = meta_data['dataType']
+            attr_dtype = meta_data['data_type']
             # The return value of rwType is a string and it is required as a
             # PyTango data type when passed to the Attr function.
             # e.g. 'READ' -> PyTango.AttrWriteType.READ
-            rw_type = meta_data['rwType']
+            rw_type = meta_data['writable']
             rw_type = getattr(AttrWriteType, rw_type)
             attr = Attr(attribute_name, attr_dtype, rw_type)
             attr_props = UserDefaultAttrProp()
