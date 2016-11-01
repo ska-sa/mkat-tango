@@ -376,7 +376,8 @@ class test_PopModelQuantities(GenericSetup):
         """
         device_name = 'tango/device/instance'
         # Ensure that the SimModelException is raised when an instance of
-        # PopulateModelQuantities is created without the Model instance.
+        # PopulateModelQuantities is created with any object other than the Model
+        # class instance.
         with self.assertRaises(sim_xmi_parser.SimModelException):
             sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
                     sim_model='some_model')
