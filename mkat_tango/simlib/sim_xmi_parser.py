@@ -11,7 +11,7 @@ import PyTango
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
 from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat
-from PyTango.server import Device, DeviceMeta, server_run, device_property
+from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
@@ -61,6 +61,12 @@ POGO_USER_DEFAULT_ATTR_PROP_MAP = {
             'unit': 'unit'}
         }
 
+POGO_USER_DEFAULT_CMD_PROP_MAP = {
+        'name': 'name',
+        'arginDescription': 'doc_in',
+        'arginType': 'dtype_in',
+        'argoutDescription': 'doc_out',
+        'argoutType': 'dtype_out'}
 
 class Xmi_Parser(object):
 
@@ -439,11 +445,24 @@ class Xmi_Parser(object):
                  }
         """
         commands = {}
-
         for cmd_info in self.device_commands:
             commands[cmd_info['name']] = cmd_info
 
-        return commands
+        new_commands = {}
+        # Need to convert the parameter names to the TANGO names
+        for cmd_name, cmd_metadata in commands.items():
+            new_commands_metadata = {}
+            for cmd_prop_name, cmd_prop_value in cmd_metadata.items():
+                try:
+                    new_commands_metadata.update(
+                            {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name] :cmd_prop_value})
+                except KeyError:
+                    MODULE_LOGGER.info("The property '%s' cannot be translated to a "
+                            "corresponding parameter in the TANGO library" %(cmd_prop_name))
+
+            new_commands[cmd_name] = new_commands_metadata
+
+        return new_commands
 
     def get_reformatted_properties_metadata(self):
         """Creates a dictionary of the device properties and their metadata.
@@ -494,6 +513,10 @@ class PopulateModelQuantities(object):
         else:
             self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
+        pma = PopulateModelActions(
+                  self.xmi_parser.get_reformatted_cmd_metadata(),
+                  tango_device_name,
+                  model_instance=self.sim_model)
 
     def setup_sim_quantities(self):
         """Set up self.sim_quantities from Model with simulated quantities.
@@ -553,7 +576,7 @@ class PopulateModelQuantities(object):
         Notes
         =====
         - Statistical simulation parameters (mean, std dev, slew rate) are
-          derived from the min/max values of the attribute.
+    derived      derived from the min/max values of the attribute.
 
         """
         sim_attribute_quantities = dict()
@@ -571,6 +594,59 @@ class PopulateModelQuantities(object):
         sim_attribute_quantities['std_dev'] = max_slew_rate/2
         return sim_attribute_quantities
 
+
+class PopulateModelActions(object):
+    """
+
+    Attributes
+    ----------
+        command_info :
+
+        sim_model :
+    """
+    def __init__(self, commands_info, tango_device_name, model_instance=None):
+        self.command_info = commands_info
+        if model_instance is None:
+            self.sim_model = model.Model(tango_device_name)
+        else:
+            self.sim_model = model_instance
+
+        self.add_actions()
+
+    def add_actions(self):
+        for cmd_name in self.command_info:
+            # Generate handler
+            if cmd_name not in ['State', 'Status']:
+                print cmd_name, self.command_info[cmd_name]
+                handler = self.generate_action_handler(cmd_name)
+                self.sim_model.setup_sim_actions(cmd_name, handler)
+
+    def generate_action_handler(self, action_name):
+        def action_handler(*args):
+            return 'ok'
+        action_handler.__name__ = action_name
+        print action_handler
+        return action_handler
+
+class PopulaTangoDeviceCommands(object):
+    """
+    """
+    def __init__(self, model, tango_device_class):
+        for action_name, action_handler in model.sim_actions.items():
+            cmd_handler = self.generate_cmd_handler(action, handler)
+            # You might need to turn cmd_handler into an unbound method before you add
+           # it to the class
+            setattr(tango_device_class, action, cmd_handler)
+
+    def generate_cmd_handler(self, action, action_handler):
+        # You might need to figure out how to specialise cmd_handler to different
+        # argument types
+        def cmd_handler(self, args):
+            return action_handler(args)
+        cmd_handler.__name__ = action
+        return command(stuff_from_xmi)(cmd_handler)
+
+
 class SimModelException(Exception):
     def __init__(self, message):
         super(SimModelException, self).__init__(message)
@@ -587,7 +663,10 @@ class TangoDeviceServer(Device):
         name = self.get_name()
         self.instances[name] = self
         xmi_file = get_xmi_description_file_name()
-        self.model = PopulateModelQuantities(xmi_file, name).sim_model
+        pmq = PopulateModelQuantities(xmi_file, name)
+        self.model = pmq.sim_model
+        #self.model = PopulateModelQuantities(xmi_file, name).sim_model
+        #PopulateModelActions(pmq.xmi_parser.get_reformatted_cmd_metadata(), name, sim_model=self.model)
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
@@ -651,6 +730,7 @@ def get_xmi_description_file_name():
     sim_xmi_description_file = db.get_device_property(device_name,
         'sim_xmi_description_file')['sim_xmi_description_file'][0]
     return sim_xmi_description_file
+
 
 def main():
     server_run([TangoDeviceServer])

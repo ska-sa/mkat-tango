@@ -16,6 +16,13 @@ import PyTango
 
 LOGGER = logging.getLogger(__name__)
 
+TANGO_CMD_PARAMS_NAME_MAP = {
+        'name': 'cmd_name',
+        'doc_in': 'in_type_desc',
+        'dtype_in': 'in_type',
+        'doc_out': 'out_type_desc',
+        'dtype_out': 'out_type'}
+
 # These expected values are not yet complete, see comment in sim_xmi_parser.py
 # about currently unhandled attribute and command parameters.
 # Must be updated when they are implemented.
@@ -32,9 +39,12 @@ expected_mandatory_attr_parameters = frozenset([
     "max_warning", "unit", "display_unit","format", "delta_t", "label",
     "min_warning"])
 
+#expected_mandatory_cmd_parameters = frozenset([
+ #   "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
+  #  "description", "displayLevel", "polledPeriod", "execMethod"])
+
 expected_mandatory_cmd_parameters = frozenset([
-    "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
-    "description", "displayLevel", "polledPeriod", "execMethod"])
+    "name", "doc_in", "dtype_in", "doc_out", "dtype_out"])
 
 expected_mandatory_device_property_parameters = frozenset([
     "type", "mandatory", "description", "name"])
@@ -101,15 +111,10 @@ expected_pressure_attr_info = {
 # The desired information for the 'On' command when the weather_sim xmi file is parsed
 expected_on_cmd_info = {
         'name': 'On',
-        'description': 'Turn On Device',
-        'execMethod': 'on',
-        'displayLevel': 'OPERATOR',
-        'polledPeriod': '0',
-        'isDynamic': 'false',
-        'arginDescription': '',
-        'arginType': PyTango.CmdArgType.DevVoid,
-        'argoutDescription': 'ok | Device ON',
-        'argoutType': PyTango.CmdArgType.DevString}
+        'doc_in': '',
+        'dtype_in': PyTango.CmdArgType.DevVoid,
+        'doc_out': 'ok | Device ON',
+        'dtype_out': PyTango.CmdArgType.DevString}
 
 # The expected information that would be obtained for the device property when the
 # weather_sim xmi file is parsed by the Xmi_Parser.
@@ -150,6 +155,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         """ Testing whether the attributes specified in the POGO generated xmi file
         are added to the TANGO device
         """
+        import IPython; IPython.embed()
         attributes = set(self.device.get_attribute_list())
         expected_attributes = []
         default_attributes = {'State', 'Status'}
@@ -260,6 +266,31 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
                                               user_default_prop, None)
             if attr_prop_value:
                 return attr_prop_value
+
+    def test_command_list(self):
+        """
+        """
+        actual_device_commands = set(self.device.get_command_list()) - {'Init'}
+        expected_command_list = set(self.xmi_parser.get_reformatted_cmd_metadata().keys())
+        self.assertEquals(actual_device_commands, expected_command_list,
+                "The commands specified in the xmi file are not present in the "
+                "device")
+
+    def test_command_properties(self):
+        command_list = self.device.get_command_list()
+        command_data = self.xmi_parser.get_reformatted_cmd_metadata()
+
+        for cmd_name, cmd_metadata in command_data.items():
+            cmd_config_info = self.device.get_command_config(cmd_name)
+            for cmd_prop, cmd_prop_value in cmd_metadata.items():
+                self.assertTrue(hasattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    "The cmd parameter '%s' for the cmd '%s' was not translated"
+                    %(cmd_prop, cmd_name))
+                if cmd_prop_value == 'none':
+                    cmd_prop_value = 'Uninitialised'
+                self.assertEqual(getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]), cmd_prop_value,
+                        "The cmd parameter '%s/%s' values do not match"
+                        %(cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
 
 class GenericSetup(unittest.TestCase):
     longMessage = True
