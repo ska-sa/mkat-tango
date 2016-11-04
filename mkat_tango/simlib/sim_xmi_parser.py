@@ -680,6 +680,31 @@ def get_xmi_description_file_name():
         e.g. 'home/user/weather.xmi'
 
     """
+
+    # TODO (NM 2016-11-04) At the moment this is hardcoded to assume only the
+    # first class and first device configures the XMI file. But more
+    # fundamentally, this is a chicken and egg problem. TANGO usually assumes
+    # that a device server knows what TANGO classes it supports even before any
+    # device have been registered to the device server, allowing e.g. the Jive
+    # server wizard to work. Now we are forcing the user to register a device
+    # first to specify the XMI file. Passing the XMI file on the command line is
+    # problematic since we still want to use the TANGO main function.
+    #
+    # Potential solutions
+    #
+    # 1) Generate a script that hardcodes the name of the XMI file for each
+    #    dynamic device (perhaps a good simple solution, also gives you unique
+    #    device server names)
+    #
+    # 2) Use an OS environment variable (probably too magic)
+    #
+    # 3) Perhaps define a "DynamicControl" class that is always exposed by the
+    #    dynamic simulator. A property can then be defined on a DynamicControl
+    #    instance, that is used to find the XMI file. Once the device is
+    #    restarted, the classes defined in the XMI file can be exposed.
+
+    This function should perhaps take the device name
+
     server_name = helper_module.get_server_name()
     db = Database()
     server_class = db.get_server_class_list(server_name).value_string[0]
