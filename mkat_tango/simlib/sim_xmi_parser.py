@@ -10,7 +10,7 @@ import PyTango
 
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
-from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat
+from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat, CmdArgType
 from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 from mkat_tango import helper_module
@@ -371,6 +371,10 @@ class Xmi_Parser(object):
         # For now it will be treated as normal DevString type
         if arg_type.find('Const') != -1:
             arg_type = arg_type.replace('Const', '')
+        # The out_type of the device State command is PyTango._PyTango.CmdArgType.DevState
+        # instead of the default PyTango.utils.DevState
+        if arg_type == 'State':
+            return CmdArgType.DevState
         arg_type = getattr(PyTango, 'Dev' + arg_type)
         return arg_type
 
@@ -753,22 +757,30 @@ def get_tango_device_server(model):
 
     return TangoDeviceServer
 
-def configure_device_model():
+def configure_device_model(sim_xmi_file=None, test_device_name=None):
     """In essence this function should get the xmi file, parse it,
     take the attribute and command information, populate the model quantities and
     actions to be simulated and return that model.
     """
-    xmi_file = get_xmi_description_file_name()
-    server_name = helper_module.get_server_name()
-    db = Database()
-    db_datum = db.get_device_class_list(server_name)
-    dev_name = getattr(db_datum, 'value_string')[2]
+    if sim_xmi_file is None:
+        xmi_file = get_xmi_description_file_name()
+    else:
+        xmi_file = sim_xmi_file
 
-    pmq = PopulateModelQuantities(xmi_file, dev_name)
-    model = pmq.sim_model
-    xmi_parser = pmq.xmi_parser
+    server_name = helper_module.get_server_name()
+
+    if test_device_name is None:
+        db = Database()
+        db_datum = db.get_device_class_list(server_name)
+        dev_name = getattr(db_datum, 'value_string')[2]
+    else:
+        dev_name = test_device_name
+
+    model_quants_populater = PopulateModelQuantities(xmi_file, dev_name)
+    model = model_quants_populater.sim_model
+    xmi_parser = model_quants_populater.xmi_parser
     cmd_info = xmi_parser.get_reformatted_cmd_metadata()
-    pma = PopulateModelActions(cmd_info, dev_name, model)
+    PopulateModelActions(cmd_info, dev_name, model)
 
     return model
 

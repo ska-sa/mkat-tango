@@ -140,8 +140,12 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
             cls.properties = dict(sim_xmi_description_file=cls.xmi_file)
-            cls.TangoDeviceServer = sim_xmi_parser.TangoDeviceServer
-            cls.tango_context = TangoTestContext(cls.TangoDeviceServer, db=cls.tango_db,
+            cls.device_name = 'test/nodb/tangodeviceserver'
+            model = sim_xmi_parser.configure_device_model(cls.xmi_file, cls.device_name)
+            cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
+            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
+                                                 device_name=cls.device_name,
+                                                 db=cls.tango_db,
                                                  properties=cls.properties)
             start_thread_with_cleanup(cls, cls.tango_context)
 
@@ -155,7 +159,6 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         """ Testing whether the attributes specified in the POGO generated xmi file
         are added to the TANGO device
         """
-        import IPython; IPython.embed()
         attributes = set(self.device.get_attribute_list())
         expected_attributes = []
         default_attributes = {'State', 'Status'}
@@ -286,7 +289,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
                 self.assertTrue(hasattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
                     "The cmd parameter '%s' for the cmd '%s' was not translated"
                     %(cmd_prop, cmd_name))
-                if cmd_prop_value == 'none':
+                if cmd_prop_value == 'none' or cmd_prop_value == '':
                     cmd_prop_value = 'Uninitialised'
                 self.assertEqual(getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]), cmd_prop_value,
                         "The cmd parameter '%s/%s' values do not match"
