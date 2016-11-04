@@ -10,7 +10,7 @@ import PyTango
 
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
-from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat, CmdArgType
+from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat, CmdArgType, DevDouble, DevFloat, DevLong
 from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 from mkat_tango import helper_module
@@ -24,6 +24,13 @@ POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
         'Image': AttrDataFormat.IMAGE,
         'Scalar': AttrDataFormat.SCALAR,
         'Spectrum': AttrDataFormat.SPECTRUM}
+
+ARBITRARY_DATA_TYPE_RETURN_VALUES = {
+    DevString: 'Ok!',
+    DevBoolean: True,
+    DevDouble : 4.05,
+    DevFloat: 8.1,
+    DevLong: 3}
 
 # TODO(KM 31-10-2016): Need to xmi attributes properties that are currently
 # not being handled by the parser e.g. [displayLevel, enumLabels] etc.
@@ -619,17 +626,17 @@ class PopulateModelActions(object):
 
     def add_actions(self):
         for cmd_name, cmd_meta in self.command_info.items():
-            # Generate handler
+            # Generate handler (exclude State and Status command)
             if cmd_name not in ['State', 'Status']:
-                handler = self.generate_action_handler(cmd_name)
+                handler = self.generate_action_handler(cmd_name, cmd_meta['dtype_out'])
                 self.sim_model.setup_sim_actions(cmd_name, handler)
                 # Might store the action's metadata in the sim_actions dictionary
                 # instead of creating a separate dict.
                 self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
-    def generate_action_handler(self, action_name):
+    def generate_action_handler(self, action_name, action_output_type):
         def action_handler(*args):
-            return 'action executed'
+            return ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
         action_handler.__name__ = action_name
         return action_handler
 
@@ -737,8 +744,8 @@ def get_tango_device_server(model):
     def generate_cmd_handler(action, action_handler):
         # You might need to figure out how to specialise cmd_handler to different
         # argument types
-        def cmd_handler( args):
-            return action_handler(args)
+        def cmd_handler(*args):
+            return action_handler(*args)
         cmd_handler.__name__ = action
         cmd_info_copy = model.sim_actions_meta[action].copy()
         cmd_info_copy.pop('name')
@@ -754,7 +761,6 @@ def get_tango_device_server(model):
         __metaclass__ = DeviceMeta
 
         def initialize_dynamic_attributes(self):
-            print "Overriding superclass method"
             self.model = model
             model_sim_quants = self.model.sim_quantities
             attribute_list = set([attr for attr in model_sim_quants.keys()])
@@ -796,8 +802,8 @@ def configure_device_model(sim_xmi_file=None, test_device_name=None):
 
     if test_device_name is None:
         db = Database()
-        db_datum = db.get_device_class_list(server_name)
-        dev_name = getattr(db_datum, 'value_string')[2]
+        db_datum = db.get_device_name(server_name, 'TangoDeviceServer')
+        dev_name = getattr(db_datum, 'value_string')[0]
     else:
         dev_name = test_device_name
 

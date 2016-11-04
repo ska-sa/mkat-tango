@@ -345,7 +345,7 @@ class test_XmiParser(GenericSetup):
         with the one captured in the XMI file generated using POGO.
         """
         actual_parsed_cmds = self.xmi_parser.get_reformatted_cmd_metadata()
-        expected_cmd_list = ['On', 'Off'] + default_pogo_commands
+        expected_cmd_list = ['On', 'Off', 'Add'] + default_pogo_commands
         actual_parsed_cmd_list = actual_parsed_cmds.keys()
         self.assertGreater(len(actual_parsed_cmd_list), len(default_pogo_commands),
                 "There are missing commands in the parsed list")
@@ -404,7 +404,7 @@ class test_XmiParser(GenericSetup):
 
 class test_PopModelQuantities(GenericSetup):
 
-    def test_model_populator(self):
+    def test_model_quantites_populator(self):
         """Testing that the model quantities that are added to the model match with
         the attributes specified in the XMI file.
         """
@@ -425,3 +425,22 @@ class test_PopModelQuantities(GenericSetup):
         actual_quantities_list = pmq.sim_model.sim_quantities.keys()
         self.assertEqual(set(expected_quantities_list), set(actual_quantities_list),
                 "The are quantities missing in the model")
+
+class test_PopModelActions(GenericSetup):
+    def test_model_actions_populator(self):
+        """
+        """
+        device_name = 'tango/device/instance'
+        cmd_info = self.xmi_parser.get_reformatted_cmd_metadata()
+
+        sim_model  = sim_xmi_parser.PopulateModelActions(cmd_info, device_name).sim_model
+        self.assertEqual(len(sim_model.sim_quantities), 0,
+                         "The model has some unexpected quantities")
+
+        for cmd_name in cmd_info.keys():
+            # Exclude the State and Status command (cmd_handlers for them are created
+            # automatically by TANGO
+            if cmd_name not in ['State', 'Status']:
+                self.assertTrue(sim_model.sim_actions.has_key(cmd_name),
+                                 "The an action handler for the cmd '%s' was not created "
+                                 % (cmd_name))
