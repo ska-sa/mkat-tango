@@ -20,6 +20,7 @@ class Model(object):
         self.last_update_time = self.start_time
         self.sim_quantities = {}
         self.sim_actions = {}
+        self.sim_actions_meta = {}
         self._sim_state = {}
         self.setup_sim_quantities()
         self.paused = False  # Flag to pause updates

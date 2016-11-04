@@ -614,59 +614,37 @@ class PopulateModelActions(object):
         self.add_actions()
 
     def add_actions(self):
-        for cmd_name in self.command_info:
+        for cmd_name, cmd_meta in self.command_info.items():
             # Generate handler
             if cmd_name not in ['State', 'Status']:
-                print cmd_name, self.command_info[cmd_name]
                 handler = self.generate_action_handler(cmd_name)
                 self.sim_model.setup_sim_actions(cmd_name, handler)
+                # Might store the action's metadata in the sim_actions dictionary
+                # instead of creating a separate dict.
+                self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
     def generate_action_handler(self, action_name):
         def action_handler(*args):
-            return 'ok'
+            return 'action executed'
         action_handler.__name__ = action_name
-        print action_handler
         return action_handler
-
-class PopulaTangoDeviceCommands(object):
-    """
-    """
-    def __init__(self, model, tango_device_class):
-        for action_name, action_handler in model.sim_actions.items():
-            cmd_handler = self.generate_cmd_handler(action, handler)
-            # You might need to turn cmd_handler into an unbound method before you add
-           # it to the class
-            setattr(tango_device_class, action, cmd_handler)
-
-    def generate_cmd_handler(self, action, action_handler):
-        # You might need to figure out how to specialise cmd_handler to different
-        # argument types
-        def cmd_handler(self, args):
-            return action_handler(args)
-        cmd_handler.__name__ = action
-        return command(stuff_from_xmi)(cmd_handler)
 
 
 class SimModelException(Exception):
     def __init__(self, message):
         super(SimModelException, self).__init__(message)
 
-class TangoDeviceServer(Device):
-    __metaclass__ = DeviceMeta
+class TangoDeviceServerBase(Device):
     instances = weakref.WeakValueDictionary()
 
     sim_xmi_description_file = device_property(dtype=str,
             doc='Complete path name of the POGO xmi file to be parsed')
 
     def init_device(self):
-        super(TangoDeviceServer, self).init_device()
+        super(TangoDeviceServerBase, self).init_device()
         name = self.get_name()
         self.instances[name] = self
-        xmi_file = get_xmi_description_file_name()
-        pmq = PopulateModelQuantities(xmi_file, name)
-        self.model = pmq.sim_model
-        #self.model = PopulateModelQuantities(xmi_file, name).sim_model
-        #PopulateModelActions(pmq.xmi_parser.get_reformatted_cmd_metadata(), name, sim_model=self.model)
+        self.model = None
         self.set_state(DevState.ON)
 
     def initialize_dynamic_attributes(self):
@@ -732,8 +710,97 @@ def get_xmi_description_file_name():
     return sim_xmi_description_file
 
 
+def get_tango_device_server(model):
+    """Declares a tango device class that inherits the Device class and then
+    adds tango commands.
+
+    Returns
+    -------
+    TangoDeviceServer : PyTango.Device
+        Tango device that has the results of the translated KATCP server
+
+    """
+    # Declare a Tango Device class for specifically adding commands prior
+    # running the device server
+    class TangoDeviceServerCommands(object):
+        pass
+
+
+    def generate_cmd_handler(action, action_handler):
+        # You might need to figure out how to specialise cmd_handler to different
+        # argument types
+        def cmd_handler( args):
+            return action_handler(args)
+        #print action
+        cmd_handler.__name__ = action
+        #print cmd_info[action]
+        cmd_info_copy = model.sim_actions_meta[action].copy()
+        cmd_info_copy.pop('name')
+        return command(**cmd_info_copy)(cmd_handler)
+        #return command(stuff_from_xmi)(cmd_handler)
+
+    for action_name, action_handler in model.sim_actions.items():
+        cmd_handler = generate_cmd_handler(action_name, action_handler)
+        # You might need to turn cmd_handler into an unbound method before you add
+        # it to the class
+        print cmd_handler
+        setattr(TangoDeviceServerCommands, action_name, cmd_handler)
+
+    class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
+        __metaclass__ = DeviceMeta
+
+        def initialize_dynamic_attributes(self):
+            print "Overriding superclass method"
+            self.model = model
+            model_sim_quants = self.model.sim_quantities
+            attribute_list = set([attr for attr in model_sim_quants.keys()])
+            for attribute_name in attribute_list:
+                MODULE_LOGGER.info("Added dynamic {} attribute"
+                               .format(attribute_name))
+                meta_data = model_sim_quants[attribute_name].meta
+                attr_dtype = meta_data['data_type']
+                # The return value of rwType is a string and it is required as a
+                # PyTango data type when passed to the Attr function.
+                # e.g. 'READ' -> PyTango.AttrWriteType.READ
+                rw_type = meta_data['writable']
+                rw_type = getattr(AttrWriteType, rw_type)
+                attr = Attr(attribute_name, attr_dtype, rw_type)
+                attr_props = UserDefaultAttrProp()
+                for prop in meta_data.keys():
+                    attr_prop_setter = getattr(attr_props, 'set_' + prop, None)
+                    if attr_prop_setter:
+                        attr_prop_setter(meta_data[prop])
+                    else:
+                        MODULE_LOGGER.info("No setter function for " + prop + " property")
+                attr.set_default_properties(attr_props)
+                self.add_attribute(attr, self.read_attributes)
+
+
+    return TangoDeviceServer
+
+def configure_device_model():
+    """In essence this function should get the xmi file, parse it,
+    take the attribute and command information, populate the model quantities and
+    actions to be simulated and return that model.
+    """
+    xmi_file = get_xmi_description_file_name()
+    server_name = helper_module.get_server_name()
+    db = Database()
+    db_datum = db.get_device_class_list(server_name)
+    dev_name = getattr(db_datum, 'value_string')[2]
+
+    pmq = PopulateModelQuantities(xmi_file, dev_name)
+    model = pmq.sim_model
+    xmi_parser = pmq.xmi_parser
+    cmd_info = xmi_parser.get_reformatted_cmd_metadata()
+    pma = PopulateModelActions(cmd_info, dev_name, model)
+
+    return model
+
 def main():
-    server_run([TangoDeviceServer])
+    model = configure_device_model()
+    TangoDS = get_tango_device_server(model)
+    server_run([TangoDS])
 
 if __name__ == "__main__":
     main()
