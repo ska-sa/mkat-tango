@@ -649,28 +649,7 @@ class TangoDeviceServerBase(Device):
 
     def initialize_dynamic_attributes(self):
         """The device method that sets up attributes during run time"""
-        model_sim_quants = self.model.sim_quantities
-        attribute_list = set([attr for attr in model_sim_quants.keys()])
-        for attribute_name in attribute_list:
-            MODULE_LOGGER.info("Added dynamic {} attribute"
-                               .format(attribute_name))
-            meta_data = model_sim_quants[attribute_name].meta
-            attr_dtype = meta_data['data_type']
-            # The return value of rwType is a string and it is required as a
-            # PyTango data type when passed to the Attr function.
-            # e.g. 'READ' -> PyTango.AttrWriteType.READ
-            rw_type = meta_data['writable']
-            rw_type = getattr(AttrWriteType, rw_type)
-            attr = Attr(attribute_name, attr_dtype, rw_type)
-            attr_props = UserDefaultAttrProp()
-            for prop in meta_data.keys():
-                attr_prop_setter = getattr(attr_props, 'set_' + prop, None)
-                if attr_prop_setter:
-                    attr_prop_setter(meta_data[prop])
-                else:
-                    MODULE_LOGGER.info("No setter function for " + prop + " property")
-            attr.set_default_properties(attr_props)
-            self.add_attribute(attr, self.read_attributes)
+        pass
 
     def always_executed_hook(self):
         self.model.update()
@@ -731,19 +710,15 @@ def get_tango_device_server(model):
         # argument types
         def cmd_handler( args):
             return action_handler(args)
-        #print action
         cmd_handler.__name__ = action
-        #print cmd_info[action]
         cmd_info_copy = model.sim_actions_meta[action].copy()
         cmd_info_copy.pop('name')
         return command(**cmd_info_copy)(cmd_handler)
-        #return command(stuff_from_xmi)(cmd_handler)
 
     for action_name, action_handler in model.sim_actions.items():
         cmd_handler = generate_cmd_handler(action_name, action_handler)
         # You might need to turn cmd_handler into an unbound method before you add
         # it to the class
-        print cmd_handler
         setattr(TangoDeviceServerCommands, action_name, cmd_handler)
 
     class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
@@ -799,8 +774,8 @@ def configure_device_model():
 
 def main():
     model = configure_device_model()
-    TangoDS = get_tango_device_server(model)
-    server_run([TangoDS])
+    TangoDeviceServer = get_tango_device_server(model)
+    server_run([TangoDeviceServer])
 
 if __name__ == "__main__":
     main()
