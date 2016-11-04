@@ -707,7 +707,7 @@ def get_xmi_description_file_name():
     #    instance, that is used to find the XMI file. Once the device is
     #    restarted, the classes defined in the XMI file can be exposed.
 
-    This function should perhaps take the device name
+    #This function should perhaps take the device name
 
     server_name = helper_module.get_server_name()
     db = Database()
