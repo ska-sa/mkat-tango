@@ -697,7 +697,7 @@ def get_xmi_description_file_name():
         POGO xmi device server description file
         e.g. 'home/user/weather.xmi'
 
-    """`
+    """
 
     # TODO (NM 2016-11-04) At the moment this is hardcoded to assume only the
     # first class and first device configures the XMI file. But more
