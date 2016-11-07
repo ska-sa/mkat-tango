@@ -10,7 +10,8 @@ import PyTango
 
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
-from PyTango import DevState, DevBoolean, DevString, DevEnum, AttrDataFormat, CmdArgType, DevDouble, DevFloat, DevLong
+from PyTango import (DevState, DevBoolean, DevString, DevEnum, AttrDataFormat,
+                     CmdArgType, DevDouble, DevFloat, DevLong)
 from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 from mkat_tango import helper_module
@@ -32,7 +33,7 @@ ARBITRARY_DATA_TYPE_RETURN_VALUES = {
     DevFloat: 8.1,
     DevLong: 3}
 
-# TODO(KM 31-10-2016): Need to xmi attributes properties that are currently
+# TODO(KM 31-10-2016): Need to add xmi attributes' properties that are currently
 # not being handled by the parser e.g. [displayLevel, enumLabels] etc.
 POGO_USER_DEFAULT_ATTR_PROP_MAP = {
         'dynamicAttributes': {
@@ -466,10 +467,11 @@ class Xmi_Parser(object):
             for cmd_prop_name, cmd_prop_value in cmd_metadata.items():
                 try:
                     new_commands_metadata.update(
-                            {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name] :cmd_prop_value})
+                        {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name] :cmd_prop_value})
                 except KeyError:
-                    MODULE_LOGGER.info("The property '%s' cannot be translated to a "
-                            "corresponding parameter in the TANGO library" %(cmd_prop_name))
+                    MODULE_LOGGER.info(
+                        "The property '%s' cannot be translated to a "
+                        "corresponding parameter in the TANGO library" %(cmd_prop_name))
 
             new_commands[cmd_name] = new_commands_metadata
 
@@ -525,9 +527,9 @@ class PopulateModelQuantities(object):
             self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
         pma = PopulateModelActions(
-                  self.xmi_parser.get_reformatted_cmd_metadata(),
-                  tango_device_name,
-                  model_instance=self.sim_model)
+              self.xmi_parser.get_reformatted_cmd_metadata(),
+              tango_device_name,
+              model_instance=self.sim_model)
 
     def setup_sim_quantities(self):
         """Set up self.sim_quantities from Model with simulated quantities.
@@ -587,7 +589,7 @@ class PopulateModelQuantities(object):
         Notes
         =====
         - Statistical simulation parameters (mean, std dev, slew rate) are
-    derived      derived from the min/max values of the attribute.
+          derived from the min/max values of the attribute.
 
         """
         sim_attribute_quantities = dict()
@@ -607,13 +609,22 @@ class PopulateModelQuantities(object):
 
 
 class PopulateModelActions(object):
-    """
+    """Used to populate/update model actions.
+
+    Populates the model actions using the data from the TANGO device information
+    captured in the POGO generated xmi file.
 
     Attributes
     ----------
-        command_info :
+    command_info: dict
+        A dictionary of all the device commands together with their
+        metadata specified in the POGO generated XMI file. The key
+        represents the name of the command and the value is a dictionary
+        of all the attribute's metadata.
 
-        sim_model :
+    sim_model:  Model instance
+        An instance of the Model class which is used for simulation of simple attributes
+        and/or commands.
     """
     def __init__(self, commands_info, tango_device_name, model_instance=None):
         self.command_info = commands_info
@@ -658,10 +669,6 @@ class TangoDeviceServerBase(Device):
         self.model = None
         self.set_state(DevState.ON)
 
-    def initialize_dynamic_attributes(self):
-        """The device method that sets up attributes during run time"""
-        pass
-
     def always_executed_hook(self):
         self.model.update()
 
@@ -690,7 +697,7 @@ def get_xmi_description_file_name():
         POGO xmi device server description file
         e.g. 'home/user/weather.xmi'
 
-    """
+    """`
 
     # TODO (NM 2016-11-04) At the moment this is hardcoded to assume only the
     # first class and first device configures the XMI file. But more
@@ -766,7 +773,7 @@ def get_tango_device_server(model):
             attribute_list = set([attr for attr in model_sim_quants.keys()])
             for attribute_name in attribute_list:
                 MODULE_LOGGER.info("Added dynamic {} attribute"
-                               .format(attribute_name))
+                    .format(attribute_name))
                 meta_data = model_sim_quants[attribute_name].meta
                 attr_dtype = meta_data['data_type']
                 # The return value of rwType is a string and it is required as a
@@ -792,6 +799,18 @@ def configure_device_model(sim_xmi_file=None, test_device_name=None):
     """In essence this function should get the xmi file, parse it,
     take the attribute and command information, populate the model quantities and
     actions to be simulated and return that model.
+
+    Parameters
+    ----------
+    sim_xmi_file : str
+        A direct path to the XMI file.
+    test_device_name : str
+        A TANGO device name. This is used for running tests as we want the model
+        instance and the device name to have the same name.
+
+    Returns
+    -------
+    model : model.Model instance
     """
     if sim_xmi_file is None:
         xmi_file = get_xmi_description_file_name()
@@ -802,8 +821,15 @@ def configure_device_model(sim_xmi_file=None, test_device_name=None):
 
     if test_device_name is None:
         db = Database()
+        # db_datum is a PyTango.DbDatum structure with attribute name and value_string.
+        # The name attribute represents the name of the device server and the
+        # value_string attribute is a list of all the registered device instances in
+        # that device server instance for the TANGO class 'TangoDeviceServer'.
         db_datum = db.get_device_name(server_name, 'TangoDeviceServer')
-        dev_name = getattr(db_datum, 'value_string')[0]
+        dev_name = getattr(db_datum, 'value_string')[0] # We assume that at least one
+                                                        # device instance has been
+                                                        # registered for that class
+                                                        # and device server.
     else:
         dev_name = test_device_name
 

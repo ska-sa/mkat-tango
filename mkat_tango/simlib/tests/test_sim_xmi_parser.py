@@ -276,8 +276,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         actual_device_commands = set(self.device.get_command_list()) - {'Init'}
         expected_command_list = set(self.xmi_parser.get_reformatted_cmd_metadata().keys())
         self.assertEquals(actual_device_commands, expected_command_list,
-                "The commands specified in the xmi file are not present in the "
-                "device")
+            "The commands specified in the xmi file are not present in the device")
 
     def test_command_properties(self):
         command_list = self.device.get_command_list()
@@ -286,14 +285,16 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         for cmd_name, cmd_metadata in command_data.items():
             cmd_config_info = self.device.get_command_config(cmd_name)
             for cmd_prop, cmd_prop_value in cmd_metadata.items():
-                self.assertTrue(hasattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
-                    "The cmd parameter '%s' for the cmd '%s' was not translated"
-                    %(cmd_prop, cmd_name))
+                self.assertTrue(
+                    hasattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    "The cmd parameter '%s' for the cmd '%s' was not translated" %
+                    (cmd_prop, cmd_name))
                 if cmd_prop_value == 'none' or cmd_prop_value == '':
                     cmd_prop_value = 'Uninitialised'
-                self.assertEqual(getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]), cmd_prop_value,
-                        "The cmd parameter '%s/%s' values do not match"
-                        %(cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
+                self.assertEqual(
+                    getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]), cmd_prop_value,
+                    "The cmd parameter '%s/%s' values do not match" %
+                    (cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
 
 class GenericSetup(unittest.TestCase):
     longMessage = True
@@ -442,5 +443,5 @@ class test_PopModelActions(GenericSetup):
             # automatically by TANGO
             if cmd_name not in ['State', 'Status']:
                 self.assertTrue(sim_model.sim_actions.has_key(cmd_name),
-                                 "The an action handler for the cmd '%s' was not created "
-                                 % (cmd_name))
+                                "The an action handler for the cmd '%s' was not created" %
+                                (cmd_name))
