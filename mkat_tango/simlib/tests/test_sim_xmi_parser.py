@@ -292,8 +292,8 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
                 if cmd_prop_value == 'none' or cmd_prop_value == '':
                     cmd_prop_value = 'Uninitialised'
                 self.assertEqual(
-                    getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]), cmd_prop_value,
-                    "The cmd parameter '%s/%s' values do not match" %
+                    getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    cmd_prop_value, "The cmd parameter '%s/%s' values do not match" %
                     (cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
 
 class GenericSetup(unittest.TestCase):

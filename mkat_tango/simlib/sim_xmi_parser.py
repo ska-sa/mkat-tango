@@ -462,7 +462,7 @@ class Xmi_Parser(object):
 
         commands = {}
         # Need to convert the POGO parameter names to the TANGO names
-        for cmd_name, cmd_metadata in commands.items():
+        for cmd_name, cmd_metadata in temp_commands.items():
             commands_metadata = {}
             for cmd_prop_name, cmd_prop_value in cmd_metadata.items():
                 try:
