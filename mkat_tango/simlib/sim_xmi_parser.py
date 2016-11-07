@@ -456,26 +456,26 @@ class Xmi_Parser(object):
 
                  }
         """
-        commands = {}
+        temp_commands = {}
         for cmd_info in self.device_commands:
-            commands[cmd_info['name']] = cmd_info
+            temp_commands[cmd_info['name']] = cmd_info
 
-        new_commands = {}
-        # Need to convert the parameter names to the TANGO names
+        commands = {}
+        # Need to convert the POGO parameter names to the TANGO names
         for cmd_name, cmd_metadata in commands.items():
-            new_commands_metadata = {}
+            commands_metadata = {}
             for cmd_prop_name, cmd_prop_value in cmd_metadata.items():
                 try:
-                    new_commands_metadata.update(
+                    commands_metadata.update(
                         {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name] :cmd_prop_value})
                 except KeyError:
                     MODULE_LOGGER.info(
                         "The property '%s' cannot be translated to a "
                         "corresponding parameter in the TANGO library" %(cmd_prop_name))
 
-            new_commands[cmd_name] = new_commands_metadata
+            commands[cmd_name] = commands_metadata
 
-        return new_commands
+        return commands
 
     def get_reformatted_properties_metadata(self):
         """Creates a dictionary of the device properties and their metadata.
