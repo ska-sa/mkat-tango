@@ -792,7 +792,6 @@ def get_tango_device_server(model):
                 attr.set_default_properties(attr_props)
                 self.add_attribute(attr, self.read_attributes)
 
-
     return TangoDeviceServer
 
 def configure_device_model(sim_xmi_file=None, test_device_name=None):
