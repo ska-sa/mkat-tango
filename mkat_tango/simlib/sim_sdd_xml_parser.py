@@ -7,6 +7,18 @@ import argparse
 
 import xml.etree.ElementTree as ET
 
+from mkat_tango import helper_module
+from mkat_tango.simlib import quantities
+from mkat_tango.simlib import model
+
+
+SDD_MP_PARAMS_TANGO_MAP = {
+    'name': 'name',
+    'Description': 'description',
+    'DataType': 'data_type',
+    'MinValue': 'min_value',
+    'MaxValue': 'max_value',
+    'RWType': 'writable'}
 
 class SDD_Parser(object):
     """
@@ -14,7 +26,7 @@ class SDD_Parser(object):
     def __init__(self):
         #self.sdd_xml_file = sdd_xml_file
         self.device_class_name = ""
-        self.device_monitoring_points = []
+        self.device_monitoring_points = {}
         """e.g.
             <MonitoringPoint id="" name="Temperature" mandatory="TRUE/FALSE">
                 <Description>....</Description>
@@ -53,7 +65,7 @@ class SDD_Parser(object):
                     'logging_level' :''
                     }
         """
-        self.device_command_list = []
+        self.device_commands = {}
         """e.g.
             <Command>
                 <CommandID>....</CommandID>
@@ -125,15 +137,13 @@ class SDD_Parser(object):
 
         for info in main_element_info:
             if info.tag == 'CommandList':
-                self.device_command_list.append(self.extract_command_info(info))
+                self.device_commands.update(self.extract_command_info(info))
             elif info.tag == 'MonitoringPointsList':
-                self.device_monitoring_points.append(self.extract_monitoring_point_info(info))
+                self.device_monitoring_points.update(
+                    self.extract_monitoring_point_info(info))
 
 
-    def extract_command_info(cmd_info):
-        """
-        """
-        def extract_command_info(cmd_info):
+    def extract_command_info(self, cmd_info):
         """
         """
         cmds_s = dict()
@@ -147,14 +157,17 @@ class SDD_Parser(object):
                     for parameter in prop:
                         cmd_meta_meta_meta = {}
                         for parameter_prop in parameter:
-                            if parameter_prop.text == None or parameter_prop.text.startswith('.'):
+                            if (parameter_prop.text == None or
+                                    parameter_prop.text.startswith('.'):
                                 cmd_meta_meta_meta[parameter_prop.tag] = ''
                             else:
-                                cmd_meta_meta_meta[parameter_prop.tag] = parameter_prop.text
-                        cmd_meta_meta[cmd_meta_meta_meta['ParameterName']] = cmd_meta_meta_meta
+                                cmd_meta_meta_meta[parameter_prop.tag] = (
+                                    parameter_prop.text)
+                        cmd_meta_meta[cmd_meta_meta_meta['ParameterName']] = (
+                            cmd_meta_meta_meta)
                     cmd_meta[prop.tag].update(cmd_meta_meta)
                 elif prop.tag in ['ResponseList']:
-                    cmd_responses = {}              # To store a list of the cmd_responses
+                    cmd_responses = {}      # To store a list of the cmd_responses
                     for response in prop:
                         print "RES '%s'" % response.tag
                         cmd_response_meta = {}      # Stores the response properties
@@ -162,23 +175,29 @@ class SDD_Parser(object):
                             if resp_prop.tag in ['ResponseParameters']:
                                 response_params = {}   # Stores the response paramaters
                                 cmd_response_meta[resp_prop.tag] = {}
-                                print "\nresponse_meta before loop '%s'" % str(cmd_response_meta)
                                 for parameter in resp_prop:
-                                    resp_params_prop = {}   # Stores the properties of the paramter
+                                    # Stores the properties of the paramter
+                                    resp_params_prop = {}
                                     for parameter_prop in parameter:
-                                        if parameter_prop.text == None or parameter_prop.text.startswith('.'):
+                                        if (parameter_prop.text == None or
+                                                parameter_prop.text.startswith('.'):
                                             resp_params_prop[parameter_prop.tag] = ''
                                         else:
-                                            resp_params_prop[parameter_prop.tag] = parameter_prop.text
+                                            resp_params_prop[parameter_prop.tag] =(
+                                                parameter_prop.text)
 
-                                    response_params[resp_params_prop['ParameterName']] = resp_params_prop
-                                    cmd_response_meta[resp_prop.tag].update(response_params)
+                                    response_params[resp_params_prop['ParameterName']] =(
+                                        resp_params_prop)
+                                    cmd_response_meta[resp_prop.tag].update(
+                                        response_params)
 
-                            elif resp_prop.text == None or resp_prop.text.startswith('.'):
+                            elif (resp_prop.text == None or
+                                  resp_prop.text.startswith('.'):
                                 cmd_response_meta[resp_prop.tag] = ''
                             else:
                                 cmd_response_meta[resp_prop.tag] = resp_prop.text
-                        cmd_responses[cmd_response_meta['ResponseName']] = cmd_response_meta
+                        cmd_responses[cmd_response_meta['ResponseName']] =(
+                            cmd_response_meta)
 
                     cmd_meta[prop.tag].update(cmd_responses)
                 elif prop.tag in ['AvailableInModes']:
@@ -196,13 +215,14 @@ class SDD_Parser(object):
         return cmds_s
 
 
+
     def extract_monitoring_point_info(self, mp_info):
         """
         """
         dev_mnt_pts = dict()
         monitoring_points = mp_info.getchildren()
         for mnt_pt in monitoring_points:
-            dev_mnt_pts_meta = dict()
+            dev_mnt_pts_meta = {}
             for prop in mnt_pt:
                 if prop.tag in ['ValueRange', 'SamplingFrequency']:
                     dev_mnt_pts_meta[prop.tag] = {}
@@ -210,11 +230,12 @@ class SDD_Parser(object):
                         if inner_prop.text == None or inner_prop.text.startswith('.'):
                             dev_mnt_pts_meta[prop.tag].update({inner_prop.tag: ''})
                         else:
-                            dev_mnt_pts_meta[prop.tag].update({inner_prop.tag: inner_prop.text})
+                            dev_mnt_pts_meta[prop.tag].update(
+                                {inner_prop.tag: inner_prop.text})
                 elif prop.text == None or prop.text.startswith('.'):
                     dev_mnt_pts_meta[prop.tag] = ''
                 else:
                     dev_mnt_pts_meta[prop.tag] = prop.text
 
             dev_mnt_pts[mnt_pt.attrib['name']] = dev_mnt_pts_meta
-        print dev_mnt_pts
+        return dev_mnt_pts
