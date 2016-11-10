@@ -222,6 +222,11 @@
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
+						<Parameter>
+							<ParameterID>...................</ParameterID>
+							<ParameterName>gsm</ParameterName>
+							<ParameterValue></ParameterValue>
+						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>

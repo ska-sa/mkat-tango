@@ -133,6 +133,9 @@ class SDD_Parser(object):
     def extract_command_info(cmd_info):
         """
         """
+        def extract_command_info(cmd_info):
+        """
+        """
         cmds_s = dict()
         cmds = cmd_info.getchildren()
         for cmd in cmds:
@@ -141,48 +144,43 @@ class SDD_Parser(object):
                 cmd_meta[prop.tag] = {}
                 if prop.tag in ['CommandParameters']:
                     cmd_meta_meta = {}
-                    for param in prop:
+                    for parameter in prop:
                         cmd_meta_meta_meta = {}
-                        for param_prop in param:
-                            #print param_prop.tag
-                            if param_prop.text == None or param_prop.text.startswith('.'):
-                                cmd_meta_meta_meta[param_prop.tag] = ''
+                        for parameter_prop in parameter:
+                            if parameter_prop.text == None or parameter_prop.text.startswith('.'):
+                                cmd_meta_meta_meta[parameter_prop.tag] = ''
                             else:
-                                cmd_meta_meta_meta[param_prop.tag] = param_prop.text
+                                cmd_meta_meta_meta[parameter_prop.tag] = parameter_prop.text
                         cmd_meta_meta[cmd_meta_meta_meta['ParameterName']] = cmd_meta_meta_meta
                     cmd_meta[prop.tag].update(cmd_meta_meta)
                 elif prop.tag in ['ResponseList']:
-                    responses = {}              # To store a list of the responses
+                    cmd_responses = {}              # To store a list of the cmd_responses
                     for response in prop:
-                        response_meta = {}      # Stores the response properties
+                        print "RES '%s'" % response.tag
+                        cmd_response_meta = {}      # Stores the response properties
                         for resp_prop in response:
                             if resp_prop.tag in ['ResponseParameters']:
                                 response_params = {}   # Stores the response paramaters
-                                for param in resp_prop:
-                                    print "Paramter '%s'" % param.tag
+                                cmd_response_meta[resp_prop.tag] = {}
+                                print "\nresponse_meta before loop '%s'" % str(cmd_response_meta)
+                                for parameter in resp_prop:
                                     resp_params_prop = {}   # Stores the properties of the paramter
-                                    print "Response params '%s'" % response_params
-                                    for props in param:
-                                        print "Response Parameter Prop '%s'" %props.tag
-                                        if props.text == None or props.text.startswith('.'):
-                                            resp_params_prop[props.tag] = ''
+                                    for parameter_prop in parameter:
+                                        if parameter_prop.text == None or parameter_prop.text.startswith('.'):
+                                            resp_params_prop[parameter_prop.tag] = ''
                                         else:
-                                            resp_params_prop[props.tag] = props.text
+                                            resp_params_prop[parameter_prop.tag] = parameter_prop.text
 
-                                    print "Parameter Props '%s'" % resp_params_prop
                                     response_params[resp_params_prop['ParameterName']] = resp_params_prop
-                                    print "Response params '%s'" % response_params
+                                    cmd_response_meta[resp_prop.tag].update(response_params)
 
-
-                            if resp_prop.text == None or resp_prop.text.startswith('.'):
-                                response_meta[resp_prop.tag] = ''
+                            elif resp_prop.text == None or resp_prop.text.startswith('.'):
+                                cmd_response_meta[resp_prop.tag] = ''
                             else:
-                                response_meta[resp_prop.tag] = resp_prop.text
-                        responses[response_meta['ResponseName']] = response_meta
-                        print "responses '%s' " % str(responses)
-                        print "response_meta '%s'" % str(response_meta)
-                    print "responses '%s' " % str(responses)
-                    cmd_meta[prop.tag].update(responses)
+                                cmd_response_meta[resp_prop.tag] = resp_prop.text
+                        cmd_responses[cmd_response_meta['ResponseName']] = cmd_response_meta
+
+                    cmd_meta[prop.tag].update(cmd_responses)
                 elif prop.tag in ['AvailableInModes']:
                     for inner_prop in prop:
                         if inner_prop.text == None or inner_prop.text.startswith('.'):
@@ -195,7 +193,6 @@ class SDD_Parser(object):
                 else:
                     cmd_meta[prop.tag] = prop.text
             cmds_s[cmd_meta['CommandName']] = cmd_meta
-        #print cmds_s
         return cmds_s
 
 
