@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
-
+from mkat_tango.simlib.sim_xmi_parser import PopulateModelQuantities
 
 SDD_MP_PARAMS_TANGO_MAP = {
     'name': 'name',
@@ -158,7 +158,7 @@ class SDD_Parser(object):
                         cmd_meta_meta_meta = {}
                         for parameter_prop in parameter:
                             if (parameter_prop.text == None or
-                                    parameter_prop.text.startswith('.'):
+                                    parameter_prop.text.startswith('.')):
                                 cmd_meta_meta_meta[parameter_prop.tag] = ''
                             else:
                                 cmd_meta_meta_meta[parameter_prop.tag] = (
@@ -180,7 +180,7 @@ class SDD_Parser(object):
                                     resp_params_prop = {}
                                     for parameter_prop in parameter:
                                         if (parameter_prop.text == None or
-                                                parameter_prop.text.startswith('.'):
+                                                parameter_prop.text.startswith('.')):
                                             resp_params_prop[parameter_prop.tag] = ''
                                         else:
                                             resp_params_prop[parameter_prop.tag] =(
@@ -192,7 +192,7 @@ class SDD_Parser(object):
                                         response_params)
 
                             elif (resp_prop.text == None or
-                                  resp_prop.text.startswith('.'):
+                                  resp_prop.text.startswith('.')):
                                 cmd_response_meta[resp_prop.tag] = ''
                             else:
                                 cmd_response_meta[resp_prop.tag] = resp_prop.text
@@ -223,6 +223,7 @@ class SDD_Parser(object):
         monitoring_points = mp_info.getchildren()
         for mnt_pt in monitoring_points:
             dev_mnt_pts_meta = {}
+            dev_mnt_pts_meta['name'] = mnt_pt.attrib['name']
             for prop in mnt_pt:
                 if prop.tag in ['ValueRange', 'SamplingFrequency']:
                     dev_mnt_pts_meta[prop.tag] = {}
@@ -239,3 +240,38 @@ class SDD_Parser(object):
 
             dev_mnt_pts[mnt_pt.attrib['name']] = dev_mnt_pts_meta
         return dev_mnt_pts
+
+
+    def get_reformatted_device_attr_metadata(self):
+        """
+        """
+        monitoring_pts = {}
+        for mpt_name, mpt_metadata in self.device_monitoring_points.items():
+            monitoring_pts[mpt_name] = {}
+            for metadata_prop_name, metadata_prop_val in mpt_metadata.items():
+                if metadata_prop_name == "ValueRange":
+                    for extremity, extremity_val in metadata_prop_val.items():
+                       monitoring_pts[mpt_name].update(
+                           {SDD_MP_PARAMS_TANGO_MAP[extremity] : extremity_val})
+                    break
+
+                try:
+                    monitoring_pts[mpt_name].update(
+                        {SDD_MP_PARAMS_TANGO_MAP[metadata_prop_name] : metadata_prop_val})
+                except KeyError:
+                    monitoring_pts[mpt_name].update({metadata_prop_name : metadata_prop_val})
+        return monitoring_pts
+
+
+
+class SDD_PopulateModelQuantities(PopulateModelQuantities):
+    """
+    """
+    def __init__(self, sdd_parser, sim_model_name, sim_model=None):
+        self.xmi_parser = sdd_parser
+        if not sim_model:
+            self.sim_model = model.Model(sim_model_name)
+        else:
+            self.sim_model = sim_model
+
+        self.setup_sim_quantities()
