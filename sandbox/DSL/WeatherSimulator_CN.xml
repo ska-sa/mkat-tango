@@ -267,8 +267,17 @@
 				<Mode>. . .</Mode>
 			</AvailableInModes>
 			<CommandParameters>
-
-			</CommandParameters>
+			<Parameter>
+				<ParameterID>..........</ParameterID>
+				<ParameterName>x</ParameterName>
+				<ParameterDataType>int</ParameterDataType>
+			</Parameter>
+			<Parameter>
+				<ParameterID>..........</ParameterID>
+				<ParameterName>y</ParameterName>
+				<ParameterDataType>int</ParameterDataType>
+			</Parameter>
+		</CommandParameters>
 
 
 			<ResponseList>

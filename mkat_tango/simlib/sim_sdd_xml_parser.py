@@ -99,9 +99,9 @@ class SDD_Parser(object):
                     'response_list': {
                         'response': {
                             'resp_id': '',
-                            'resp_name': '', 
+                            'resp_name': '',
                             'resp_type': '',
-                            'resp_description': '', 
+                            'resp_description': '',
                             'resp_params': {
                                  'param': {
                                      'param_id': '',
@@ -120,7 +120,7 @@ class SDD_Parser(object):
         """
         tree = ET.parse(sdd_xml_file)
         root = tree.getroot()
-        
+
         main_element_info = root.getchildren()
 
         for info in main_element_info:
@@ -130,13 +130,74 @@ class SDD_Parser(object):
                 self.device_monitoring_points.append(self.extract_monitoring_point_info(info))
 
 
-    def extract_command_info(self, cmd_info):
+    def extract_command_info(cmd_info):
         """
         """
+        cmds_s = dict()
         cmds = cmd_info.getchildren()
         for cmd in cmds:
-            pass
-            
+            cmd_meta = dict()
+            for prop in cmd:
+                cmd_meta[prop.tag] = {}
+                if prop.tag in ['CommandParameters']:
+                    cmd_meta_meta = {}
+                    for param in prop:
+                        cmd_meta_meta_meta = {}
+                        for param_prop in param:
+                            #print param_prop.tag
+                            if param_prop.text == None or param_prop.text.startswith('.'):
+                                cmd_meta_meta_meta[param_prop.tag] = ''
+                            else:
+                                cmd_meta_meta_meta[param_prop.tag] = param_prop.text
+                        cmd_meta_meta[cmd_meta_meta_meta['ParameterName']] = cmd_meta_meta_meta
+                    cmd_meta[prop.tag].update(cmd_meta_meta)
+                elif prop.tag in ['ResponseList']:
+                    responses = {}              # To store a list of the responses
+                    for response in prop:
+                        response_meta = {}      # Stores the response properties
+                        for resp_prop in response:
+                            if resp_prop.tag in ['ResponseParameters']:
+                                response_params = {}   # Stores the response paramaters
+                                for param in resp_prop:
+                                    print "Paramter '%s'" % param.tag
+                                    resp_params_prop = {}   # Stores the properties of the paramter
+                                    print "Response params '%s'" % response_params
+                                    for props in param:
+                                        print "Response Parameter Prop '%s'" %props.tag
+                                        if props.text == None or props.text.startswith('.'):
+                                            resp_params_prop[props.tag] = ''
+                                        else:
+                                            resp_params_prop[props.tag] = props.text
+
+                                    print "Parameter Props '%s'" % resp_params_prop
+                                    response_params[resp_params_prop['ParameterName']] = resp_params_prop
+                                    print "Response params '%s'" % response_params
+
+
+                            if resp_prop.text == None or resp_prop.text.startswith('.'):
+                                response_meta[resp_prop.tag] = ''
+                            else:
+                                response_meta[resp_prop.tag] = resp_prop.text
+                        responses[response_meta['ResponseName']] = response_meta
+                        print "responses '%s' " % str(responses)
+                        print "response_meta '%s'" % str(response_meta)
+                    print "responses '%s' " % str(responses)
+                    cmd_meta[prop.tag].update(responses)
+                elif prop.tag in ['AvailableInModes']:
+                    for inner_prop in prop:
+                        if inner_prop.text == None or inner_prop.text.startswith('.'):
+                            cmd_meta[prop.tag].update({inner_prop.tag: ''})
+                        else:
+                            cmd_meta[prop.tag].update(
+                                {inner_prop.tag: inner_prop.text})
+                elif prop.text == None or prop.text.startswith('.'):
+                    cmd_meta[prop.tag] = ''
+                else:
+                    cmd_meta[prop.tag] = prop.text
+            cmds_s[cmd_meta['CommandName']] = cmd_meta
+        #print cmds_s
+        return cmds_s
+
 
     def extract_monitoring_point_info(self, mp_info):
         """
@@ -144,20 +205,19 @@ class SDD_Parser(object):
         dev_mnt_pts = dict()
         monitoring_points = mp_info.getchildren()
         for mnt_pt in monitoring_points:
-            attr = mnt_pt.attrib
-            print mnt_pt
-            print attr
-            print attr['name']
-            #print mnt_pt
             dev_mnt_pts_meta = dict()
             for prop in mnt_pt:
-                if prop.text == None or prop.text.startswith('.'):
-                    print "Property name: '%s' " % prop.tag
+                if prop.tag in ['ValueRange', 'SamplingFrequency']:
+                    dev_mnt_pts_meta[prop.tag] = {}
+                    for inner_prop in prop:
+                        if inner_prop.text == None or inner_prop.text.startswith('.'):
+                            dev_mnt_pts_meta[prop.tag].update({inner_prop.tag: ''})
+                        else:
+                            dev_mnt_pts_meta[prop.tag].update({inner_prop.tag: inner_prop.text})
+                elif prop.text == None or prop.text.startswith('.'):
                     dev_mnt_pts_meta[prop.tag] = ''
                 else:
-                    print "Property name: '%s' | property val: '%s'" %(prop.tag, prop.text)
                     dev_mnt_pts_meta[prop.tag] = prop.text
-                #print prop
+
             dev_mnt_pts[mnt_pt.attrib['name']] = dev_mnt_pts_meta
-            print dev_mnt_pts
-            print 6 * 'x'
+        print dev_mnt_pts
