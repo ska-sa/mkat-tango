@@ -169,7 +169,7 @@ class SDD_Parser(object):
                 elif prop.tag in ['ResponseList']:
                     cmd_responses = {}      # To store a list of the cmd_responses
                     for response in prop:
-                        print "RES '%s'" % response.tag
+                        #print "RES '%s'" % response.tag
                         cmd_response_meta = {}      # Stores the response properties
                         for resp_prop in response:
                             if resp_prop.tag in ['ResponseParameters']:
@@ -214,32 +214,75 @@ class SDD_Parser(object):
             cmds_s[cmd_meta['CommandName']] = cmd_meta
         return cmds_s
 
-
-
-    def extract_monitoring_point_info(self, mp_info):
-        """
-        """
-        dev_mnt_pts = dict()
-        monitoring_points = mp_info.getchildren()
-        for mnt_pt in monitoring_points:
-            dev_mnt_pts_meta = {}
-            dev_mnt_pts_meta['name'] = mnt_pt.attrib['name']
-            for prop in mnt_pt:
-                if prop.tag in ['ValueRange', 'SamplingFrequency']:
-                    dev_mnt_pts_meta[prop.tag] = {}
-                    for inner_prop in prop:
-                        if inner_prop.text == None or inner_prop.text.startswith('.'):
-                            dev_mnt_pts_meta[prop.tag].update({inner_prop.tag: ''})
-                        else:
-                            dev_mnt_pts_meta[prop.tag].update(
-                                {inner_prop.tag: inner_prop.text})
-                elif prop.text == None or prop.text.startswith('.'):
-                    dev_mnt_pts_meta[prop.tag] = ''
+    # WIP (KM 12-11-2016)  to refactor the above method  
+    def extract_cmd_info(self, cmd_info):
+        dev_cmds = dict()
+        cmd_list = cmd_info.findall('Command')
+        for cmd in cmd_list:
+            print cmd.tag
+            cmd_meta = {}
+            cmd_meta['name'] = cmd.find('CommandName').text
+            for props in cmd:
+                print "Parent prop '%s'" %props.tag
+                if props.getchildren() == []:
+                    val = ('' if props.text == None or props.text.startswith('.')
+                           else props.text)
+                    cmd_meta[props.tag] = val
                 else:
-                    dev_mnt_pts_meta[prop.tag] = prop.text
-
-            dev_mnt_pts[mnt_pt.attrib['name']] = dev_mnt_pts_meta
+                    cmd_meta[props.tag] = {}
+                    els = props.getchildren()
+                    for child in els:
+                        print "Child prop '%s'" %child.tag
+                        ele_meta = self._unpack_parent(child)
+                        if type(ele_meta) == dict:
+                            cmd_meta[props.tag].update(ele_meta)
+                        while(type(ele_meta) != dict):
+                            print "Element to unpack '%s' " %ele_meta
+                            if type(ele_meta) == dict:
+                                dev_cmds[cmd.tag].update(ele_meta)
+                            else:
+                                dev_cmds[cmd.tag].update({ele_meta.tag:{}})
+                                ele_meta = self._unpack_parent(ele_meta)
+            print dev_cmds
+            dev_cmds[cmd_meta['name']] = cmd_meta
+        return dev_cmds
+    # WIP (KM 12-11-2016) to make it recursively extract info from deeply nested tags
+    def extract_monitoring_point_info(self, mp_info):
+        dev_mnt_pts = dict()
+        mnt_pt_list = mp_info.findall('MonitoringPoint')
+        for mp in mnt_pt_list:
+            dev_mnt_pts_meta = {}
+            dev_mnt_pts_meta['name'] = mp.attrib['name']
+            for props in mp:
+                if props.getchildren() == []:
+                    val = ('' if props.text == None or props.text.startswith('.')
+                        else props.text)
+                    dev_mnt_pts_meta[props.tag] = val
+                else:
+                    dev_mnt_pts_meta[props.tag] = {}
+                    els = props.getchildren()
+                    for child in els:
+                        ele_meta = self._unpack_parent(child)
+                        if type(ele_meta) == dict:
+                            dev_mnt_pts_meta[props.tag].update(ele_meta)
+                        while(type(ele_meta) != dict):
+                            if type(ele_meta) == dict:
+                                dev_mnt_pts[mp.tag].update(ele_meta)
+                            else:
+                                dev_mnt_pts[mp.tag].update({ele_meta.tag : {}})
+                                ele_meta = self._unpack_parent(ele_meta) 
+            dev_mnt_pts[dev_mnt_pts_meta['name']] = dev_mnt_pts_meta
         return dev_mnt_pts
+
+
+    def _unpack_parent(self, element):
+        if element.getchildren() == []:
+            val = element.text
+            if val == None or val.startswith('.'):
+                val = ''
+            return {element.tag:val}
+        else:
+            return element.getchildren()
 
 
     def get_reformatted_device_attr_metadata(self):
