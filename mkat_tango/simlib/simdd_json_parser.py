@@ -7,14 +7,14 @@ import json
 
 from mkat_tango.simlib import model
 from mkat_tango.simlib.sim_xmi_parser import (PopulateModelQuantities,
-                                              TangoDeviceServer)
+                                              TangoDeviceServer, main)
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
 
 class Simdd_Parser(object):
 
-    def __init__(self, simdd_json_file='/home/athanaseus/Desktop/SIMDD.json'):
+    def __init__(self, simdd_json_file='/home/athanaseus/Desktop/weather_SIMDD.json'):
         self.simdd_json_file = simdd_json_file
         self.device_attributes = {}
         self.device_commands = {}
@@ -75,3 +75,8 @@ class SIMDD_PopulateModelQuantities(PopulateModelQuantities):
         self.setup_sim_quantities()
 
 
+class TangoDeviceServer(TangoDeviceServer):
+    pass
+
+if __name__ == "__main__":
+    main()
