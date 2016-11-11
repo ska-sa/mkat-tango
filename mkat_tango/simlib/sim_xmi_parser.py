@@ -806,9 +806,9 @@ def get_parser_instance(sim_datafile=None):
         attributes, commands, and properties.
 
     """
-    extension = sim_datafile.split(".")[-1]
+    extension = os.path.splitext(sim_datafile)[-1]
     parser_instance = None
-    if extension in ["xmi"]:
+    if extension in [".xmi"]:
         parser_instance = Xmi_Parser(sim_datafile)
     return parser_instance
 
