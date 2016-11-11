@@ -214,8 +214,8 @@ class SDD_Parser(object):
             cmds_s[cmd_meta['CommandName']] = cmd_meta
         return cmds_s
 
-    # WIP (KM 12-11-2016)  to refactor the above method  
-    def extract_cmd_info(self, cmd_info):
+    # WIP (KM 12-11-2016)  to refactor the above method
+    def extract_cmd_info_rec(self, cmd_info):
         dev_cmds = dict()
         cmd_list = cmd_info.findall('Command')
         for cmd in cmd_list:
@@ -246,8 +246,34 @@ class SDD_Parser(object):
             print dev_cmds
             dev_cmds[cmd_meta['name']] = cmd_meta
         return dev_cmds
-    # WIP (KM 12-11-2016) to make it recursively extract info from deeply nested tags
+
     def extract_monitoring_point_info(self, mp_info):
+        """
+        """
+        dev_mnt_pts = dict()
+        monitoring_points = mp_info.getchildren()
+        for mnt_pt in monitoring_points:
+            dev_mnt_pts_meta = {}
+            for prop in mnt_pt:
+                if prop.tag in ['ValueRange', 'SamplingFrequency']:
+                    dev_mnt_pts_meta[prop.tag] = {}
+                    for inner_prop in prop:
+                        if inner_prop.text == None or inner_prop.text.startswith('.'):
+                            dev_mnt_pts_meta[prop.tag].update({inner_prop.tag: ''})
+                        else:
+                            dev_mnt_pts_meta[prop.tag].update(
+                                {inner_prop.tag: inner_prop.text})
+                elif prop.text == None or prop.text.startswith('.'):
+                    dev_mnt_pts_meta[prop.tag] = ''
+                else:
+                    dev_mnt_pts_meta[prop.tag] = prop.text
+
+            dev_mnt_pts[mnt_pt.attrib['name']] = dev_mnt_pts_meta
+        return dev_mnt_pts
+
+
+    # WIP (KM 12-11-2016) to make it recursively extract info from deeply nested tags
+    def extract_monitoring_point_info_rec(self, mp_info):
         dev_mnt_pts = dict()
         mnt_pt_list = mp_info.findall('MonitoringPoint')
         for mp in mnt_pt_list:
@@ -270,7 +296,7 @@ class SDD_Parser(object):
                                 dev_mnt_pts[mp.tag].update(ele_meta)
                             else:
                                 dev_mnt_pts[mp.tag].update({ele_meta.tag : {}})
-                                ele_meta = self._unpack_parent(ele_meta) 
+                                ele_meta = self._unpack_parent(ele_meta)
             dev_mnt_pts[dev_mnt_pts_meta['name']] = dev_mnt_pts_meta
         return dev_mnt_pts
 
