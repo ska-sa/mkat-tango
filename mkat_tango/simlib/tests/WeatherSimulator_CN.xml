@@ -66,8 +66,8 @@
 				</ValueRange>
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
 			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
@@ -85,16 +85,16 @@
 
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
 			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
 		<MonitoringPoint id = "..." name = "Pressure" mandatory = "TRUE/FALSE">
-			<Description>..........</Description>
+			<Description></Description>
 			<DataType>float</DataType>
 			<Size>0</Size>
-			<RWType>..............................</RWType>
+			<RWType></RWType>
 			<PossibleValues></PossibleValues>
 
 
@@ -106,10 +106,10 @@
 
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
-			<LoggingLevel>.................</LoggingLevel>
+			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
 		<MonitoringPoint id = "..." name = "Rainfall" mandatory = "TRUE/FALSE">
 			<Description>..........</Description>
@@ -133,10 +133,10 @@
 			<LoggingLevel>.................</LoggingLevel>
 		</MonitoringPoint>
 		<MonitoringPoint id = "..." name = "Wind_Speed" mandatory = "TRUE/FALSE">
-			<Description>..........</Description>
+			<Description></Description>
 			<DataType>float</DataType>
 			<Size>0</Size>
-			<RWType>..............................</RWType>
+			<RWType></RWType>
 			<PossibleValues></PossibleValues>
 
 				<ValueRange>
@@ -147,16 +147,16 @@
 
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
-			<LoggingLevel>.................</LoggingLevel>
+			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
 		<MonitoringPoint id = "..." name = "Wind_Direction" mandatory = "TRUE/FALSE">
-			<Description>..........</Description>
+			<Description></Description>
 			<DataType>float</DataType>
 			<Size>0</Size>
-			<RWType>..............................</RWType>
+			<RWType></RWType>
 			<PossibleValues></PossibleValues>
 
 
@@ -167,16 +167,16 @@
 
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
-			<LoggingLevel>.................</LoggingLevel>
+			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
 		<MonitoringPoint id = "..." name = "Relative_Humidity" mandatory = "TRUE/FALSE">
-			<Description>..........</Description>
+			<Description></Description>
 			<DataType>float</DataType>
 			<Size>0</Size>
-			<RWType>..............................</RWType>
+			<RWType></RWType>
 			<PossibleValues></PossibleValues>
 
 
@@ -186,10 +186,10 @@
 				</ValueRange>
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
-			<LoggingLevel>.................</LoggingLevel>
+			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
 	</MonitoringPointsList>
 	<CommandList>
