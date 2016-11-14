@@ -45,6 +45,15 @@
       </argout>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
+    <commands name="Add" description="Add two or more numbers together." execMethod="add" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="Takes an array of at least two numerals.">
+        <type xsi:type="pogoDsl:DoubleType"/>
+      </argin>
+      <argout description="Returns the sum of the values.">
+        <type xsi:type="pogoDsl:DoubleType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </commands>
     <dynamicAttributes name="temperature" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="1000" maxX="" maxY="" allocReadMember="true" isDynamic="true">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="true" libCheckCriteria="false"/>
