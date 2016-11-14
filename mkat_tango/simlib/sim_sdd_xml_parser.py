@@ -33,7 +33,7 @@ class SDD_Parser(object):
             root.find('MonitoringPointsList')))
 
     def extract_command_info(self, cmd_info):
-        """Extracts all the information of the xml element 'CommmandList'
+        """Extracts all the information of the xml element 'CommandList'
 
         Parameters
         ----------
@@ -113,18 +113,18 @@ class SDD_Parser(object):
                 if prop.tag in ['CommandParameters']:
                     cmd_meta_prop = {}
                     for parameter in prop:
-                        cmd_meta_meta_meta = {}
+                        cmd_param_meta = {}
                         for parameter_prop in parameter:
-                            cmd_meta_meta_meta[parameter_prop.tag] = (
+                            cmd_param_meta[parameter_prop.tag] = (
                                 parameter_prop.text)
-                        cmd_meta_prop[cmd_meta_meta_meta['ParameterName']] = (
-                            cmd_meta_meta_meta)
+                        cmd_meta_prop[cmd_param_meta['ParameterName']] = (
+                            cmd_param_meta)
                     cmd_metadata[prop.tag].update(cmd_meta_prop)
                 elif prop.tag in ['ResponseList']:
                     self._extract_response_list_info(cmd_metadata, prop)
                 elif prop.tag in ['AvailableInModes']:
                     for prop_param in prop:
-                        cmd_metadata[prop.tag].update({prop_param.tag:prop_param.text})
+                        cmd_metadata[prop.tag].update({prop_param.tag: prop_param.text})
                 else:
                     cmd_metadata[prop.tag] = prop.text
             cmds[cmd_metadata['CommandName']] = cmd_metadata
