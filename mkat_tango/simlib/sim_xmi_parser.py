@@ -860,7 +860,6 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
     parser_instance = get_parser_instance(datafile)
     model_quants_populater = PopulateModelQuantities(parser_instance, dev_name)
     model = model_quants_populater.sim_model
-    parser_instance = model_quants_populater.parser_instance
     cmd_info = parser_instance.get_reformatted_cmd_metadata()
     PopulateModelActions(cmd_info, dev_name, model)
 
