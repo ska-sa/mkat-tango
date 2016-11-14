@@ -9,16 +9,15 @@ from devicetest import TangoTestContext
 
 from katcore.testutils import cleanup_tempfile
 from katcp.testutils import start_thread_with_cleanup
+
 from mkat_tango.simlib import sim_sdd_xml_parser
 from mkat_tango.simlib import sim_xmi_parser
 from mkat_tango.testutils import ClassCleanupUnittestMixin
 
-import PyTango
-
 LOGGER = logging.getLogger(__name__)
 
 expected_mandatory_monitoring_point_parameters = frozenset([
-    "name", "description", "data_type",
+    "name", "id", "description", "data_type",
     "Size", "writable", "min_value", "max_value",
     "SamplingFrequency", "LoggingLevel"])
 
@@ -28,9 +27,9 @@ expected_mandatory_cmd_parameters = frozenset([
     "cmd_params", "response_list"])
 
 
-# The desired information for the atttribute pressure when the weather_sim xmi file is
-# parsed by the Xmi_Parser.
-expected_pressure_attr_info = {
+# The desired information for the monitoring point pressure when the WeatherSimulator_CN
+# xml file is parsed by the SDD_Parser.
+expected_pressure_mnt_pt_info = {
     'name': 'Pressure',
     'data_type': 'float',
     'description': None,
@@ -45,7 +44,8 @@ expected_pressure_attr_info = {
     },
     'LoggingLevel': None
 }
-# The desired information for the 'On' command when the weather_sim xmi file is parsed
+# The desired information for the 'On' command when the WeatherSimulator_CN xml file is
+# parsed
 expected_on_cmd_info = {
         'cmd_name': 'ON',
         'cmd_description': None,
@@ -79,38 +79,41 @@ class GenericSetup(unittest.TestCase):
         self.xml_parser = sim_sdd_xml_parser.SDD_Parser()
         self.xml_parser.parse(self.xml_file)
 
-class test_XmiParser(GenericSetup):
-    def test_parsed_attributes(self):
-        """Testing that the attribute information parsed matches with the one captured
-        in the XMI file.
+class test_Sdd_Xml_Parser(GenericSetup):
+    def test_parsed_monitoring_points(self):
+        """Testing that the monitoring points' information parsed matches with the one
+        captured in the XML file.
         """
-        actual_parsed_attrs = self.xml_parser.get_reformatted_device_attr_metadata()
-        expected_attr_list = ['Insolation', 'Temperature', 'Pressure', 'Rainfall',
-                              'Relative_Humidity', 'Wind_Direction', 'Wind_Speed']
-        actual_parsed_attr_list = actual_parsed_attrs.keys()
-        self.assertGreater(len(actual_parsed_attr_list), 0,
-            "There is no attribute information parsed")
-        self.assertEquals(set(expected_attr_list), set(actual_parsed_attr_list),
-            'There are missing attributes')
+        actual_parsed_mnt_pts = self.xml_parser.get_reformatted_device_attr_metadata()
+        expected_monitoring_points_list = ['Insolation', 'Temperature', 'Pressure',
+                                           'Rainfall', 'Relative_Humidity',
+                                           'Wind_Direction', 'Wind_Speed']
+        actual_parsed_monitoring_points_list = actual_parsed_mnt_pts.keys()
+        self.assertGreater(len(actual_parsed_monitoring_points_list), 0,
+            "There is no monitoring points information parsed")
+        self.assertEquals(set(expected_monitoring_points_list),
+                          set(actual_parsed_monitoring_points_list),
+                          'There are missing monitoring points')
 
-        # Test if all the parsed attributes have the mandatory properties
-        for attr_name, attribute_metadata in actual_parsed_attrs.items():
-            for param in expected_mandatory_monitoring_point_parameters:
-                self.assertIn(param, attribute_metadata.keys(),
-                    "The parsed attribute '%s' does not the mandotory parameter "
-                    "'%s' " % (attr_name, param))
+        # Test if all the parsed monitoring points have the mandatory properties
+        for mnt_pt_name, mnt_pt_metadata in actual_parsed_mnt_pts.items():
+            for param_name in expected_mandatory_monitoring_point_parameters:
+                self.assertIn(param_name, mnt_pt_metadata.keys(),
+                    "The parsed monitoring point '%s' does not the mandatory parameter "
+                    "'%s' " % (mnt_pt_name, param_name))
 
-        # Using the made up pressure attribute expected results as we haven't generated
-        # the full test data for the other attributes.
-        self.assertIn('Pressure', actual_parsed_attrs.keys(),
-            "The attribute pressure is not in the parsed attribute list")
-        actual_parsed_pressure_attr_info = actual_parsed_attrs['Pressure']
+        # Using the made up pressure monitoring point's expected results as we haven't
+        # generated the full test data for the other attributes.
+        self.assertIn('Pressure', actual_parsed_mnt_pts.keys(),
+                      "The attribute pressure is not in the parsed attribute list")
+        actual_parsed_pressure_mnt_pt_info = actual_parsed_mnt_pts['Pressure']
 
-        # Compare the values of the attribute properties captured in the POGO generated
-        # xmi file and the ones in the parsed attribute data structure.
-        for prop in expected_pressure_attr_info:
-            self.assertEquals(actual_parsed_pressure_attr_info[prop],
-                expected_pressure_attr_info[prop],
+        # Compare the values of the monitoring point's properties captured in the DSL
+        # generated xml file and the ones in the parsed monitoring point's data
+        # structure.
+        for prop in expected_pressure_mnt_pt_info:
+            self.assertEquals(actual_parsed_pressure_mnt_pt_info[prop],
+                expected_pressure_mnt_pt_info[prop],
                 "The expected value for the parameter '%s' does not match "
                 "with the actual value" % (prop))
 

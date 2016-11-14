@@ -12,7 +12,7 @@ SDD_MP_PARAMS_TANGO_MAP = {
     'RWType': 'writable'}
 
 class SDD_Parser(object):
-    """
+    """Parses the SDD xml file generated from DSL.
     """
     def __init__(self):
         self.monitoring_points = {}
@@ -39,20 +39,23 @@ class SDD_Parser(object):
                 'monitoring_pt_name': {
                     'id': '',
                     'name': '',
-                    'mandatory': '',
-                    'description': '',
-                    'data_type': '',
-                    'size': '',
-                    'rwtype': '',
-                    'values': [],
-                    'min_value': '',
-                    'max_value': '',
-                    'sampling_frequecy': {
-                        'default_value': '',
-                        'max_value': '',
+                    'Description': '',
+                    'DataType': '',
+                    'Size': '',
+                    'RWType': '',
+                    'PossibleValues': [],
+                    'ValueRange': {
+                        'MinValue': '',
+                        'MaxValue': '',
+                        },
+                    'SamplingFrequecy': {
+                        'DefaultValue': '',
+                        'MaxValue': '',
                         }
-                    'logging_level' :''
+                    'LoggingLevel' :''
                     }
+            }
+
         """
         self.commands = {}
         """e.g.
@@ -65,7 +68,7 @@ class SDD_Parser(object):
                 <MaxRetry>....</MaxRetry>
                 <TimeForExecution></TimeForExecution>
                 <AvailableInModes>
-                    <Mode>....</Mode>
+                    <Mode>....</Mde>
                     <Mode>....</Mode>
                 </AvailableInModes>
                 <CommandParameters>....</CommandParameters>
@@ -88,26 +91,26 @@ class SDD_Parser(object):
             to this ==>
             {
                 'cmd_name': {
-                    'cmd_id': '',
-                    'cmd_name: '',
-                    'cmd_description: '',
-                    'cmd_type: '',
-                    'time_out': '',
-                    'max_retry': '',
-                    'time_for_exec': '',
-                    'modes': [],
-                    'cmd_params': [],
-                    'response_list': {
-                        'response': {
-                            'resp_id': '',
-                            'resp_name': '',
-                            'resp_type': '',
-                            'resp_description': '',
-                            'resp_params': {
-                                 'param': {
-                                     'param_id': '',
-                                     'param_name': '',
-                                     'param_val': '',
+                    'CommandID': '',
+                    'Command_Name: '',
+                    'CommandDescription: '',
+                    'CommandType: '',
+                    'Timeout': '',
+                    'MaxRetry': '',
+                    'TimeForExecution': '',
+                    'AvailableInModes': {},
+                    'CommandParameters': {},
+                    'ResponseList': {
+                        'response_name': {
+                            'ResponseID': '',
+                            'ResponseName': '',
+                            'ResponseType': '',
+                            'ResponseDescription': '',
+                            'ResponseParameters': {
+                                 'parameter_name': {
+                                     'ParameterID': '',
+                                     'ParameterName': '',
+                                     'ParameterValue': '',
                                      }
                             }
                         }
@@ -117,8 +120,6 @@ class SDD_Parser(object):
         """
 
     def parse(self, sdd_xml_file):
-        """
-        """
         tree = ET.parse(sdd_xml_file)
         root = tree.getroot()
         self.commands.update(self.extract_command_info(root.find(
@@ -127,8 +128,6 @@ class SDD_Parser(object):
             root.find('MonitoringPointsList')))
 
     def extract_command_info(self, cmd_info):
-        """
-        """
         cmds = dict()
         commands = cmd_info.getchildren()
         for command in commands:
@@ -156,8 +155,6 @@ class SDD_Parser(object):
         return cmds
 
     def _extract_response_list_info(self, cmd_meta, prop):
-        """
-        """
         cmd_responses = {}      # To store a list of the cmd_responses
         for response in prop:
             cmd_response_meta = {}      # Stores the response properties
@@ -183,13 +180,12 @@ class SDD_Parser(object):
         cmd_meta[prop.tag].update(cmd_responses)
 
     def extract_monitoring_point_info(self, mp_info):
-        """
-        """
         dev_mnt_pts = dict()
         monitoring_points = mp_info.getchildren()
         for mnt_pt in monitoring_points:
             dev_mnt_pts_meta = {}
             dev_mnt_pts_meta['name'] = mnt_pt.attrib['name']
+            dev_mnt_pts_meta['id'] = mnt_pt.attrib['id']
             for prop in mnt_pt:
                 if prop.tag in ['ValueRange', 'SamplingFrequency']:
                     dev_mnt_pts_meta[prop.tag] = {}
@@ -203,7 +199,38 @@ class SDD_Parser(object):
         return dev_mnt_pts
 
     def get_reformatted_device_attr_metadata(self):
-        """
+        """Converts the monitoring points data structure into a dictionary
+        to make searching easier.
+
+        Returns
+        -------
+        monitoring_pts: dict
+            A dictionary of all the element's monitoring points together with their
+            metadata specified in the DSL generated xml file. The key
+            represents the name of the monitoring point and the value is a dictionary
+            of all the monitoring point's metadata.
+
+            e.g.
+            {
+                'monitoring_pt_name': {
+                    'id': '',
+                    'name': '',
+                    'description': '',
+                    'data_type': '',
+                    'Size': '',
+                    'writable': '',
+                    'PossibleValues': [],
+                    'min_value': '',
+                    'max_value': '',
+                    'SamplingFrequecy': {
+                        'DefaultValue': '',
+                        'MaxValue': '',
+                    },
+                    'LoggingLevel' :''
+                }
+            }
+
+
         """
         monitoring_pts = {}
         for mpt_name, mpt_metadata in self.monitoring_points.items():
@@ -219,5 +246,6 @@ class SDD_Parser(object):
                     monitoring_pts[mpt_name].update(
                         {SDD_MP_PARAMS_TANGO_MAP[metadata_prop_name] : metadata_prop_val})
                 except KeyError:
-                    monitoring_pts[mpt_name].update({metadata_prop_name : metadata_prop_val})
+                    monitoring_pts[mpt_name].update(
+                        {metadata_prop_name : metadata_prop_val})
         return monitoring_pts
