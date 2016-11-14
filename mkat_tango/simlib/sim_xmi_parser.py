@@ -18,7 +18,6 @@ from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 from mkat_tango.simlib import simdd_json_parser
-from mkat_tango.simlib import sim_sdd_xml_parser
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
