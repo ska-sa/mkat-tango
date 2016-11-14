@@ -10,6 +10,7 @@ from devicetest import TangoTestContext
 from katcore.testutils import cleanup_tempfile
 from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.simlib import sim_sdd_xml_parser
+from mkat_tango.simlib import sim_xmi_parser
 from mkat_tango.testutils import ClassCleanupUnittestMixin
 
 import PyTango
@@ -120,7 +121,7 @@ class test_PopModelQuantities(GenericSetup):
         the attributes specified in the XMI file.
         """
         device_name = 'tango/device/instance'
-        pmq = sim_sdd_xml_parser.PopulateModelQuantities(self.xml_parser, device_name)
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.xml_parser, device_name)
 
         self.assertEqual(device_name, pmq.sim_model.name,
                 "The device name and the model name do not match.")
