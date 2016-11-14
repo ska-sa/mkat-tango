@@ -115,7 +115,7 @@
 			<Description>..........</Description>
 			<DataType>float</DataType>
 			<Size>0</Size>
-			<RWType>..............................</RWType>
+			<RWType></RWType>
 			<PossibleValues></PossibleValues>
 
 
@@ -127,10 +127,10 @@
 
 
 			<SamplingFrequency>
-				<DefaultValue>..........</DefaultValue>
-				<MaxValue>..........</MaxValue>
+				<DefaultValue></DefaultValue>
+				<MaxValue></MaxValue>
 			</SamplingFrequency>
-			<LoggingLevel>.................</LoggingLevel>
+			<LoggingLevel></LoggingLevel>
 		</MonitoringPoint>
 		<MonitoringPoint id = "..." name = "Wind_Speed" mandatory = "TRUE/FALSE">
 			<Description></Description>
@@ -194,60 +194,60 @@
 	</MonitoringPointsList>
 	<CommandList>
 		<Command>
-			<CommandID>..........</CommandID>
+			<CommandID></CommandID>
 			<CommandName>ON</CommandName>
-			<CommandDescription>..........</CommandDescription>
-			<CommandType>..................</CommandType>
-			<Timeout>..........</Timeout>
-			<MaxRetry>..........</MaxRetry>
+			<CommandDescription></CommandDescription>
+			<CommandType></CommandType>
+			<Timeout></Timeout>
+			<MaxRetry></MaxRetry>
 			<TimeForExecution></TimeForExecution>
 			<AvailableInModes>
-				<Mode>..........</Mode>
-				<Mode>. . .</Mode>
+				<Mode></Mode>
+				<Mode></Mode>
 			</AvailableInModes>
 			<CommandParameters></CommandParameters>
 
 
 			<ResponseList>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_ON</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>gsm</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_OFF</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_RESET</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
@@ -258,25 +258,25 @@
 
 		</Command>
 		<Command>
-			<CommandID>..........</CommandID>
+			<CommandID></CommandID>
 			<CommandName>OFF</CommandName>
-			<CommandDescription>..........</CommandDescription>
-			<CommandType>..................</CommandType>
-			<Timeout>..........</Timeout>
-			<MaxRetry>..........</MaxRetry>
+			<CommandDescription></CommandDescription>
+			<CommandType></CommandType>
+			<Timeout></Timeout>
+			<MaxRetry></MaxRetry>
 			<TimeForExecution></TimeForExecution>
 			<AvailableInModes>
-				<Mode>..........</Mode>
-				<Mode>. . .</Mode>
+				<Mode></Mode>
+				<Mode></Mode>
 			</AvailableInModes>
 			<CommandParameters>
 			<Parameter>
-				<ParameterID>..........</ParameterID>
+				<ParameterID></ParameterID>
 				<ParameterName>x</ParameterName>
 				<ParameterDataType>int</ParameterDataType>
 			</Parameter>
 			<Parameter>
-				<ParameterID>..........</ParameterID>
+				<ParameterID></ParameterID>
 				<ParameterName>y</ParameterName>
 				<ParameterDataType>int</ParameterDataType>
 			</Parameter>
@@ -285,39 +285,39 @@
 
 			<ResponseList>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_ON</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_OFF</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_RESET</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
@@ -328,55 +328,55 @@
 
 		</Command>
 		<Command>
-			<CommandID>..........</CommandID>
+			<CommandID></CommandID>
 			<CommandName>RESET</CommandName>
-			<CommandDescription>..........</CommandDescription>
-			<CommandType>..................</CommandType>
-			<Timeout>..........</Timeout>
-			<MaxRetry>..........</MaxRetry>
+			<CommandDescription></CommandDescription>
+			<CommandType></CommandType>
+			<Timeout></Timeout>
+			<MaxRetry></MaxRetry>
 			<TimeForExecution></TimeForExecution>
 			<AvailableInModes>
-				<Mode>..........</Mode>
-				<Mode>. . .</Mode>
+				<Mode></Mode>
+				<Mode></Mode>
 			</AvailableInModes>
 			<CommandParameters></CommandParameters>
 
 
 			<ResponseList>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_ON</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_OFF</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>
 					</ResponseParameters>
 				</Response>
 				<Response>
-					<ResponseID>..........</ResponseID>
+					<ResponseID></ResponseID>
 					<ResponseName>RES_RESET</ResponseName>
-					<ResponseType>..........................</ResponseType>
-					<ResponseDescription>..........</ResponseDescription>
+					<ResponseType></ResponseType>
+					<ResponseDescription></ResponseDescription>
 					<ResponseParameters>
 						<Parameter>
-							<ParameterID>...................</ParameterID>
+							<ParameterID></ParameterID>
 							<ParameterName>msg</ParameterName>
 							<ParameterValue></ParameterValue>
 						</Parameter>

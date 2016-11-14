@@ -189,6 +189,7 @@ class SDD_Parser(object):
         monitoring_points = mp_info.getchildren()
         for mnt_pt in monitoring_points:
             dev_mnt_pts_meta = {}
+            dev_mnt_pts_meta['name'] = mnt_pt.attrib['name']
             for prop in mnt_pt:
                 if prop.tag in ['ValueRange', 'SamplingFrequency']:
                     dev_mnt_pts_meta[prop.tag] = {}
@@ -220,17 +221,3 @@ class SDD_Parser(object):
                 except KeyError:
                     monitoring_pts[mpt_name].update({metadata_prop_name : metadata_prop_val})
         return monitoring_pts
-
-
-
-class SDD_PopulateModelQuantities(PopulateModelQuantities):
-    """
-    """
-    def __init__(self, sdd_parser, sim_model_name, sim_model=None):
-        self.xmi_parser = sdd_parser
-        if not sim_model:
-            self.sim_model = model.Model(sim_model_name)
-        else:
-            self.sim_model = sim_model
-
-        self.setup_sim_quantities()
