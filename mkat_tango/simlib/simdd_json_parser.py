@@ -5,16 +5,16 @@ import logging
 
 import json
 
-from mkat_tango.simlib import model
-from mkat_tango.simlib.sim_xmi_parser import (PopulateModelQuantities,
-                                              TangoDeviceServer, main)
+from PyTango import DevState, DevDouble, DevString, DevBoolean
+from PyTango._PyTango import CmdArgType
+from mkat_tango.simlib import sim_xmi_parser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
 
 class Simdd_Parser(object):
 
-    def __init__(self, simdd_json_file='/home/athanaseus/Desktop/weather_SIMDD.json'):
+    def __init__(self, simdd_json_file):
         self.simdd_json_file = simdd_json_file
         self.device_attributes = {}
         self.device_commands = {}
@@ -49,8 +49,9 @@ class Simdd_Parser(object):
                 return [(k, v) for k, v in self.get_reformated_data(
                             value).items()]
             else:
-                return [(str(key), str(value))]
-        items = [map(str, item) for k, v in sim_device_info.items()
+                return [(str(key), eval(str(getattr(CmdArgType, "Dev%s" % value)))
+                        if str(key) in ['data_type'] else str(value))]
+        items = [item for k, v in sim_device_info.items()
                  for item in expand(k, v)]
         return dict(items)
 
@@ -63,20 +64,5 @@ class Simdd_Parser(object):
     def get_reformatted_properties_metadata(self):
         return self.device_properties
 
-
-class SIMDD_PopulateModelQuantities(PopulateModelQuantities):
-
-    def __init__(self, simdd_parser, sim_model_name, sim_model=None):
-        self.xmi_parser = simdd_parser
-        if not sim_model:
-            self.sim_model = model.Model(sim_model_name)
-        else:
-            self.sim_model = sim_model
-        self.setup_sim_quantities()
-
-
-class TangoDeviceServer(TangoDeviceServer):
-    pass
-
 if __name__ == "__main__":
-    main()
+    sim_xmi_parser.main()
