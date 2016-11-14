@@ -2,6 +2,7 @@ import logging
 import time
 import numpy
 import weakref
+from functools import partial
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -18,6 +19,8 @@ class Model(object):
         self.start_time = start_time or time_func()
         self.last_update_time = self.start_time
         self.sim_quantities = {}
+        self.sim_actions = {}
+        self.sim_actions_meta = {}
         self._sim_state = {}
         self.setup_sim_quantities()
         self.paused = False  # Flag to pause updates
@@ -59,3 +62,18 @@ class Model(object):
                 self._sim_state[var] = (quant.next_val(sim_time), sim_time)
         except Exception:
             MODULE_LOGGER.exception('Exception in update loop')
+
+    def setup_sim_actions(self, name, handler):
+        """Add an action handler function
+        Parameters
+        ----------
+        name : str
+            Name of the action
+        handler : callable(model_instance, action_args)
+            Callable that handles action (name). Is called with the model instance
+            as the first parameter.
+        """
+        # Perhaps you need to check that the names are valid, or you need to escape
+        # stuff to underscores or something, since we need to generate python function
+        # names.
+        self.sim_actions[name] = partial(handler, self)

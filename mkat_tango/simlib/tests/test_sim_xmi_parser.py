@@ -16,6 +16,13 @@ import PyTango
 
 LOGGER = logging.getLogger(__name__)
 
+TANGO_CMD_PARAMS_NAME_MAP = {
+        'name': 'cmd_name',
+        'doc_in': 'in_type_desc',
+        'dtype_in': 'in_type',
+        'doc_out': 'out_type_desc',
+        'dtype_out': 'out_type'}
+
 # These expected values are not yet complete, see comment in sim_xmi_parser.py
 # about currently unhandled attribute and command parameters.
 # Must be updated when they are implemented.
@@ -29,12 +36,15 @@ expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
     "data_type", "writable", "name", "description", "delta_val",
     "max_alarm", "max_value", "min_value", "standard_unit", "min_alarm",
-    "max_warning", "unit", "display_unit","format", "delta_t", "label",
+    "max_warning", "unit", "display_unit", "format", "delta_t", "label",
     "min_warning"])
 
+#expected_mandatory_cmd_parameters = frozenset([
+#   "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
+#  "description", "displayLevel", "polledPeriod", "execMethod"])
+
 expected_mandatory_cmd_parameters = frozenset([
-    "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
-    "description", "displayLevel", "polledPeriod", "execMethod"])
+    "name", "doc_in", "dtype_in", "doc_out", "dtype_out"])
 
 expected_mandatory_device_property_parameters = frozenset([
     "type", "mandatory", "description", "name"])
@@ -101,15 +111,10 @@ expected_pressure_attr_info = {
 # The desired information for the 'On' command when the weather_sim xmi file is parsed
 expected_on_cmd_info = {
         'name': 'On',
-        'description': 'Turn On Device',
-        'execMethod': 'on',
-        'displayLevel': 'OPERATOR',
-        'polledPeriod': '0',
-        'isDynamic': 'false',
-        'arginDescription': '',
-        'arginType': PyTango.CmdArgType.DevVoid,
-        'argoutDescription': 'ok | Device ON',
-        'argoutType': PyTango.CmdArgType.DevString}
+        'doc_in': '',
+        'dtype_in': PyTango.CmdArgType.DevVoid,
+        'doc_out': 'ok | Device ON',
+        'dtype_out': PyTango.CmdArgType.DevString}
 
 # The expected information that would be obtained for the device property when the
 # weather_sim xmi file is parsed by the Xmi_Parser.
@@ -131,12 +136,16 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'
+        with mock.patch(sim_xmi_parser.__name__+'.get_data_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
-            cls.properties = dict(sim_xmi_description_file=cls.xmi_file)
-            cls.TangoDeviceServer = sim_xmi_parser.TangoDeviceServer
-            cls.tango_context = TangoTestContext(cls.TangoDeviceServer, db=cls.tango_db,
+            cls.properties = dict(sim_data_description_file=cls.xmi_file)
+            cls.device_name = 'test/nodb/tangodeviceserver'
+            model = sim_xmi_parser.configure_device_model(cls.xmi_file, cls.device_name)
+            cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
+            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
+                                                 device_name=cls.device_name,
+                                                 db=cls.tango_db,
                                                  properties=cls.properties)
             start_thread_with_cleanup(cls, cls.tango_context)
 
@@ -261,6 +270,31 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
             if attr_prop_value:
                 return attr_prop_value
 
+    def test_command_list(self):
+        """
+        """
+        actual_device_commands = set(self.device.get_command_list()) - {'Init'}
+        expected_command_list = set(self.xmi_parser.get_reformatted_cmd_metadata().keys())
+        self.assertEquals(actual_device_commands, expected_command_list,
+            "The commands specified in the xmi file are not present in the device")
+
+    def test_command_properties(self):
+        command_data = self.xmi_parser.get_reformatted_cmd_metadata()
+
+        for cmd_name, cmd_metadata in command_data.items():
+            cmd_config_info = self.device.get_command_config(cmd_name)
+            for cmd_prop, cmd_prop_value in cmd_metadata.items():
+                self.assertTrue(
+                    hasattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    "The cmd parameter '%s' for the cmd '%s' was not translated" %
+                    (cmd_prop, cmd_name))
+                if cmd_prop_value == 'none' or cmd_prop_value == '':
+                    cmd_prop_value = 'Uninitialised'
+                self.assertEqual(
+                    getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    cmd_prop_value, "The cmd parameter '%s/%s' values do not match" %
+                    (cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
+
 class GenericSetup(unittest.TestCase):
     longMessage = True
 
@@ -311,7 +345,7 @@ class test_XmiParser(GenericSetup):
         with the one captured in the XMI file generated using POGO.
         """
         actual_parsed_cmds = self.xmi_parser.get_reformatted_cmd_metadata()
-        expected_cmd_list = ['On', 'Off'] + default_pogo_commands
+        expected_cmd_list = ['On', 'Off', 'Add'] + default_pogo_commands
         actual_parsed_cmd_list = actual_parsed_cmds.keys()
         self.assertGreater(len(actual_parsed_cmd_list), len(default_pogo_commands),
                 "There are missing commands in the parsed list")
@@ -370,7 +404,7 @@ class test_XmiParser(GenericSetup):
 
 class test_PopModelQuantities(GenericSetup):
 
-    def test_model_populator(self):
+    def test_model_quantites_populator(self):
         """Testing that the model quantities that are added to the model match with
         the attributes specified in the XMI file.
         """
@@ -379,9 +413,9 @@ class test_PopModelQuantities(GenericSetup):
         # PopulateModelQuantities is created with any object other than a Model
         # class instance.
         with self.assertRaises(sim_xmi_parser.SimModelException):
-            sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
+            sim_xmi_parser.PopulateModelQuantities(self.xmi_parser, device_name,
                     sim_model='some_model')
-        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name)
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_parser, device_name)
 
         self.assertEqual(device_name, pmq.sim_model.name,
                 "The device name and the model name do not match.")
@@ -391,3 +425,22 @@ class test_PopModelQuantities(GenericSetup):
         actual_quantities_list = pmq.sim_model.sim_quantities.keys()
         self.assertEqual(set(expected_quantities_list), set(actual_quantities_list),
                 "The are quantities missing in the model")
+
+class test_PopModelActions(GenericSetup):
+    def test_model_actions_populator(self):
+        """
+        """
+        device_name = 'tango/device/instance'
+        cmd_info = self.xmi_parser.get_reformatted_cmd_metadata()
+
+        sim_model  = sim_xmi_parser.PopulateModelActions(cmd_info, device_name).sim_model
+        self.assertEqual(len(sim_model.sim_quantities), 0,
+                         "The model has some unexpected quantities")
+
+        for cmd_name in cmd_info.keys():
+            # Exclude the State and Status command (cmd_handlers for them are created
+            # automatically by TANGO
+            if cmd_name not in ['State', 'Status']:
+                self.assertTrue(sim_model.sim_actions.has_key(cmd_name),
+                                "The an action handler for the cmd '%s' was not created" %
+                                (cmd_name))
