@@ -13,82 +13,68 @@ SDD_MP_PARAMS_TANGO_MAP = {
 
 class SDD_Parser(object):
     """Parses the SDD xml file generated from DSL.
+
+    Attributes
+    ----------
+    monitoring_points: dict
+
+    commands: dict
     """
     def __init__(self):
         self.monitoring_points = {}
-        """e.g.
-            <MonitoringPoint id="" name="Temperature" mandatory="TRUE/FALSE">
-                <Description>....</Description>
-                <DataType>float</DataType>
-                <Size>0</Size>
-                <RWType>....</RWType>
-                <PossibleValues></PossibleValues>
-                <ValueRange>
-                    <MinValue>-10</MinValue>
-                    <MaxValue>55</MaxValue>
-                </ValueRange>
-                <SamplingFrequency>
-                    <DefaultValue>....</DefaultValue>
-                    <MaxValue>....</MaxValue>
-                </SamplingFrequency>
-                <LoggingLevel>....</LoggingLevel>
-            </MonitoringPoint>
-
-            to this ==>
-            {
-                'monitoring_pt_name': {
-                    'id': '',
-                    'name': '',
-                    'Description': '',
-                    'DataType': '',
-                    'Size': '',
-                    'RWType': '',
-                    'PossibleValues': [],
-                    'ValueRange': {
-                        'MinValue': '',
-                        'MaxValue': '',
-                        },
-                    'SamplingFrequecy': {
-                        'DefaultValue': '',
-                        'MaxValue': '',
-                        }
-                    'LoggingLevel' :''
-                    }
-            }
-
-        """
         self.commands = {}
-        """e.g.
-            <Command>
-                <CommandID>....</CommandID>
-                <CommandName>ON</CommandName>
-                <CommandDescription>....</CommandDescription>
-                <CommandType>....</CommandType>
-                <Timeout>....</Timeout>
-                <MaxRetry>....</MaxRetry>
-                <TimeForExecution></TimeForExecution>
-                <AvailableInModes>
-                    <Mode>....</Mde>
-                    <Mode>....</Mode>
-                </AvailableInModes>
-                <CommandParameters>....</CommandParameters>
-                <ResponseList>
-                    <Response>
-                        <ResponseID>....</ResponseID>
-                        <ResponseName>RES_ON</ResponseName>
-                        <ResponseType>....</ResponseType>
-                        <ResponseParameters>
-                            <Parameter>
-                                <ParameterID>....</ParameterID>
-                                <ParameterName>msg</ParameterName>
-                                <ParameterValue></ParameterValue>
-                            </Parameter>
-                        </ResponseParameters>
-                    </Response>
-                </ResponseList>
-            </Command>
 
-            to this ==>
+    def parse(self, sdd_xml_file):
+        tree = ET.parse(sdd_xml_file)
+        root = tree.getroot()
+        self.commands.update(self.extract_command_info(root.find(
+            'CommandList')))
+        self.monitoring_points.update(self.extract_monitoring_point_info(
+            root.find('MonitoringPointsList')))
+
+    def extract_command_info(self, cmd_info):
+        """Extracts all the information of the xml element 'CommmandList'
+
+        Parameters
+        ----------
+        cmd_info: xml.etree.ElementTree.Element
+        e.g.
+            <CommandList>
+                <Command>
+                    <CommandID></CommandID>
+                    <CommandName>ON</CommandName>
+                    <CommandDescription></CommandDescription>
+                    <CommandType></CommandType>
+                    <Timeout></Timeout>
+                    <MaxRetry></MaxRetry>
+                    <TimeForExecution></TimeForExecution>
+                    <AvailableInModes>
+                        <Mode></Mde>
+                        <Mode></Mode>
+                    </AvailableInModes>
+                    <CommandParameters></CommandParameters>
+                    <ResponseList>
+                        <Response>
+                            <ResponseID></ResponseID>
+                            <ResponseName>RES_ON</ResponseName>
+                            <ResponseType></ResponseType>
+                            <ResponseParameters>
+                                <Parameter>
+                                    <ParameterID></ParameterID>
+                                    <ParameterName>msg</ParameterName>
+                                    <ParameterValue></ParameterValue>
+                                </Parameter>
+                            </ResponseParameters>
+                        </Response>
+                    </ResponseList>
+                </Command>
+            </CommandList>
+
+        Returns
+        -------
+        cmds: dict
+            A dictionary of all the monitoring points and their metadata.
+            e.g.
             {
                 'cmd_name': {
                     'CommandID': '',
@@ -117,27 +103,6 @@ class SDD_Parser(object):
                     }
                 }
             }
-        """
-
-    def parse(self, sdd_xml_file):
-        tree = ET.parse(sdd_xml_file)
-        root = tree.getroot()
-        self.commands.update(self.extract_command_info(root.find(
-            'CommandList')))
-        self.monitoring_points.update(self.extract_monitoring_point_info(
-            root.find('MonitoringPointsList')))
-
-    def extract_command_info(self, cmd_info):
-        """Extracts all the information of the xml element 'CommmandList'
-
-        Parameters
-        ----------
-        cmd_info: xml.etree.ElementTree.Element
-
-        Returns
-        -------
-        cmds: dict
-            A dictionary of all the monitoring points and their metadata.
         """
         cmds = dict()
         commands = cmd_info.getchildren()
@@ -196,11 +161,51 @@ class SDD_Parser(object):
         Parameters
         ----------
         mp_info: xml.etree.ElementTree.Element
+            e.g.
+            <MonitoringPointsList>
+                <MonitoringPoint id="" name="Temperature" mandatory="TRUE/FALSE">
+                    <Description></Description>
+                    <DataType>float</DataType>
+                    <Size>0</Size>
+                    <RWType></RWType>
+                    <PossibleValues></PossibleValues>
+                    <ValueRange>
+                        <MinValue>-10</MinValue>
+                        <MaxValue>55</MaxValue>
+                    </ValueRange>
+                    <SamplingFrequency>
+                        <DefaultValue></DefaultValue>
+                        <MaxValue></MaxValue>
+                    </SamplingFrequency>
+                    <LoggingLevel></LoggingLevel>
+                </MonitoringPoint>
+            </MonitoringPointsList>
 
         Returns
         -------
         dev_mnt_pts: dict
             A dictionary of all the element's commands and their metadata.
+            e.g.
+            {
+                'monitoring_pt_name': {
+                    'id': '',
+                    'name': '',
+                    'Description': '',
+                    'DataType': '',
+                    'Size': '',
+                    'RWType': '',
+                    'PossibleValues': [],
+                    'ValueRange': {
+                        'MinValue': '',
+                        'MaxValue': '',
+                        },
+                    'SamplingFrequecy': {
+                        'DefaultValue': '',
+                        'MaxValue': '',
+                        }
+                    'LoggingLevel' :''
+                    }
+            }
         """
         dev_mnt_pts = dict()
         monitoring_points = mp_info.getchildren()
@@ -271,3 +276,11 @@ class SDD_Parser(object):
                     monitoring_pts[mpt_name].update(
                         {metadata_prop_name : metadata_prop_val})
         return monitoring_pts
+
+
+if __name__ == "__main__":
+    # Populates the simlib model using the SDD xml file.
+    sdd_parser = SDD_Parser()
+    sdd_parser.parse("/home/kmadisa/Documents/github/mkat-tango/sandbox/DSL/"
+                 "WeatherSimulator_CN.xml")
+    pmq = PopulateModelQuantities(sdd_parser, 'test_model')
