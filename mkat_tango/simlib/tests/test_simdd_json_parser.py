@@ -22,8 +22,8 @@ MODULE_LOGGER = logging.getLogger(__name__)
 expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
     "data_type", "writable", "name", "description", "delta_val",
-    "max_alarm", "max_value", "min_value",
-    "min_alarm", "unit", "delta_t", "label", ])
+    "max_alarm", "max_value", "min_value", "max_warning", "min_warning",
+    "min_alarm", "unit", "delta_t", "label", "format"])
 
 # Mandotary parameters required to create a well configure Tango command.
 expected_mandatory_cmd_parameters = frozenset([
@@ -39,6 +39,7 @@ expected_temperature_attr_info = {
         'archive_rel_change': '10',
         'data_format': '',
         'data_type': PyTango._PyTango.CmdArgType.DevDouble,
+        'format': '6.2f',
         'delta_t': '1000',
         'delta_val': '0.5',
         'description': 'Current temperature outside near the telescope.',
@@ -55,6 +56,8 @@ expected_temperature_attr_info = {
         'min_alarm': '-9',
         'min_bound': '-10',
         'min_value': '-10',
+        "min_warning": "-8",
+        "max_warning": "49",
         'name': 'temperature',
         'period': '1000',
         'rel_change': '10',
