@@ -202,7 +202,7 @@
         },
         {
             "basicAttributeData": {
-                "name": "relative-humidity",
+                "name": "relative_humidity",
                 "unit": "percent",
                 "label": "Air humidity",
                 "description": "Relative humidity in central telescope area.",
@@ -252,7 +252,7 @@
         },
         {
             "basicAttributeData": {
-                "name": "wind-speed",
+                "name": "wind_speed",
                 "unit": "m/s",
                 "label": "Wind speed",
                 "description": "Wind speed in central telescope area.",
@@ -302,7 +302,7 @@
         },
         {
             "basicAttributeData": {
-                "name": "wind-direction",
+                "name": "wind_direction",
                 "unit": "Degrees",
                 "label": "Wind direction",
                 "description": "Wind direction in central telescope area.",
@@ -352,7 +352,7 @@
         },
         {
             "basicAttributeData": {
-                "name": "input-comms-ok'",
+                "name": "input_comms_ok",
                 "unit": "",
                 "label": "Input communication OK",
                 "description": "Communications with all weather sensors are nominal.",
