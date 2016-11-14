@@ -128,12 +128,23 @@ class SDD_Parser(object):
             root.find('MonitoringPointsList')))
 
     def extract_command_info(self, cmd_info):
+        """Extracts all the information of the xml element 'CommmandList'
+
+        Parameters
+        ----------
+        cmd_info: xml.etree.ElementTree.Element
+
+        Returns
+        -------
+        cmds: dict
+            A dictionary of all the monitoring points and their metadata.
+        """
         cmds = dict()
         commands = cmd_info.getchildren()
         for command in commands:
-            cmd_meta = dict()
+            cmd_metadata = dict()
             for prop in command:
-                cmd_meta[prop.tag] = {}
+                cmd_metadata[prop.tag] = {}
                 if prop.tag in ['CommandParameters']:
                     cmd_meta_prop = {}
                     for parameter in prop:
@@ -143,15 +154,15 @@ class SDD_Parser(object):
                                 parameter_prop.text)
                         cmd_meta_prop[cmd_meta_meta_meta['ParameterName']] = (
                             cmd_meta_meta_meta)
-                    cmd_meta[prop.tag].update(cmd_meta_prop)
+                    cmd_metadata[prop.tag].update(cmd_meta_prop)
                 elif prop.tag in ['ResponseList']:
-                    self._extract_response_list_info(cmd_meta, prop)
+                    self._extract_response_list_info(cmd_metadata, prop)
                 elif prop.tag in ['AvailableInModes']:
-                    for inner_prop in prop:
-                        cmd_meta[prop.tag].update({inner_prop.tag:inner_prop.text})
+                    for prop_param in prop:
+                        cmd_metadata[prop.tag].update({prop_param.tag:prop_param.text})
                 else:
-                    cmd_meta[prop.tag] = prop.text
-            cmds[cmd_meta['CommandName']] = cmd_meta
+                    cmd_metadata[prop.tag] = prop.text
+            cmds[cmd_metadata['CommandName']] = cmd_metadata
         return cmds
 
     def _extract_response_list_info(self, cmd_meta, prop):
@@ -163,7 +174,7 @@ class SDD_Parser(object):
                     response_params = {}   # Stores the response paramaters
                     cmd_response_meta[resp_prop.tag] = {}
                     for parameter in resp_prop:
-                        # Stores the properties of the paramter
+                        # Stores the properties of the parameter
                         resp_params_prop = {}
                         for parameter_prop in parameter:
                             resp_params_prop[parameter_prop.tag] =(
@@ -180,6 +191,17 @@ class SDD_Parser(object):
         cmd_meta[prop.tag].update(cmd_responses)
 
     def extract_monitoring_point_info(self, mp_info):
+        """Extracts all the information of the xml element 'MonitoringPointsList'
+
+        Parameters
+        ----------
+        mp_info: xml.etree.ElementTree.Element
+
+        Returns
+        -------
+        dev_mnt_pts: dict
+            A dictionary of all the element's commands and their metadata.
+        """
         dev_mnt_pts = dict()
         monitoring_points = mp_info.getchildren()
         for mnt_pt in monitoring_points:
