@@ -8,6 +8,7 @@
                 "description": "Current temperature outside near the telescope.",
                 "data_type": "Double",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
                 "data_shape": {
@@ -18,7 +19,9 @@
                     "min_value": "-10",
                     "max_value": "51",
                     "min_alarm": "-9",
-                    "max_alarm": "50"
+                    "max_alarm": "50",
+                    "min_warning": "-8",
+                    "max_warning": "49
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -58,6 +61,7 @@
                 "description": "Sun intensity in central telescope area.",
                 "data_type": "Double",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
                 "data_shape": {
@@ -68,7 +72,9 @@
                     "min_value": "0",
                     "max_value": "1200",
                     "min_alarm": "",
-                    "max_alarm": "1100"
+                    "max_alarm": "1100",
+                    "min_warning": "",
+                    "max_warning": "1000
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -108,8 +114,9 @@
                 "description": "Barometric pressure in central telescope area.",
                 "data_type": "Double",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "1000",
-                "delta_val": "0.5",
+                "delta_val": "5",
                 "data_shape": {
                     "max_dim_x": "1",
                     "max_dim_y": "0"
@@ -118,7 +125,9 @@
                     "min_value": "500",
                     "max_value": "1100",
                     "min_alarm": "",
-                    "max_alarm": "1000"
+                    "max_alarm": "1000",
+                    "min_warning": "",
+                    "max_warning": "900
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -158,6 +167,7 @@
                 "description": "Rainfall in central telescope area.",
                 "data_type": "Double",
                 "data_format": "Scalar",
+                "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
                 "data_shape": {
@@ -168,7 +178,9 @@
                     "min_value": "0",
                     "max_value": "3.2",
                     "min_alarm": "",
-                    "max_alarm": "3.1"
+                    "max_alarm": "3.1",
+                    "min_warning": "",
+                    "max_warning": "3.0"
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -208,6 +220,7 @@
                 "description": "Relative humidity in central telescope area.",
                 "data_type": "Double",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
                 "data_shape": {
@@ -218,7 +231,9 @@
                     "min_value": "0",
                     "max_value": "100",
                     "min_alarm": "0",
-                    "max_alarm": "99"
+                    "max_alarm": "99",
+                    "min_warning": "0",
+                    "max_warning": "98
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -258,6 +273,7 @@
                 "description": "Wind speed in central telescope area.",
                 "data_type": "Double",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
                 "data_shape": {
@@ -268,7 +284,9 @@
                     "min_value": "0",
                     "max_value": "30",
                     "min_alarm": "",
-                    "max_alarm": "25"
+                    "max_alarm": "25",
+                    "min_warning": "",
+                    "max_warning": "20"
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -308,6 +326,7 @@
                 "description": "Wind direction in central telescope area.",
                 "data_type": "Double",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
                 "data_shape": {
@@ -318,7 +337,9 @@
                     "min_value": "0",
                     "max_value": "360",
                     "min_alarm": "",
-                    "max_alarm": ""
+                    "max_alarm": "",
+                    "min_warning": "",
+                    "max_warning": ""
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -358,6 +379,7 @@
                 "description": "Communications with all weather sensors are nominal.",
                 "data_type": "Boolean",
                 "data_format": "",
+                "format": "6.2f",
                 "delta_t": "",
                 "delta_val": "",
                 "data_shape": {
@@ -368,7 +390,9 @@
                     "min_value": "",
                     "max_value": "",
                     "min_alarm": "",
-                    "max_alarm": ""
+                    "max_alarm": "",
+                    "min_warning": "",
+                    "max_warning": ""
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
