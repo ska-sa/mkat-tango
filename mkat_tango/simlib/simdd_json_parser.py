@@ -7,8 +7,7 @@ import json
 
 from PyTango import DevState, DevDouble, DevString, DevBoolean
 from PyTango._PyTango import CmdArgType
-#from mkat_tango.simlib import sim_xmi_parser
-import sim_xmi_parser
+from mkat_tango.simlib import sim_xmi_parser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 

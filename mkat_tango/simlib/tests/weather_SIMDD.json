@@ -21,7 +21,7 @@
                     "min_alarm": "-9",
                     "max_alarm": "50",
                     "min_warning": "-8",
-                    "max_warning": "49
+                    "max_warning": "49"
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -74,7 +74,7 @@
                     "min_alarm": "",
                     "max_alarm": "1100",
                     "min_warning": "",
-                    "max_warning": "1000
+                    "max_warning": "1000"
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -127,7 +127,7 @@
                     "min_alarm": "",
                     "max_alarm": "1000",
                     "min_warning": "",
-                    "max_warning": "900
+                    "max_warning": "900"
                 },
                 "attributeInterlocks": {
                     "writable": "READ"
@@ -233,7 +233,7 @@
                     "min_alarm": "0",
                     "max_alarm": "99",
                     "min_warning": "0",
-                    "max_warning": "98
+                    "max_warning": "98"
                 },
                 "attributeInterlocks": {
                     "writable": "READ"

@@ -19,7 +19,6 @@ from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 from mkat_tango.simlib import simdd_json_parser
 
-
 MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
