@@ -7,6 +7,7 @@ import json
 
 from PyTango import DevState, DevDouble, DevString, DevBoolean
 from PyTango._PyTango import CmdArgType
+#from mkat_tango.simlib import sim_xmi_parser
 import sim_xmi_parser
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -252,50 +253,52 @@ class Simdd_Parser(object):
             A more formatted and easy to read dictionary
         e.g.
 
-        {'abs_change': '0.5',
-        'archive_abs_change': '0.5',
-        'archive_period': '1000',
-        'archive_rel_change': '10',
-        'data_format': '',
-        'data_type': PyTango._PyTango.CmdArgType.DevDouble,
-        'delta_t': '1000',
-        'delta_val': '0.5',
-        'description': 'Current temperature outside near the telescope.',
-        'display_level': 'OPERATOR',
-        'event_period': '1000',
-        'label': 'Outside Temperature',
-        'max_alarm': '50',
-        'max_bound': '50',
-        'max_dim_x': '1',
-        'max_dim_y': '0',
-        'max_slew_rate': '1',
-        'max_value': '51',
-        'mean': '25',
-        'min_alarm': '-9',
-        'min_bound': '-10',
-        'min_value': '-10',
-        'name': 'temperature',
-        'period': '1000',
-        'rel_change': '10',
-        'unit': 'Degrees Centrigrade',
-        'update_period': '1',
-        'writable': 'READ'
+        {
+            'abs_change': '0.5',
+            'archive_abs_change': '0.5',
+            'archive_period': '1000',
+            'archive_rel_change': '10',
+            'data_format': '',
+            'data_type': PyTango._PyTango.CmdArgType.DevDouble,
+            'delta_t': '1000',
+            'delta_val': '0.5',
+            'description': 'Current temperature outside near the telescope.',
+            'display_level': 'OPERATOR',
+            'event_period': '1000',
+            'label': 'Outside Temperature',
+            'max_alarm': '50',
+            'max_bound': '50',
+            'max_dim_x': '1',
+            'max_dim_y': '0',
+            'max_slew_rate': '1',
+            'max_value': '51',
+            'mean': '25',
+            'min_alarm': '-9',
+            'min_bound': '-10',
+            'min_value': '-10',
+            'name': 'temperature',
+            'period': '1000',
+            'rel_change': '10',
+            'unit': 'Degrees Centrigrade',
+            'update_period': '1',
+            'writable': 'READ'
         }
         """
         def expand(key, value):
             """Method to expand values of a value if it is an instance of dict"""
             if isinstance(value, dict):
                 # Recursively call get_reformated_data if value is still a dict
-                return [(k, v) for k, v in self.get_reformated_data(
-                            value).items()]
+                return [(param_name, param_val)
+                        for param_name, param_val in self.get_reformated_data(
+                        value).items()]
             else:
                 # Since the data type specified in the SIMDD is a string format
                 # e.g. Double, it is require in Tango device as a CmdArgType
                 # i.e. PyTango._PyTango.CmdArgType.DevDouble
                 return [(str(key), eval(str(getattr(CmdArgType, "Dev%s" % value)))
                         if str(key) in ['data_type'] else str(value))]
-        items = [item for k, v in sim_device_info.items()
-                 for item in expand(k, v)]
+        items = [item for param_name, param_val in sim_device_info.items()
+                 for item in expand(param_name, param_val)]
         return dict(items)  # Format the output item list of tuples as a dictionary
 
     def get_reformatted_device_attr_metadata(self):
