@@ -379,7 +379,7 @@
                 "description": "Communications with all weather sensors are nominal.",
                 "data_type": "Boolean",
                 "data_format": "",
-                "format": "6.2f",
+                "format": "",
                 "delta_t": "",
                 "delta_val": "",
                 "data_shape": {
