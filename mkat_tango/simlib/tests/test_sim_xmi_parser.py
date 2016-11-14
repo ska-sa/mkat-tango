@@ -36,12 +36,12 @@ expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
     "data_type", "writable", "name", "description", "delta_val",
     "max_alarm", "max_value", "min_value", "standard_unit", "min_alarm",
-    "max_warning", "unit", "display_unit","format", "delta_t", "label",
+    "max_warning", "unit", "display_unit", "format", "delta_t", "label",
     "min_warning"])
 
 #expected_mandatory_cmd_parameters = frozenset([
- #   "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
-  #  "description", "displayLevel", "polledPeriod", "execMethod"])
+#   "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
+#  "description", "displayLevel", "polledPeriod", "execMethod"])
 
 expected_mandatory_cmd_parameters = frozenset([
     "name", "doc_in", "dtype_in", "doc_out", "dtype_out"])
@@ -136,10 +136,10 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'
+        with mock.patch(sim_xmi_parser.__name__+'.get_data_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
-            cls.properties = dict(sim_xmi_description_file=cls.xmi_file)
+            cls.properties = dict(sim_data_description_file=cls.xmi_file)
             cls.device_name = 'test/nodb/tangodeviceserver'
             model = sim_xmi_parser.configure_device_model(cls.xmi_file, cls.device_name)
             cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
@@ -279,7 +279,6 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
             "The commands specified in the xmi file are not present in the device")
 
     def test_command_properties(self):
-        command_list = self.device.get_command_list()
         command_data = self.xmi_parser.get_reformatted_cmd_metadata()
 
         for cmd_name, cmd_metadata in command_data.items():
@@ -414,9 +413,9 @@ class test_PopModelQuantities(GenericSetup):
         # PopulateModelQuantities is created with any object other than a Model
         # class instance.
         with self.assertRaises(sim_xmi_parser.SimModelException):
-            sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
+            sim_xmi_parser.PopulateModelQuantities(self.xmi_parser, device_name,
                     sim_model='some_model')
-        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name)
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_parser, device_name)
 
         self.assertEqual(device_name, pmq.sim_model.name,
                 "The device name and the model name do not match.")
