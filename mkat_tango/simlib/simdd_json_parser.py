@@ -16,7 +16,7 @@ class Simdd_Parser(object):
     def __init__(self, simdd_json_file):
         # Simulator decription datafile in json format
         self.simdd_json_file = simdd_json_file
-        self.device_attributes = {}
+        self._device_attributes = {}
         """The Data structure format is a dict containing attribute info in a dict
 
         e.g.
@@ -52,7 +52,7 @@ class Simdd_Parser(object):
         }
 
         """
-        self.device_commands = {}
+        self._device_commands = {}
         """
         The Data structure format is a dict containing command info in a dict
 
@@ -69,7 +69,7 @@ class Simdd_Parser(object):
         }
 
         """
-        self.device_properties = {}
+        self._device_properties = {}
         """
         Data structure format is a list containing device property info in a dict
 
@@ -85,14 +85,14 @@ class Simdd_Parser(object):
 
     def parse_simdd_json_file(self):
         """
-        Read simulator description data from json file into `self.device_properties`
+        Read simulator description data from json file into `self._device_properties`
 
         Stores all the simulator description data from the json file into
         appropriate attribute, command and device property data structures.
         Loops through the json object elements and updates description
-        information of dynamic/attributes into `self.device_attributes`,
-        commands into `self.device_commands`, and device_properties into
-        `self.device_properties`.
+        information of dynamic/attributes into `self._device_attributes`,
+        commands into `self._device_commands`, and device_properties into
+        `self._device_properties`.
 
         Notes
         =====
@@ -105,13 +105,13 @@ class Simdd_Parser(object):
         for data_component, elements in device_data.items():
             if data_component in ['dynamicAttributes']:
                 attribute_info = self.get_device_data_components_dict(elements)
-                self.device_attributes.update(attribute_info)
+                self._device_attributes.update(attribute_info)
             elif data_component in ['commands']:
                 command_info = self.get_device_data_components_dict(elements)
-                self.device_commands.update(command_info)
+                self._device_commands.update(command_info)
             elif data_component in ['deviceProperties']:
                 device_prop_info = self.get_device_data_components_dict(elements)
-                self.device_properties.update(device_prop_info)
+                self._device_properties.update(device_prop_info)
 
     def get_device_data_components_dict(self, elements):
         """
@@ -178,7 +178,7 @@ class Simdd_Parser(object):
         -------
             device_dict: dict
                 device data dictionary in the format of
-                `self.device_attributes` or `self.device_commands`
+                `self._device_attributes` or `self._device_commands`
         """
         device_dict = dict()
         for attribute_data in elements:
@@ -301,12 +301,12 @@ class Simdd_Parser(object):
 
     def get_reformatted_device_attr_metadata(self):
         """Returns a more formatted attribute data structure in a format of dict"""
-        return self.device_attributes
+        return self._device_attributes
 
     def get_reformatted_cmd_metadata(self):
         """Returns a more formatted command data structure in a format of dict"""
-        return self.device_commands
+        return self._device_commands
 
     def get_reformatted_properties_metadata(self):
         """Returns a more formatted device prop data structure in a format of dict"""
-        return self.device_properties
+        return self._device_properties
