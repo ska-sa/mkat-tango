@@ -39,10 +39,6 @@ expected_mandatory_attr_parameters = frozenset([
     "max_warning", "unit", "display_unit", "format", "delta_t", "label",
     "min_warning"])
 
-#expected_mandatory_cmd_parameters = frozenset([
-#   "name", "arginDescription", "arginType", "argoutDescription", "argoutType",
-#  "description", "displayLevel", "polledPeriod", "execMethod"])
-
 expected_mandatory_cmd_parameters = frozenset([
     "name", "doc_in", "dtype_in", "doc_out", "dtype_out"])
 
