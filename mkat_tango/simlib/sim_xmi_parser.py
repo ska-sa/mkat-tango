@@ -17,6 +17,7 @@ from PyTango.server import Device, DeviceMeta, server_run, device_property, comm
 from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
+from mkat_tango.simlib.simdd_json_parser import Simdd_Parser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -811,7 +812,7 @@ def get_parser_instance(sim_datafile=None):
     if extension in [".xmi"]:
         parser_instance = Xmi_Parser(sim_datafile)
     elif extension in [".json"]:
-        parser_instance = simdd_json_parser.Simdd_Parser(sim_datafile)
+        parser_instance = Simdd_Parser(sim_datafile)
     elif extension in [".xml"]:
         parser_instance = sim_sdd_xml_parser.SDD_Parser()
         parser_instance.parse(sim_datafile)
