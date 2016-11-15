@@ -164,7 +164,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         default_attributes = {'State', 'Status'}
         for attribute_data in self.xmi_parser.device_attributes:
             expected_attributes.append(attribute_data['dynamicAttributes']['name'])
-        self.assertEqual(set(expected_attributes),  attributes - default_attributes,
+        self.assertEqual(set(expected_attributes), attributes - default_attributes,
                          "Actual tango device attribute list differs from expected "
                          "list!")
 
@@ -434,7 +434,7 @@ class test_PopModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         cmd_info = self.xmi_parser.get_reformatted_cmd_metadata()
 
-        sim_model  = sim_xmi_parser.PopulateModelActions(cmd_info, device_name).sim_model
+        sim_model = sim_xmi_parser.PopulateModelActions(cmd_info, device_name).sim_model
         self.assertEqual(len(sim_model.sim_quantities), 0,
                          "The model has some unexpected quantities")
 
