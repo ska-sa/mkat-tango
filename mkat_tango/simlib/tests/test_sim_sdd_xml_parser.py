@@ -75,11 +75,12 @@ class GenericSetup(unittest.TestCase):
     def setUp(self):
         super(GenericSetup, self).setUp()
         self.xml_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                'WeatherSimulator_CN.xml')
+                                                        'WeatherSimulator_CN.xml')
         self.xml_parser = sim_sdd_xml_parser.SDD_Parser()
         self.xml_parser.parse(self.xml_file)
 
 class test_Sdd_Xml_Parser(GenericSetup):
+
     def test_parsed_monitoring_points(self):
         """Testing that the monitoring points' information parsed matches with the one
         captured in the XML file.
@@ -90,7 +91,7 @@ class test_Sdd_Xml_Parser(GenericSetup):
                                            'Wind_Direction', 'Wind_Speed']
         actual_parsed_monitoring_points_list = actual_parsed_mnt_pts.keys()
         self.assertGreater(len(actual_parsed_monitoring_points_list), 0,
-            "There is no monitoring points information parsed")
+                           "There is no monitoring points information parsed")
         self.assertEquals(set(expected_monitoring_points_list),
                           set(actual_parsed_monitoring_points_list),
                           'There are missing monitoring points')
@@ -99,8 +100,8 @@ class test_Sdd_Xml_Parser(GenericSetup):
         for mnt_pt_name, mnt_pt_metadata in actual_parsed_mnt_pts.items():
             for param_name in expected_mandatory_monitoring_point_parameters:
                 self.assertIn(param_name, mnt_pt_metadata.keys(),
-                    "The parsed monitoring point '%s' does not the mandatory parameter "
-                    "'%s' " % (mnt_pt_name, param_name))
+                              "The parsed monitoring point '%s' does not the mandatory"
+                              " parameter '%s' " % (mnt_pt_name, param_name))
 
         # Using the made up pressure monitoring point's expected results as we haven't
         # generated the full test data for the other attributes.
@@ -113,9 +114,9 @@ class test_Sdd_Xml_Parser(GenericSetup):
         # structure.
         for prop in expected_pressure_mnt_pt_info:
             self.assertEquals(actual_parsed_pressure_mnt_pt_info[prop],
-                expected_pressure_mnt_pt_info[prop],
-                "The expected value for the parameter '%s' does not match "
-                "with the actual value" % (prop))
+                              expected_pressure_mnt_pt_info[prop],
+                              "The expected value for the parameter '%s' does not match"
+                              " with the actual value" % (prop))
 
 
 class test_PopModelQuantities(GenericSetup):
@@ -128,13 +129,13 @@ class test_PopModelQuantities(GenericSetup):
         pmq = sim_xmi_parser.PopulateModelQuantities(self.xml_parser, device_name)
 
         self.assertEqual(device_name, pmq.sim_model.name,
-            "The device name and the model name do not match.")
+                         "The device name and the model name do not match.")
         expected_quantities_list = ['Insolation', 'Temperature', 'Pressure', 'Rainfall',
                                     'Relative_Humidity', 'Wind_Direction',
                                     'Wind_Speed']
         actual_quantities_list = pmq.sim_model.sim_quantities.keys()
         self.assertEqual(set(expected_quantities_list), set(actual_quantities_list),
-            "The are quantities missing in the model")
+                         "The are quantities missing in the model")
 
 
     def test_model_quantities_metadata(self):
@@ -144,7 +145,7 @@ class test_PopModelQuantities(GenericSetup):
         device_name = 'tango/device/instance'
         pmq = sim_xmi_parser.PopulateModelQuantities(self.xml_parser, device_name)
         self.assertEqual(device_name, pmq.sim_model.name,
-            "The device name and the model name do not match.")
+                         "The device name and the model name do not match.")
         mnt_pt_metadata = self.xml_parser.get_reformatted_device_attr_metadata()
         for sim_quantity_name, sim_quantity in (
                 pmq.sim_model.sim_quantities.items()):
