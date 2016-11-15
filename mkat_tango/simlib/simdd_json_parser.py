@@ -7,7 +7,6 @@ import json
 
 from PyTango import DevState, DevDouble, DevString, DevBoolean
 from PyTango._PyTango import CmdArgType
-from mkat_tango.simlib import sim_xmi_parser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -311,6 +310,3 @@ class Simdd_Parser(object):
     def get_reformatted_properties_metadata(self):
         """Returns a more formatted device prop data structure in a format of dict"""
         return self.device_properties
-
-if __name__ == "__main__":
-    sim_xmi_parser.main()
