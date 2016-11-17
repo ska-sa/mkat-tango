@@ -132,7 +132,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch(sim_xmi_parser.__name__+'.get_data_description_file_name'
+        with mock.patch(sim_xmi_parser.__name__ + '.get_data_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
             cls.properties = dict(sim_data_description_file=cls.xmi_file)
