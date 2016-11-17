@@ -808,6 +808,7 @@ def get_parser_instance(sim_datafile=None):
 
     """
     extension = os.path.splitext(sim_datafile)[-1]
+    extension = extension.lower()
     parser_instance = None
     if extension in [".xmi"]:
         parser_instance = Xmi_Parser(sim_datafile)
