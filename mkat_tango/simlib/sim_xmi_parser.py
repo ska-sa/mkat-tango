@@ -550,9 +550,8 @@ class PopulateModelQuantities(object):
 
         for attr_name, attr_props in attributes.items():
             if attr_props['data_type'] in CONSTANT_DATA_TYPES:
-                        self.sim_model.sim_quantities[
-                        attr_props['name']] = ConstantQuantity(
-                                meta=attr_props, start_value=True)
+                self.sim_model.sim_quantities[attr_props['name']] = ConstantQuantity(
+                    meta=attr_props, start_value=True)
             else:
                 try:
                     sim_attr_quantities = self.sim_attribute_quantities(
