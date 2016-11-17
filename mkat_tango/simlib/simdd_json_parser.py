@@ -8,6 +8,9 @@ import json
 from PyTango import DevState, DevDouble, DevString, DevBoolean
 from PyTango._PyTango import CmdArgType
 
+from mkat_tango.simlib.sim_xmi_parser import main
+
+
 MODULE_LOGGER = logging.getLogger(__name__)
 
 
@@ -284,20 +287,29 @@ class Simdd_Parser(object):
         """
         def expand(key, value):
             """Method to expand values of a value if it is an instance of dict"""
-            if isinstance(value, dict):
-                # Recursively call get_reformated_data if value is still a dict
-                return [(param_name, param_val)
-                        for param_name, param_val in self.get_reformated_data(
-                        value).items()]
-            else:
-                # Since the data type specified in the SIMDD is a string format
-                # e.g. Double, it is require in Tango device as a CmdArgType
-                # i.e. PyTango._PyTango.CmdArgType.DevDouble
-                return [(str(key), eval(str(getattr(CmdArgType, "Dev%s" % value)))
-                        if str(key) in ['data_type'] else str(value))]
-        items = [item for param_name, param_val in sim_device_info.items()
-                 for item in expand(param_name, param_val)]
-        return dict(items)  # Format the output item list of tuples as a dictionary
+            # Recursively call get_reformated_data if value is still a dict
+            return [(param_name, param_val)
+                    for param_name, param_val in self.get_reformated_data(
+                    value).items()]
+
+        formated_info = dict()
+        for param_name, param_val in sim_device_info.items():
+                if isinstance(param_val, dict):
+                    for item in expand(param_name, param_val):
+                        formated_info[str(item[0])] = str(item[1])
+                else:
+                    # Since the data type specified in the SIMDD is a string format
+                    # e.g. Double, it is require in Tango device as a CmdArgType
+                    # i.e. PyTango._PyTango.CmdArgType.DevDouble
+                    if str(param_name) in ['data_type']:
+                        # Here we extract the cmdArgType obect since
+                        # for later when creating a Tango attibute,
+                        # data type is required in this format.
+                        val = eval(str(getattr(CmdArgType, "Dev%s" % param_val)))
+                    else:
+                        val = str(param_val)
+                    formated_info[str(param_name)] = val
+        return formated_info
 
     def get_reformatted_device_attr_metadata(self):
         """Returns a more formatted attribute data structure in a format of dict"""
@@ -310,3 +322,6 @@ class Simdd_Parser(object):
     def get_reformatted_properties_metadata(self):
         """Returns a more formatted device prop data structure in a format of dict"""
         return self._device_properties
+
+if __name__ == "__main__":
+    main()
