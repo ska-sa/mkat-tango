@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+
+
 import os
 import sys
 import time
@@ -292,21 +303,21 @@ class Simdd_Parser(object):
 
         formated_info = dict()
         for param_name, param_val in sim_device_info.items():
-                if isinstance(param_val, dict):
-                    for item in expand(param_name, param_val):
-                        formated_info[str(item[0])] = str(item[1])
+            if isinstance(param_val, dict):
+                for item in expand(param_name, param_val):
+                    formated_info[str(item[0])] = str(item[1])
+            else:
+                # Since the data type specified in the SIMDD is a string format
+                # e.g. Double, it is require in Tango device as a CmdArgType
+                # i.e. PyTango._PyTango.CmdArgType.DevDouble
+                if str(param_name) in ['data_type']:
+                    # Here we extract the cmdArgType obect since
+                    # for later when creating a Tango attibute,
+                    # data type is required in this format.
+                    val = eval(str(getattr(CmdArgType, "Dev%s" % param_val)))
                 else:
-                    # Since the data type specified in the SIMDD is a string format
-                    # e.g. Double, it is require in Tango device as a CmdArgType
-                    # i.e. PyTango._PyTango.CmdArgType.DevDouble
-                    if str(param_name) in ['data_type']:
-                        # Here we extract the cmdArgType obect since
-                        # for later when creating a Tango attibute,
-                        # data type is required in this format.
-                        val = eval(str(getattr(CmdArgType, "Dev%s" % param_val)))
-                    else:
-                        val = str(param_val)
-                    formated_info[str(param_name)] = val
+                    val = str(param_val)
+                formated_info[str(param_name)] = val
         return formated_info
 
     def get_reformatted_device_attr_metadata(self):

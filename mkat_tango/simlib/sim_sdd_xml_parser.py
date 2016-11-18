@@ -1,7 +1,19 @@
+#!/usr/bin/env python
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+"""
+
+"""
+
 import xml.etree.ElementTree as ET
 
 from PyTango import DevDouble, DevLong, DevBoolean, DevString
-from mkat_tango.simlib import model
 
 SDD_MP_PARAMS_TANGO_MAP = {
     'name': 'name',
@@ -284,7 +296,12 @@ class SDD_Parser(object):
                         vals.append(possible_val.text)
                     dev_mnt_pts_meta[prop.tag] = vals
                 elif prop.tag == "DataType":
-                    dev_mnt_pts_meta[prop.tag] = SDD_TYPES_TO_TANGO_TYPES[prop.text]
+                    try:
+                        dev_mnt_pts_meta[prop.tag] = SDD_TYPES_TO_TANGO_TYPES[prop.text]
+                    except KeyError:
+                        raise KeyError("The monitoring point '{}''s data type '{}' cannot"
+                                     " be mapped to any TANGO type"
+                                     .format(mnt_pt, prop))
                 else:
                     dev_mnt_pts_meta[prop.tag] = prop.text
 
@@ -330,12 +347,15 @@ class SDD_Parser(object):
                 # Unpack the min and max values from the ValueRange dictionary
                 if metadata_prop_name == "ValueRange":
                     for extremity, extremity_val in metadata_prop_val.items():
+                       # This will not raise a keyerror exception as the the keys
+                       # (MaxValue/MinValue) will be available in the tag 'ValueRange'
+                       # appears in the SDD XML file.
                        monitoring_pts[mpt_name][SDD_MP_PARAMS_TANGO_MAP[extremity]] = (
                            extremity_val)
                 else:
                     try:
-                        monitoring_pts[mpt_name][SDD_MP_PARAMS_TANGO_MAP[metadata_prop_name]] = (
-                            metadata_prop_val)
+                        parameter_name = SDD_MP_PARAMS_TANGO_MAP[metadata_prop_name]
+                        monitoring_pts[mpt_name][parameter_name] = metadata_prop_val
                     except KeyError:
                         monitoring_pts[mpt_name][metadata_prop_name.lower()] = metadata_prop_val
         self._formatted_mnt_pts_info =  monitoring_pts

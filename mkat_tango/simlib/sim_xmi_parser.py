@@ -1,9 +1,19 @@
+#!/usr/bin/env python
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+"""
+
+"""
+
 import os
-import sys
-import time
 import weakref
 import logging
-import argparse
 
 import xml.etree.ElementTree as ET
 import PyTango
@@ -814,7 +824,7 @@ def get_parser_instance(sim_datafile=None):
     if extension in [".xmi"]:
         parser_instance = Xmi_Parser(sim_datafile)
     elif extension in [".json"]:
-        parser_instance = simdd_parser.Simdd_Parser(sim_datafile)
+        parser_instance = Simdd_Parser(sim_datafile)
     elif extension in [".xml"]:
         parser_instance = SDD_Parser()
         parser_instance.parse(sim_datafile)
