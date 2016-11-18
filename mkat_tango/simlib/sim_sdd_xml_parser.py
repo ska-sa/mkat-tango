@@ -32,6 +32,8 @@ class SDD_Parser(object):
         self._formatted_mnt_pts_info = {}
 
     def parse(self, sdd_xml_file):
+        # TODO (KM 18-11-2016) Might make use of the libraries mentioned to parse XML
+        # files in this URL http://docs.python-guide.org/en/latest/scenarios/xml/
         tree = ET.parse(sdd_xml_file)
         root = tree.getroot()
         self.commands.update(self.extract_command_info(root.find(
