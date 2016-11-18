@@ -1,6 +1,8 @@
+import logging
 import unittest
-
 import pkg_resources
+
+from PyTango import DevDouble
 
 from mkat_tango.simlib import sim_sdd_xml_parser
 from mkat_tango.simlib import sim_xmi_parser
@@ -9,8 +11,8 @@ LOGGER = logging.getLogger(__name__)
 
 expected_mandatory_monitoring_point_parameters = frozenset([
     "name", "id", "description", "data_type",
-    "Size", "writable", "min_value", "max_value",
-    "SamplingFrequency", "LoggingLevel"])
+    "size", "writable", "samplingfrequency",
+    "logginglevel"])
 
 expected_mandatory_cmd_parameters = frozenset([
     "cmd_id", "cmd_name", "cmd_description", "cmd_type",
@@ -22,18 +24,18 @@ expected_mandatory_cmd_parameters = frozenset([
 # xml file is parsed by the SDD_Parser.
 expected_pressure_mnt_pt_info = {
     'name': 'Pressure',
-    'data_type': 'float',
+    'data_type': DevDouble,
     'description': None,
     'max_value': '1100',
     'min_value': '500',
-    'Size': '0',
+    'size': '0',
     'writable': None,
-    'PossibleValues': None,
-    'SamplingFrequency': {
+    'possiblevalues': [],
+    'samplingfrequency': {
         'DefaultValue': None,
         'MaxValue': None
     },
-    'LoggingLevel': None
+    'logginglevel': None
 }
 # The desired information for the 'On' command when the WeatherSimulator_CN xml file is
 # parsed
