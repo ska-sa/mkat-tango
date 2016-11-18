@@ -17,11 +17,9 @@ from PyTango.server import Device, DeviceMeta, server_run, device_property, comm
 from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
-<<<<<<< HEAD
-=======
+
 from mkat_tango.simlib.simdd_json_parser import Simdd_Parser
 from mkat_tango.simlib.sim_sdd_xml_parser import SDD_Parser
->>>>>>> user/athanaseus/Implementing-a-more-generic-configure_device_model-to-parse-any-parser-instance
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
