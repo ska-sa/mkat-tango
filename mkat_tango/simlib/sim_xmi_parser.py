@@ -1,9 +1,19 @@
+#!/usr/bin/env python
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+"""
+
+"""
+
 import os
-import sys
-import time
 import weakref
 import logging
-import argparse
 
 import xml.etree.ElementTree as ET
 import PyTango
@@ -18,6 +28,9 @@ from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 
+from mkat_tango.simlib.simdd_json_parser import Simdd_Parser
+from mkat_tango.simlib.sim_sdd_xml_parser import SDD_Parser
+
 MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
@@ -29,7 +42,7 @@ POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
 ARBITRARY_DATA_TYPE_RETURN_VALUES = {
     DevString: 'Ok!',
     DevBoolean: True,
-    DevDouble : 4.05,
+    DevDouble: 4.05,
     DevFloat: 8.1,
     DevLong: 3}
 
@@ -508,14 +521,14 @@ class PopulateModelQuantities(object):
 
     Attributes
     ----------
-    xmi_parser: Xmi_Parser innstance
-        The Xmi_Parser object which reads an xmi file and parses it into device
+    parser_instance: Parser instance
+        The Parser object which reads an xmi/xml/json file and parses it into device
         attributes, commands, and properties.
     sim_model:  Model instance
         An instance of the Model class which is used for simulation of simple attributes.
     """
-    def __init__(self, xmi_file, tango_device_name, sim_model=None):
-        self.xmi_parser = Xmi_Parser(xmi_file)
+    def __init__(self, parser_instance, tango_device_name, sim_model=None):
+        self.parser_instance = parser_instance
         if sim_model:
             if isinstance(sim_model, model.Model):
                 self.sim_model = sim_model
@@ -526,10 +539,6 @@ class PopulateModelQuantities(object):
         else:
             self.sim_model = model.Model(tango_device_name)
         self.setup_sim_quantities()
-        pma = PopulateModelActions(
-              self.xmi_parser.get_reformatted_cmd_metadata(),
-              tango_device_name,
-              model_instance=self.sim_model)
 
     def setup_sim_quantities(self):
         """Set up self.sim_quantities from Model with simulated quantities.
@@ -549,13 +558,12 @@ class PopulateModelQuantities(object):
             quantities.GaussianSlewLimited, start_time=start_time)
         ConstantQuantity = partial(
             quantities.ConstantQuantity, start_time=start_time)
-        attributes = self.xmi_parser.get_reformatted_device_attr_metadata()
+        attributes = self.parser_instance.get_reformatted_device_attr_metadata()
 
         for attr_name, attr_props in attributes.items():
             if attr_props['data_type'] in CONSTANT_DATA_TYPES:
-                        self.sim_model.sim_quantities[
-                        attr_props['name']] = ConstantQuantity(
-                                meta=attr_props, start_value=True)
+                self.sim_model.sim_quantities[attr_props['name']] = ConstantQuantity(
+                    meta=attr_props, start_value=True)
             else:
                 try:
                     sim_attr_quantities = self.sim_attribute_quantities(
@@ -688,13 +696,14 @@ class TangoDeviceServerBase(Device):
         self.info_stream("Reading attribute %s", name)
         attr.set_value_date_quality(value, update_time, quality)
 
-def get_xmi_description_file_name():
-    """Gets the xmi description file name from the tango-db device properties
+def get_data_description_file_name():
+    """Gets the xmi/xml/json description file name from the tango-db device properties
 
     Returns
     =======
-    sim_xmi_description_file : str
-        POGO xmi device server description file
+    sim_data_description_file : str
+        Tango device server description file
+        (POGO xmi or SDD xml or SIMDD json)
         e.g. 'home/user/weather.xmi'
 
     """
@@ -727,9 +736,9 @@ def get_xmi_description_file_name():
     db = Database()
     server_class = db.get_server_class_list(server_name).value_string[0]
     device_name = db.get_device_name(server_name, server_class).value_string[0]
-    sim_xmi_description_file = db.get_device_property(device_name,
-        'sim_xmi_description_file')['sim_xmi_description_file'][0]
-    return sim_xmi_description_file
+    sim_data_description_file = db.get_device_property(device_name,
+        'sim_data_description_file')['sim_data_description_file'][0]
+    return sim_data_description_file
 
 
 def get_tango_device_server(model):
@@ -794,15 +803,42 @@ def get_tango_device_server(model):
 
     return TangoDeviceServer
 
-def configure_device_model(sim_xmi_file=None, test_device_name=None):
+def get_parser_instance(sim_datafile=None):
+    """This method returns an appropriate parser instance to generate a Tango device
+
+    Parameters
+    ----------
+    sim_datafile : str
+        A direct path to the xmi/xml/json file.
+
+    return
+    ------
+    parser_instance: Parser instance
+        The Parser object which reads an xmi/xml/json file and parses it into device
+        attributes, commands, and properties.
+
+    """
+    extension = os.path.splitext(sim_datafile)[-1]
+    extension = extension.lower()
+    parser_instance = None
+    if extension in [".xmi"]:
+        parser_instance = Xmi_Parser(sim_datafile)
+    elif extension in [".json"]:
+        parser_instance = Simdd_Parser(sim_datafile)
+    elif extension in [".xml"]:
+        parser_instance = SDD_Parser()
+        parser_instance.parse(sim_datafile)
+    return parser_instance
+
+def configure_device_model(sim_datafile=None, test_device_name=None):
     """In essence this function should get the xmi file, parse it,
     take the attribute and command information, populate the model quantities and
     actions to be simulated and return that model.
 
     Parameters
     ----------
-    sim_xmi_file : str
-        A direct path to the XMI file.
+    sim_datafile : str
+        A direct path to the xmi/xml/json file.
     test_device_name : str
         A TANGO device name. This is used for running tests as we want the model
         instance and the device name to have the same name.
@@ -811,10 +847,10 @@ def configure_device_model(sim_xmi_file=None, test_device_name=None):
     -------
     model : model.Model instance
     """
-    if sim_xmi_file is None:
-        xmi_file = get_xmi_description_file_name()
+    if sim_datafile is None:
+        datafile = get_data_description_file_name()
     else:
-        xmi_file = sim_xmi_file
+        datafile = sim_datafile
 
     server_name = helper_module.get_server_name()
 
@@ -825,17 +861,16 @@ def configure_device_model(sim_xmi_file=None, test_device_name=None):
         # value_string attribute is a list of all the registered device instances in
         # that device server instance for the TANGO class 'TangoDeviceServer'.
         db_datum = db.get_device_name(server_name, 'TangoDeviceServer')
-        dev_name = getattr(db_datum, 'value_string')[0] # We assume that at least one
-                                                        # device instance has been
-                                                        # registered for that class
-                                                        # and device server.
+        # We assume that at least one device instance has been
+        # registered for that class and device server.
+        dev_name = getattr(db_datum, 'value_string')[0]
     else:
         dev_name = test_device_name
 
-    model_quants_populater = PopulateModelQuantities(xmi_file, dev_name)
+    parser_instance = get_parser_instance(datafile)
+    model_quants_populater = PopulateModelQuantities(parser_instance, dev_name)
     model = model_quants_populater.sim_model
-    xmi_parser = model_quants_populater.xmi_parser
-    cmd_info = xmi_parser.get_reformatted_cmd_metadata()
+    cmd_info = parser_instance.get_reformatted_cmd_metadata()
     PopulateModelActions(cmd_info, dev_name, model)
 
     return model

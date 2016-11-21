@@ -17,11 +17,11 @@ import PyTango
 LOGGER = logging.getLogger(__name__)
 
 TANGO_CMD_PARAMS_NAME_MAP = {
-        'name': 'cmd_name',
-        'doc_in': 'in_type_desc',
-        'dtype_in': 'in_type',
-        'doc_out': 'out_type_desc',
-        'dtype_out': 'out_type'}
+    'name': 'cmd_name',
+    'doc_in': 'in_type_desc',
+    'dtype_in': 'in_type',
+    'doc_out': 'out_type_desc',
+    'dtype_out': 'out_type'}
 
 # These expected values are not yet complete, see comment in sim_xmi_parser.py
 # about currently unhandled attribute and command parameters.
@@ -36,7 +36,7 @@ expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
     "data_type", "writable", "name", "description", "delta_val",
     "max_alarm", "max_value", "min_value", "standard_unit", "min_alarm",
-    "max_warning", "unit", "display_unit","format", "delta_t", "label",
+    "max_warning", "unit", "display_unit", "format", "delta_t", "label",
     "min_warning"])
 
 expected_mandatory_cmd_parameters = frozenset([
@@ -75,49 +75,49 @@ expected_mandatory_default_cmds_info = [
 # The desired information for the atttribute pressure when the weather_sim xmi file is
 # parsed by the Xmi_Parser.
 expected_pressure_attr_info = {
-        'name': 'pressure',
-        'data_type': PyTango.CmdArgType.DevDouble,
-        'period': '1000',
-        'writable': 'READ',
-        'description': 'Barometric pressure in central telescope area.',
-        'label': 'Barometric pressure',
-        'unit': 'mbar',
-        'standard_unit': '',
-        'display_unit': '',
-        'format': '',
-        'max_value': '1100',
-        'min_value': '500',
-        'max_alarm': '1000',
-        'min_alarm': '',
-        'max_warning': '900',
-        'min_warning': '',
-        'delta_t': '',
-        'delta_val': '',
-        'data_format': PyTango.AttrDataFormat.SCALAR,
-        'max_dim_y': 0,
-        'max_dim_x': 1,
-        'abs_change': '0.5',
-        'rel_change': '10',
-        'event_period': '1000',
-        'archive_abs_change': '0.5',
-        'archive_period': '1000',
-        'archive_rel_change': '10'}
+    'name': 'pressure',
+    'data_type': PyTango.CmdArgType.DevDouble,
+    'period': '1000',
+    'writable': 'READ',
+    'description': 'Barometric pressure in central telescope area.',
+    'label': 'Barometric pressure',
+    'unit': 'mbar',
+    'standard_unit': '',
+    'display_unit': '',
+    'format': '',
+    'max_value': '1100',
+    'min_value': '500',
+    'max_alarm': '1000',
+    'min_alarm': '',
+    'max_warning': '900',
+    'min_warning': '',
+    'delta_t': '',
+    'delta_val': '',
+    'data_format': PyTango.AttrDataFormat.SCALAR,
+    'max_dim_y': 0,
+    'max_dim_x': 1,
+    'abs_change': '0.5',
+    'rel_change': '10',
+    'event_period': '1000',
+    'archive_abs_change': '0.5',
+    'archive_period': '1000',
+    'archive_rel_change': '10'}
 
 # The desired information for the 'On' command when the weather_sim xmi file is parsed
 expected_on_cmd_info = {
-        'name': 'On',
-        'doc_in': '',
-        'dtype_in': PyTango.CmdArgType.DevVoid,
-        'doc_out': 'ok | Device ON',
-        'dtype_out': PyTango.CmdArgType.DevString}
+    'name': 'On',
+    'doc_in': '',
+    'dtype_in': PyTango.CmdArgType.DevVoid,
+    'doc_out': 'ok | Device ON',
+    'dtype_out': PyTango.CmdArgType.DevString}
 
 # The expected information that would be obtained for the device property when the
 # weather_sim xmi file is parsed by the Xmi_Parser.
 expected_sim_xmi_file_device_property_info = {
-        'name': 'sim_xmi_description_file',
-        'mandatory': 'true',
-        'description': 'Path to the pogo generated xmi file',
-        'type': PyTango.CmdArgType.DevString}
+    'name': 'sim_xmi_description_file',
+    'mandatory': 'true',
+    'description': 'Path to the pogo generated xmi file',
+    'type': PyTango.CmdArgType.DevString}
 
 class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
     longMessage = True
@@ -126,15 +126,15 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                        'weather_sim.xmi')
+                                                       'weather_sim.xmi')
         # Since the sim_xmi_parser gets the xmi file from the device properties
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch(sim_xmi_parser.__name__+'.get_xmi_description_file_name'
+        with mock.patch(sim_xmi_parser.__name__ + '.get_data_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
-            cls.properties = dict(sim_xmi_description_file=cls.xmi_file)
+            cls.properties = dict(sim_data_description_file=cls.xmi_file)
             cls.device_name = 'test/nodb/tangodeviceserver'
             model = sim_xmi_parser.configure_device_model(cls.xmi_file, cls.device_name)
             cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
@@ -159,7 +159,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         default_attributes = {'State', 'Status'}
         for attribute_data in self.xmi_parser.device_attributes:
             expected_attributes.append(attribute_data['dynamicAttributes']['name'])
-        self.assertEqual(set(expected_attributes),  attributes - default_attributes,
+        self.assertEqual(set(expected_attributes), attributes - default_attributes,
                          "Actual tango device attribute list differs from expected "
                          "list!")
 
@@ -169,7 +169,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
 
         for attr_name, attr_metadata in attribute_data.items():
             self.assertIn(attr_name, attribute_list,
-                    "Device does not have the attribute %s" % (attr_name))
+                          "Device does not have the attribute %s" % (attr_name))
             attr_query_data = self.device.attribute_query(attr_name)
 
             for attr_parameter in attr_metadata:
@@ -214,8 +214,8 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
                     attr_prop_value = ''
 
                 self.assertEqual(expected_attr_value, attr_prop_value,
-                        "Non matching %s property for %s attribute" % (
-                            attr_parameter, attr_name))
+                                 "Non matching %s property for %s attribute" %
+                                 (attr_parameter, attr_name))
 
     def _get_attribute_property_object_value(self, attr_query_data, user_default_prop):
         """Extracting the tango attribute property value from alarms an events objects
@@ -271,10 +271,10 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         actual_device_commands = set(self.device.get_command_list()) - {'Init'}
         expected_command_list = set(self.xmi_parser.get_reformatted_cmd_metadata().keys())
         self.assertEquals(actual_device_commands, expected_command_list,
-            "The commands specified in the xmi file are not present in the device")
+                          "The commands specified in the xmi file are not present in"
+                          " the device")
 
     def test_command_properties(self):
-        command_list = self.device.get_command_list()
         command_data = self.xmi_parser.get_reformatted_cmd_metadata()
 
         for cmd_name, cmd_metadata in command_data.items():
@@ -297,7 +297,7 @@ class GenericSetup(unittest.TestCase):
     def setUp(self):
         super(GenericSetup, self).setUp()
         self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                'weather_sim.xmi')
+                                                        'weather_sim.xmi')
         self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
 
 class test_XmiParser(GenericSetup):
@@ -311,30 +311,30 @@ class test_XmiParser(GenericSetup):
                               'wind_speed']
         actual_parsed_attr_list = actual_parsed_attrs.keys()
         self.assertGreater(len(actual_parsed_attr_list), 0,
-                "There is no attribute information parsed")
+                           "There is no attribute information parsed")
         self.assertEquals(set(expected_attr_list), set(actual_parsed_attr_list),
-                 'There are missing attributes')
+                          'There are missing attributes')
 
         # Test if all the parsed attributes have the mandatory properties
         for attribute_metadata in actual_parsed_attrs.values():
             for param in expected_mandatory_attr_parameters:
                 self.assertIn(param, attribute_metadata.keys(),
-                        "The parsed attribute '%s' does not the mandotory parameter "
-                        "'%s' " % (attribute_metadata['name'], param))
+                              "The parsed attribute '%s' does not the mandotory parameter"
+                              " '%s' " % (attribute_metadata['name'], param))
 
         # Using the made up pressure attribute expected results as we haven't generated
         # the full test data for the other attributes.
         self.assertIn('pressure', actual_parsed_attrs.keys(),
-                "The attribute pressure is not in the parsed attribute list")
+                      "The attribute pressure is not in the parsed attribute list")
         actual_parsed_pressure_attr_info = actual_parsed_attrs['pressure']
 
         # Compare the values of the attribute properties captured in the POGO generated
         # xmi file and the ones in the parsed attribute data structure.
         for prop in expected_pressure_attr_info:
             self.assertEquals(actual_parsed_pressure_attr_info[prop],
-                    expected_pressure_attr_info[prop],
-                    "The expected value for the parameter '%s' does not match "
-                    "with the actual value" % (prop))
+                              expected_pressure_attr_info[prop],
+                              "The expected value for the parameter '%s' does not match"
+                              " with the actual value" % (prop))
 
     def test_parsed_commands(self):
         """Testing that the command information in the xmi parser object matches
@@ -344,16 +344,16 @@ class test_XmiParser(GenericSetup):
         expected_cmd_list = ['On', 'Off', 'Add'] + default_pogo_commands
         actual_parsed_cmd_list = actual_parsed_cmds.keys()
         self.assertGreater(len(actual_parsed_cmd_list), len(default_pogo_commands),
-                "There are missing commands in the parsed list")
+                           "There are missing commands in the parsed list")
         self.assertEquals(set(expected_cmd_list), set(actual_parsed_cmd_list),
-                'There are some missing commands')
+                          'There are some missing commands')
 
         # Test if all the parsed commands have the mandatory properties
         for command_metadata in actual_parsed_cmds.values():
             for param in expected_mandatory_cmd_parameters:
                 self.assertIn(param, command_metadata.keys(),
-                        "The parsed command '%s' does not the mandatory parameter "
-                        "'%s' " % (command_metadata['name'], param))
+                              "The parsed command '%s' does not the mandatory parameter"
+                              " '%s' " % (command_metadata['name'], param))
 
         # Test the 'On' command using the made up expected results as we haven't
         # generated the full test data for the other commands.
@@ -362,8 +362,8 @@ class test_XmiParser(GenericSetup):
         actual_on_cmd_info = actual_parsed_cmds['On']
         for prop in expected_on_cmd_info:
             self.assertEqual(expected_on_cmd_info[prop], actual_on_cmd_info[prop],
-                "The expected value for the command paramater '%s' "
-                "does not match with the actual value" % (prop))
+                             "The expected value for the command paramater '%s'"
+                             " does not match with the actual value" % (prop))
 
     def test_parsed_device_properties(self):
         """Testing that the device property information captured in the XMI file
@@ -374,28 +374,28 @@ class test_XmiParser(GenericSetup):
         expected_device_properties_list = ['sim_xmi_description_file']
         actual_parsed_dev_props_list = actual_parsed_dev_properties.keys()
         self.assertEqual(set(expected_device_properties_list),
-                set(actual_parsed_dev_props_list),
-                "The device property list do not match")
+                         set(actual_parsed_dev_props_list),
+                         "The device property list do not match")
 
         # Test if all the parsed device properties have the mandatoy parameters
         for dev_prop_metadata in actual_parsed_dev_properties.values():
             for param in expected_mandatory_device_property_parameters:
                 self.assertIn(param, dev_prop_metadata.keys(),
-                        "The parsed device property '%s' does not have the "
-                        "mandatory parameter '%s' " % (
-                            dev_prop_metadata['name'], param))
+                              "The parsed device property '%s' does not have the"
+                              " mandatory parameter '%s' " % (dev_prop_metadata['name'],
+                                                              param))
 
         # Test the 'sim_xmi_description_file' device property as it is the only device
         # property we have for our device
         self.assertIn('sim_xmi_description_file', actual_parsed_dev_properties.keys(),
-                "The 'sim_xmi_description_file' device property is not in the parsed "
-                "device properties' list")
+                      "The 'sim_xmi_description_file' device property is not in the"
+                      "parsed device properties' list")
         actual_dev_prop_info = actual_parsed_dev_properties['sim_xmi_description_file']
         for prop in expected_sim_xmi_file_device_property_info:
             self.assertEqual(expected_sim_xmi_file_device_property_info[prop],
-                    actual_dev_prop_info[prop],
-                    "The expected value for the device property parameter '%s' "
-                    "does not match with the actual value" % (prop))
+                             actual_dev_prop_info[prop],
+                             "The expected value for the device property parameter '%s'"
+                             " does not match with the actual value" % (prop))
 
 
 class test_PopModelQuantities(GenericSetup):
@@ -409,9 +409,9 @@ class test_PopModelQuantities(GenericSetup):
         # PopulateModelQuantities is created with any object other than a Model
         # class instance.
         with self.assertRaises(sim_xmi_parser.SimModelException):
-            sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name,
-                    sim_model='some_model')
-        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_file, device_name)
+            sim_xmi_parser.PopulateModelQuantities(self.xmi_parser, device_name,
+                                                   sim_model='some_model')
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.xmi_parser, device_name)
 
         self.assertEqual(device_name, pmq.sim_model.name,
                 "The device name and the model name do not match.")
@@ -420,7 +420,7 @@ class test_PopModelQuantities(GenericSetup):
                                     'input_comms_ok', 'wind_speed']
         actual_quantities_list = pmq.sim_model.sim_quantities.keys()
         self.assertEqual(set(expected_quantities_list), set(actual_quantities_list),
-                "The are quantities missing in the model")
+                         "The are quantities missing in the model")
 
 class test_PopModelActions(GenericSetup):
     def test_model_actions_populator(self):
@@ -429,7 +429,7 @@ class test_PopModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         cmd_info = self.xmi_parser.get_reformatted_cmd_metadata()
 
-        sim_model  = sim_xmi_parser.PopulateModelActions(cmd_info, device_name).sim_model
+        sim_model = sim_xmi_parser.PopulateModelActions(cmd_info, device_name).sim_model
         self.assertEqual(len(sim_model.sim_quantities), 0,
                          "The model has some unexpected quantities")
 
