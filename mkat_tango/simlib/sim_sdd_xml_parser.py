@@ -7,7 +7,8 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-"""
+"""This module performs the parsing of the SKA Self-Description Data XML schema
+file generated from the DSL.
 
 """
 
@@ -30,7 +31,7 @@ SDD_TYPES_TO_TANGO_TYPES = {
     'string': DevString}
 
 class SDD_Parser(object):
-    """Parses the SDD xml file generated from DSL.
+    """Parses the SDD XML file generated from DSL.
 
     Attributes
     ----------
@@ -56,7 +57,7 @@ class SDD_Parser(object):
         self._convert_mnt_pt_info()
 
     def extract_command_info(self, cmd_info):
-        """Extracts all the information of the xml element 'CommandList'
+        """Extracts all the information of the XML element 'CommandList'
 
         Parameters
         ----------
@@ -224,7 +225,7 @@ class SDD_Parser(object):
         cmd_meta[prop.tag].update(cmd_responses)
 
     def extract_monitoring_point_info(self, mp_info):
-        """Extracts all the information of the xml element 'MonitoringPointsList'
+        """Extracts all the information of the XML element 'MonitoringPointsList'
 
         Parameters
         ----------
