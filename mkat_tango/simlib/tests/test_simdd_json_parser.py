@@ -127,7 +127,7 @@ class test_Simdd_Json_Parser(GenericSetup):
                               "not match with the actual value" % (prop))
 
 
-class test_PopModelQuantities(GenericSetup):
+class test_PopulateModelQuantities(GenericSetup):
 
     def test_model_quantities(self):
         """Testing that the model quantities that are added to the model match with
@@ -169,3 +169,53 @@ class test_PopModelQuantities(GenericSetup):
                     "not the same with the one captured in the SDD xml file "
                     "for the monitoring point '%s'." % (
                         attr_param_name, sim_quantity_name, attr_param_name))
+
+
+expected_action_On_metadata = {
+    "name": "On",
+    "description": "Turns On Device",
+    "override_handler": "True",
+    "dtype_in": "Void",
+    "doc_in": "No input parameter",
+    "dformat_in": "",
+    "dtype_out": "String",
+    "doc_out": "Command responds",
+    "dformat_out": "",
+    "package_name": "mkat_tango.simlib",
+    "module_name": "override_class"
+}
+
+class test_PopulateModelActions(GenericSetup):
+
+    def test_model_actions(self):
+        """Testing that the model actions that are added to the model match with
+        the commands specified in the XMI file.
+        """
+
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
+        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+
+        actual_actions_list = model.sim_actions.keys()
+        expected_actions_list = ['On', 'Off']
+        self.assertEqual(actual_actions_list, expected_actions_list,
+                         "There are actions missing in the model")
+
+    def test_model_actions_metadata(self):
+        """Testing that the model action metadata has been added correctly to the model
+        """
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
+        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+
+        sim_model_actions_meta = model.sim_actions_meta
+
+        for cmd_name, cmd_metadata in cmd_info.items():
+            model_act_meta = sim_model_actions_meta[cmd_name]
+            self.assertEqual(cmd_metadata, model_act_meta,
+                             "The action's %s metadata was not processed correctly" %
+                             cmd_name)

@@ -430,6 +430,7 @@
             "basicCommandData": {
                 "name": "On",
                 "description": "Turns On Device",
+		"override_handler": "True",
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",
@@ -439,7 +440,32 @@
                     "dtype_out": "String",
                     "doc_out": "Command responds",
                     "dformat_out": ""
-                }
+                },
+		"class_override": {
+			"package_name": "mkat_tango.simlib",
+			"module_name": "override_class"
+		}
+            }
+        },
+        {
+            "basicCommandData": {
+                "name": "Off",
+                "description": "Turns Off Device",
+		"override_handler": "True",
+                "input_parameters": {
+                    "dtype_in": "Void",
+                    "doc_in": "No input parameter",
+                    "dformat_in": ""
+                },
+                "output_parameters": {
+                    "dtype_out": "String",
+                    "doc_out": "Command responds",
+                    "dformat_out": ""
+                },
+		"class_override": {
+			"package_name": "mkat_tango.simlib",
+			"module_name": "override_class"
+		}
             }
         }
     ],

@@ -312,6 +312,9 @@ class SDD_Parser(object):
     def get_reformatted_device_attr_metadata(self):
         return self._formatted_mnt_pts_info
 
+    def get_reformatted_cmd_metadata(self):
+        return {}
+
     def _convert_mnt_pt_info(self):
         """Converts the monitoring points data structure into a dictionary
         to make searching easier.
