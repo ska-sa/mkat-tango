@@ -441,9 +441,9 @@
                     "doc_out": "Command responds",
                     "dformat_out": ""
                 },
-		"class_override": {
-			"package_name": "mkat_tango.simlib",
-			"module_name": "override_class"
+		"override_class": {
+			"module_name": "mkat_tango.simlib.override_class",
+			"class_name": "Override"
 		}
             }
         },
@@ -462,9 +462,9 @@
                     "doc_out": "Command responds",
                     "dformat_out": ""
                 },
-		"class_override": {
-			"package_name": "mkat_tango.simlib",
-			"module_name": "override_class"
+		"override_class": {
+			"module_name": "mkat_tango.simlib.override_class",
+			"class_name": "Override"
 		}
             }
         }
