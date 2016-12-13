@@ -30,6 +30,10 @@ expected_mandatory_cmd_parameters = frozenset([
         'dformat_in', 'dformat_out', 'doc_in',
         'doc_out', 'dtype_in', 'dtype_out', 'name', ])
 
+expected_mandatory_basic_cmd_parameters = frozenset([
+        "name", "description", "override_handler", "dtype_in", "doc_in", "dformat_in",
+        "dtype_out", "doc_out", "dformat_out"])
+
 # The desired information for the atttribute pressure when the weather_SIMDD
 # json file is parsed by the Simdd_Parser.
 expected_temperature_attr_info = {
@@ -181,8 +185,8 @@ expected_action_On_metadata = {
     "dtype_out": "String",
     "doc_out": "Command responds",
     "dformat_out": "",
-    "package_name": "mkat_tango.simlib",
-    "module_name": "override_class"
+    "class_name": "Override",
+    "module_name": "mkat_tango.simlib.override_class"
 }
 
 class test_PopulateModelActions(GenericSetup):
@@ -211,11 +215,13 @@ class test_PopulateModelActions(GenericSetup):
         model = pmq.sim_model
         cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
         sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
-
         sim_model_actions_meta = model.sim_actions_meta
 
         for cmd_name, cmd_metadata in cmd_info.items():
             model_act_meta = sim_model_actions_meta[cmd_name]
+            for action_parameter in expected_mandatory_basic_cmd_parameters:
+                self.assertIn(action_parameter, model_act_meta,
+                              "The parameter is not in the action's metadata")
             self.assertEqual(cmd_metadata, model_act_meta,
                              "The action's %s metadata was not processed correctly" %
                              cmd_name)
