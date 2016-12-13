@@ -169,3 +169,15 @@ class test_PopModelQuantities(GenericSetup):
                     "not the same with the one captured in the SDD xml file "
                     "for the monitoring point '%s'." % (
                         attr_param_name, sim_quantity_name, attr_param_name))
+
+    def test_model_actions_overrides(self):
+        """
+        """
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
+        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+
+        action_on = model.sim_actions['On']
+        self.assertEqual(action_on(), "On returning")
