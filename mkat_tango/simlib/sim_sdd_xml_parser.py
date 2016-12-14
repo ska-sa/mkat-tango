@@ -43,6 +43,7 @@ class SDD_Parser(object):
         self.monitoring_points = {}
         self.commands = {}
         self._formatted_mnt_pts_info = {}
+        self._formatted_cmds_info = {}
 
     def parse(self, sdd_xml_file):
         # TODO (KM 18-11-2016) Might make use of the libraries mentioned to parse XML
@@ -313,7 +314,7 @@ class SDD_Parser(object):
         return self._formatted_mnt_pts_info
 
     def get_reformatted_cmd_metadata(self):
-        return {}
+        return self._formatted_cmds_info
 
     def _convert_mnt_pt_info(self):
         """Converts the monitoring points data structure into a dictionary
