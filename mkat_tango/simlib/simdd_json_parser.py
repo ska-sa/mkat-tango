@@ -93,6 +93,9 @@ class Simdd_Parser(object):
         }
 
         """
+
+        self._device_override_class = {}
+
         self.parse_simdd_json_file()
 
     def parse_simdd_json_file(self):
@@ -124,6 +127,9 @@ class Simdd_Parser(object):
             elif data_component in ['deviceProperties']:
                 device_prop_info = self.get_device_data_components_dict(elements)
                 self._device_properties.update(device_prop_info)
+            elif data_component in ['class_overrides']:
+                device_prop_info = self.get_device_data_components_dict(elements)
+                self._device_override_class.update(device_prop_info)
 
     def get_device_data_components_dict(self, elements):
         """
@@ -331,3 +337,9 @@ class Simdd_Parser(object):
     def get_reformatted_properties_metadata(self):
         """Returns a more formatted device prop data structure in a format of dict"""
         return self._device_properties
+
+    def get_reformatted_override_metadata(self):
+        """Returns a more formatted device override info data structure in a format of a
+        dict.
+        """
+        return self._device_override_class
