@@ -12,6 +12,7 @@
 """
 
 import os
+import time
 import weakref
 import logging
 
@@ -480,14 +481,12 @@ class Xmi_Parser(object):
             for cmd_prop_name, cmd_prop_value in cmd_metadata.items():
                 try:
                     commands_metadata.update(
-                        {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name] :cmd_prop_value})
+                        {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name]: cmd_prop_value})
                 except KeyError:
                     MODULE_LOGGER.info(
                         "The property '%s' cannot be translated to a "
-                        "corresponding parameter in the TANGO library" %(cmd_prop_name))
-
+                        "corresponding parameter in the TANGO library" % (cmd_prop_name))
             commands[cmd_name] = commands_metadata
-
         return commands
 
     def get_reformatted_properties_metadata(self):
@@ -640,22 +639,54 @@ class PopulateModelActions(object):
             self.sim_model = model.Model(tango_device_name)
         else:
             self.sim_model = model_instance
-
         self.add_actions()
 
     def add_actions(self):
         for cmd_name, cmd_meta in self.command_info.items():
             # Generate handler (exclude State and Status command)
             if cmd_name not in ['State', 'Status']:
-                handler = self.generate_action_handler(cmd_name, cmd_meta['dtype_out'])
+                # Every command is to be declared to have one or more  action behaviour.
+                # Example of a list of actions handle at this moment is as follows
+                # [{'behaviour': 'input_transform',
+                # 'destination_variable': 'temporary_variable'},
+                # {'behaviour': 'side_effect',
+                # 'destination_quantity': 'temperature',
+                # 'source_variable': 'temporary_variable'},
+                # {'behaviour': 'output_return',
+                # 'source_variable': 'temporary_variable'}]
+                actions = cmd_meta['actions']
+                handler = self.generate_action_handler(cmd_name, actions)
                 self.sim_model.setup_sim_actions(cmd_name, handler)
                 # Might store the action's metadata in the sim_actions dictionary
                 # instead of creating a separate dict.
                 self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
-    def generate_action_handler(self, action_name, action_output_type):
+    def generate_action_handler(self, action_name, actions=[]):
         def action_handler(*args):
-            return ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
+            # args contains the model instance and tango device instance
+            # whereby the third item is a value in the case of commands with
+            # input parameters.
+            temp_variable = ''
+            if len(actions) > 2:
+                for action in actions:
+                    if 'input_transform' in action.values():
+                        temp_variable = args[-1]
+                    if 'side_effect' in action.values():
+                        quantity = action['destination_quantity']
+                        temp_variable = args[-1]
+                        model_quantity = args[0].sim_quantities[quantity]
+                        model_quantity.set_val(temp_variable, time.time())
+                    if 'output_return' in action.values():
+                        if 'source_variable' in action.keys():
+                            temp_variable = args[-1]
+                        else:
+                            quantity = action['source_quantity']
+                            model_quantity = args[0].sim_quantities[quantity]
+                            temp_variable = model_quantity.last_val
+                return 'ok | ' + str(temp_variable)
+            else:
+                temp_variable = 'ok'
+                return temp_variable
         action_handler.__name__ = action_name
         return action_handler
 
@@ -756,7 +787,6 @@ def get_tango_device_server(model):
     class TangoDeviceServerCommands(object):
         pass
 
-
     def generate_cmd_handler(action, action_handler):
         # You might need to figure out how to specialise cmd_handler to different
         # argument types
@@ -765,7 +795,11 @@ def get_tango_device_server(model):
         cmd_handler.__name__ = action
         cmd_info_copy = model.sim_actions_meta[action].copy()
         cmd_info_copy.pop('name')
-        return command(**cmd_info_copy)(cmd_handler)
+        tango_cmd_prop = POGO_USER_DEFAULT_CMD_PROP_MAP.values()
+        for prop_key in model.sim_actions_meta[action].keys():
+            if prop_key not in tango_cmd_prop:
+                cmd_info_copy.pop(prop_key)
+        return command(f=cmd_handler, **cmd_info_copy)
 
     for action_name, action_handler in model.sim_actions.items():
         cmd_handler = generate_cmd_handler(action_name, action_handler)
