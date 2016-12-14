@@ -654,7 +654,10 @@ class PopulateModelActions(object):
                 # 'source_variable': 'temporary_variable'},
                 # {'behaviour': 'output_return',
                 # 'source_variable': 'temporary_variable'}]
-                actions = cmd_meta['actions']
+                if 'actions' in cmd_meta.keys():
+                    actions = cmd_meta['actions']
+                else:
+                    actions = []
                 handler = self.generate_action_handler(cmd_name, actions)
                 self.sim_model.setup_sim_actions(cmd_name, handler)
                 # Might store the action's metadata in the sim_actions dictionary
