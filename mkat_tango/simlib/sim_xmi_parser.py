@@ -14,6 +14,8 @@
 import os
 import weakref
 import logging
+import importlib
+import imp
 
 import xml.etree.ElementTree as ET
 import PyTango
@@ -513,6 +515,14 @@ class Xmi_Parser(object):
 
         return device_properties
 
+    def get_reformatted_override_metadata(self):
+        # TODO(KM 15-12-2016) The PopulateModelQuantities and PopulateModelActions
+        # classes assume that the parsers we have developed have the same interface
+        # so this method does nothing but return an empty dictionary. Might provide
+        # an implementation when the XMI file has such parameter information (provided 
+        # in the SIMDD file).
+        return {}
+
 class PopulateModelQuantities(object):
     """Used to populate/update model quantities.
 
@@ -634,8 +644,8 @@ class PopulateModelActions(object):
         An instance of the Model class which is used for simulation of simple attributes
         and/or commands.
     """
-    def __init__(self, commands_info, tango_device_name, model_instance=None):
-        self.command_info = commands_info
+    def __init__(self, parser_instance, tango_device_name, model_instance=None):
+        self.parser_instance = parser_instance
         if model_instance is None:
             self.sim_model = model.Model(tango_device_name)
         else:
@@ -644,14 +654,28 @@ class PopulateModelActions(object):
         self.add_actions()
 
     def add_actions(self):
-        for cmd_name, cmd_meta in self.command_info.items():
-            # Generate handler (exclude State and Status command)
-            if cmd_name not in ['State', 'Status']:
-                handler = self.generate_action_handler(cmd_name, cmd_meta['dtype_out'])
-                self.sim_model.setup_sim_actions(cmd_name, handler)
-                # Might store the action's metadata in the sim_actions dictionary
-                # instead of creating a separate dict.
-                self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
+        command_info = self.parser_instance.get_reformatted_cmd_metadata()
+        override_info = self.parser_instance.get_reformatted_override_metadata()
+        if override_info != {}:
+            for klass_info in override_info.values():
+                if klass_info['module_directory'] == 'None':
+                    module = importlib.import_module(klass_info['module_name'])
+                else:
+                    module = imp.load_source(klass_info['module_name'].split('.')[-1],
+                                             klass_info['module_directory'])
+                klass = getattr(module, klass_info['class_name'])
+                instance = klass()
+        else:
+            instance = None
+
+        for cmd_name, cmd_meta in command_info.items():
+            handler = getattr(instance, 'action_' + cmd_name,
+                               self.generate_action_handler(cmd_name,
+                                                            cmd_meta['dtype_out']))
+            self.sim_model.setup_sim_actions(cmd_name, handler)
+            # Might store the action's metadata in the sim_actions dictionary
+            # instead of creating a separate dict.
+            self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
     def generate_action_handler(self, action_name, action_output_type):
         def action_handler(*args):
@@ -870,8 +894,7 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
     parser_instance = get_parser_instance(datafile)
     model_quants_populater = PopulateModelQuantities(parser_instance, dev_name)
     model = model_quants_populater.sim_model
-    cmd_info = parser_instance.get_reformatted_cmd_metadata()
-    PopulateModelActions(cmd_info, dev_name, model)
+    PopulateModelActions(parser_instance, dev_name, model)
 
     return model
 

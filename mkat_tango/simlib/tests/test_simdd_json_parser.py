@@ -187,14 +187,12 @@ class test_PopulateModelQuantities(GenericSetup):
 expected_action_On_metadata = {
     "name": "On",
     "description": "Turns On Device",
-    "override_handler": "True",
     "dtype_in": "Void",
     "doc_in": "No input parameter",
     "dformat_in": "",
     "dtype_out": "String",
     "doc_out": "Command responds",
-    "dformat_out": "",
-    "class_name": "Override"
+    "dformat_out": ""
 }
 
 class test_PopulateModelActions(GenericSetup):
@@ -207,8 +205,7 @@ class test_PopulateModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
-        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
-        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
 
         actual_actions_list = model.sim_actions.keys()
         expected_actions_list = ['On', 'Off']
@@ -222,7 +219,7 @@ class test_PopulateModelActions(GenericSetup):
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
         cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
-        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
         sim_model_actions_meta = model.sim_actions_meta
 
         for cmd_name, cmd_metadata in cmd_info.items():
@@ -233,3 +230,15 @@ class test_PopulateModelActions(GenericSetup):
             self.assertEqual(cmd_metadata, model_act_meta,
                              "The action's %s metadata was not processed correctly" %
                              cmd_name)
+
+    def test_model_actions_overrides(self):
+        """
+        """
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
+
+        action_on = model.sim_actions['On']
+        self.assertEqual(action_on(), "On returning")
