@@ -18,19 +18,23 @@ from mkat_tango.testutils import ClassCleanupUnittestMixin
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
-# Mandotary parameters required to create a well configure Tango attribute.
+# Mandatory parameters required to create a well configure Tango attribute.
 expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
     "data_type", "writable", "name", "description", "delta_val",
     "max_alarm", "max_value", "min_value", "max_warning", "min_warning",
     "min_alarm", "unit", "delta_t", "label", "format"])
 
-# Mandotary parameters required to create a well configure Tango command.
+# Mandatory parameters required to create a well configure Tango command.
 expected_mandatory_cmd_parameters = frozenset([
-        'dformat_in', 'dformat_out', 'doc_in',
-        'doc_out', 'dtype_in', 'dtype_out', 'name', ])
+    'dformat_in', 'dformat_out', 'doc_in',
+    'doc_out', 'dtype_in', 'dtype_out', 'name', ])
 
-# The desired information for the atttribute pressure when the weather_SIMDD
+# Mandatory parameters required by each override_class.
+expected_mandatory_override_class_parameters = frozenset([
+    'class_name', 'module_directory', 'module_name', 'name'])
+
+# The desired information for the attribute temperature when the weather_SIMDD
 # json file is parsed by the Simdd_Parser.
 expected_temperature_attr_info = {
         'abs_change': '0.5',
@@ -95,10 +99,10 @@ class test_Simdd_Json_Parser(GenericSetup):
         in the SIMDD json file.
         """
         actual_parsed_attrs = self.simdd_parser.get_reformatted_device_attr_metadata()
-        expected_attr_list = ['insolation', 'temperature', 'pressure',
-                              'rainfall', 'relative_humidity', 'wind_direction',
-                              'wind_speed', 'input_comms_ok']
-        actual_parsed_attr_list = actual_parsed_attrs.keys()
+        expected_attr_list = ['input_comms_ok', 'insolation', 'pressure', 'rainfall',
+                              'relative_humidity', 'temperature', 'wind_direction',
+                              'wind_speed']
+        actual_parsed_attr_list = sorted(actual_parsed_attrs.keys())
         self.assertGreater(
             len(actual_parsed_attr_list), 0, "There is no attribute information parsed")
         self.assertEquals(set(expected_attr_list), set(actual_parsed_attr_list),
@@ -116,18 +120,27 @@ class test_Simdd_Json_Parser(GenericSetup):
         # haven't generated the full test data for the other attributes.
         self.assertIn('temperature', actual_parsed_attrs.keys(),
                       "The attribute pressure is not in the parsed attribute list")
-        actual_parsed_pressure_attr_info = actual_parsed_attrs['temperature']
+        actual_parsed_temperature_attr_info = actual_parsed_attrs['temperature']
 
         # Compare the values of the attribute properties captured in the POGO
         # generated xmi file and the ones in the parsed attribute data structure.
         for prop in expected_temperature_attr_info:
-            self.assertEquals(actual_parsed_pressure_attr_info[prop],
+            self.assertEquals(actual_parsed_temperature_attr_info[prop],
                               expected_temperature_attr_info[prop],
                               "The expected value for the parameter '%s' does "
                               "not match with the actual value" % (prop))
 
+    def test_parsed_override_info(self):
+        """Testing that the class override information parsed matches with the one captured
+        in the SIMDD json file.
+        """
+        actual_override_info = self.simdd_parser.get_reformatted_override_metadata()
+        for klass_info in actual_override_info.values():
+            for param in expected_mandatory_override_class_parameters:
+                self.assertIn(param, klass_info.keys(), "Class override info missing"
+                              " some important parameter.")
 
-class test_PopModelQuantities(GenericSetup):
+class test_PopulateModelQuantities(GenericSetup):
 
     def test_model_quantities(self):
         """Testing that the model quantities that are added to the model match with
@@ -169,3 +182,54 @@ class test_PopModelQuantities(GenericSetup):
                     "not the same with the one captured in the SDD xml file "
                     "for the monitoring point '%s'." % (
                         attr_param_name, sim_quantity_name, attr_param_name))
+
+
+expected_action_On_metadata = {
+    "name": "On",
+    "description": "Turns On Device",
+    "override_handler": "True",
+    "dtype_in": "Void",
+    "doc_in": "No input parameter",
+    "dformat_in": "",
+    "dtype_out": "String",
+    "doc_out": "Command responds",
+    "dformat_out": "",
+    "class_name": "Override"
+}
+
+class test_PopulateModelActions(GenericSetup):
+
+    def test_model_actions(self):
+        """Testing that the model actions that are added to the model match with
+        the commands specified in the XMI file.
+        """
+
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
+        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+
+        actual_actions_list = model.sim_actions.keys()
+        expected_actions_list = ['On', 'Off']
+        self.assertEqual(actual_actions_list, expected_actions_list,
+                         "There are actions missing in the model")
+
+    def test_model_actions_metadata(self):
+        """Testing that the model action metadata has been added correctly to the model
+        """
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
+        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+        sim_model_actions_meta = model.sim_actions_meta
+
+        for cmd_name, cmd_metadata in cmd_info.items():
+            model_act_meta = sim_model_actions_meta[cmd_name]
+            for action_parameter in expected_mandatory_cmd_parameters:
+                self.assertIn(action_parameter, model_act_meta,
+                              "The parameter is not in the action's metadata")
+            self.assertEqual(cmd_metadata, model_act_meta,
+                             "The action's %s metadata was not processed correctly" %
+                             cmd_name)
