@@ -80,7 +80,8 @@ expected_on_cmd_info = {
         'doc_out': 'Command responds',
         'dtype_in': 'Void',
         'dtype_out': 'String',
-        'name': 'On'
+        'name': 'On',
+        'actions': []
     }
 
 
@@ -208,7 +209,7 @@ class test_PopulateModelActions(GenericSetup):
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
 
         actual_actions_list = model.sim_actions.keys()
-        expected_actions_list = ['On', 'Off']
+        expected_actions_list = ['On', 'Off', 'set_temperature']
         self.assertEqual(actual_actions_list, expected_actions_list,
                          "There are actions missing in the model")
 
@@ -237,8 +238,6 @@ class test_PopulateModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
-        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
-
         action_on = model.sim_actions['On']
         self.assertEqual(action_on(), "On returning")
