@@ -193,7 +193,8 @@ expected_action_On_metadata = {
     "dformat_in": "",
     "dtype_out": "String",
     "doc_out": "Command responds",
-    "dformat_out": ""
+    "dformat_out": "",
+    "actions": []
 }
 
 class test_PopulateModelActions(GenericSetup):
@@ -210,7 +211,7 @@ class test_PopulateModelActions(GenericSetup):
 
         actual_actions_list = model.sim_actions.keys()
         expected_actions_list = ['On', 'Off', 'set_temperature']
-        self.assertEqual(actual_actions_list, expected_actions_list,
+        self.assertEqual(set(actual_actions_list), set(expected_actions_list),
                          "There are actions missing in the model")
 
     def test_model_actions_metadata(self):

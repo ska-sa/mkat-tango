@@ -87,4 +87,4 @@ class Model(object):
         # Perhaps you need to check that the names are valid, or you need to escape
         # stuff to underscores or something, since we need to generate python function
         # names.
-        self.sim_actions[name] = handler
+        self.sim_actions[name] = partial(handler, self)
