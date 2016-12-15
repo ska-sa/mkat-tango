@@ -430,7 +430,6 @@
             "basicCommandData": {
                 "name": "On",
                 "description": "Turns On Device",
-                "override_handler": "False",
                 "actions": [],
                 "input_parameters": {
                     "dtype_in": "Void",
@@ -448,7 +447,6 @@
             "basicCommandData": {
                 "name": "set_temperature",
                 "description": "Sets the temperature value",
-                "override_handler": "False",
                 "actions": [
                     {
                      "behaviour": "input_transform",
@@ -473,6 +471,23 @@
                     "dformat_out": ""
                 }
             }
+        },
+        {
+            "basicCommandData": {
+                "name": "Off",
+                "description": "Turns Off Device",
+                "actions": [],
+                "input_parameters": {
+                    "dtype_in": "Void",
+                    "doc_in": "No input parameter",
+                    "dformat_in": ""
+                },
+                "output_parameters": {
+                    "dtype_out": "String",
+                    "doc_out": "Command responds",
+                    "dformat_out": ""
+                }
+            }
         }
     ],
     "deviceProperties": [
@@ -483,5 +498,15 @@
                 "default_value": ""
             }
         }
+    ],
+    "class_overrides": [
+        {
+	    "override_class": {
+		"name": "Override_Weather_Sim",
+		"module_directory": "None",
+		"module_name": "mkat_tango.simlib.tests.override_class",
+		"class_name": "Override_Weather"
+	    }
+	}
     ]
 }
