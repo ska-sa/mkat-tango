@@ -313,6 +313,9 @@ class SDD_Parser(object):
     def get_reformatted_device_attr_metadata(self):
         return self._formatted_mnt_pts_info
 
+    # TODO(KM 15-12-2016) Will need to implement a method that unpacks the commands
+    # dictionary to be 'un-nested' for easier lookups, which this method is going to
+    # return.
     def get_reformatted_cmd_metadata(self):
         return self._formatted_cmds_info
 
