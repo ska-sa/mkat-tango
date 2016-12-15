@@ -685,7 +685,7 @@ class PopulateModelActions(object):
                 self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
     def generate_action_handler(self, action_name, actions=[]):
-        def action_handler(tango_device, data_in=None):
+        def action_handler(model, data_in=None):
             # args contains the model instance and tango device instance
             # whereby the third item is a value in the case of commands with
             # input parameters.
@@ -697,7 +697,7 @@ class PopulateModelActions(object):
                     if action['behaviour'] == 'side_effect':
                         quantity = action['destination_quantity']
                         temp_variables[action['source_variable']] = data_in
-                        model_quantity = tango_device.model.sim_quantities[quantity]
+                        model_quantity = model.sim_quantities[quantity]
                         model_quantity.set_val(data_in, time.time())
                     if action['behaviour'] == 'output_return':
                         if 'source_variable' in action and 'source_quantity' in action:
@@ -707,7 +707,7 @@ class PopulateModelActions(object):
                             temp_variables[action['source_variable']] = data_in
                         else:
                             quantity = action['source_quantity']
-                            model_quantity = tango_device.model.sim_quantities[quantity]
+                            model_quantity = model.sim_quantities[quantity]
                             temp_variables[action[
                                 'source_variable']] = model_quantity.last_val
                 return_value = temp_variables[action['source_variable']]
