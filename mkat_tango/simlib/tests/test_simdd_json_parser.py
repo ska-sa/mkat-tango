@@ -177,7 +177,7 @@ class test_PopModelQuantities(GenericSetup):
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
         cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
-        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
 
         action_on = model.sim_actions['On']
         self.assertEqual(action_on(), "On returning")
