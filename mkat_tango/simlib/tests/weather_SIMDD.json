@@ -441,6 +441,22 @@
                     "dformat_out": ""
                 }
             }
+        },
+        {
+            "basicCommandData": {
+                "name": "Off",
+                "description": "Turns Off Device",
+                "input_parameters": {
+                    "dtype_in": "Void",
+                    "doc_in": "No input parameter",
+                    "dformat_in": ""
+                },
+                "output_parameters": {
+                    "dtype_out": "String",
+                    "doc_out": "Command responds",
+                    "dformat_out": ""
+                }
+            }
         }
     ],
     "deviceProperties": [
