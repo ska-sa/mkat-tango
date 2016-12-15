@@ -431,10 +431,7 @@
                 "name": "On",
                 "description": "Turns On Device",
                 "override_handler": "False",
-                "actions": [{
-                    "behaviour": "output_return",
-                    "source_variable": "temporary_variable"
-                }],
+                "actions": [],
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",

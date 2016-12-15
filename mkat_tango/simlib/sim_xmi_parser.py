@@ -654,10 +654,7 @@ class PopulateModelActions(object):
                 # 'source_variable': 'temporary_variable'},
                 # {'behaviour': 'output_return',
                 # 'source_variable': 'temporary_variable'}]
-                if 'actions' in cmd_meta.keys():
-                    actions = cmd_meta['actions']
-                else:
-                    actions = []
+                actions = cmd_meta.get('actions', [])
                 handler = self.generate_action_handler(cmd_name, actions)
                 self.sim_model.setup_sim_actions(cmd_name, handler)
                 # Might store the action's metadata in the sim_actions dictionary
@@ -665,34 +662,38 @@ class PopulateModelActions(object):
                 self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
     def generate_action_handler(self, action_name, actions=[]):
-        def action_handler(*args):
+        def action_handler(tango_device, data_in=None):
             # args contains the model instance and tango device instance
             # whereby the third item is a value in the case of commands with
             # input parameters.
-            temp_variable = ''
-            if len(actions) > 2:
+            temp_variables = {}
+            if len(actions) > 0:
                 for action in actions:
-                    if 'input_transform' in action.values():
-                        temp_variable = args[-1]
-                    if 'side_effect' in action.values():
+                    if action['behaviour'] == 'input_transform':
+                        temp_variables[action['destination_variable']] = data_in
+                    if action['behaviour'] == 'side_effect':
                         quantity = action['destination_quantity']
-                        temp_variable = args[-1]
-                        model_quantity = args[0].sim_quantities[quantity]
-                        model_quantity.set_val(temp_variable, time.time())
-                    if 'output_return' in action.values():
-                        if 'source_variable' in action.keys():
-                            temp_variable = args[-1]
+                        temp_variables[action['source_variable']] = data_in
+                        model_quantity = tango_device.model.sim_quantities[quantity]
+                        model_quantity.set_val(data_in, time.time())
+                    if action['behaviour'] == 'output_return':
+                        if 'source_variable' in action and 'source_quantity' in action:
+                            raise ValueError("Either 'source_variable' or " \
+                                             "'source_quantity', not both")
+                        elif action['source_variable'] == 'temporary_variable':
+                            temp_variables[action['source_variable']] = data_in
                         else:
                             quantity = action['source_quantity']
-                            model_quantity = args[0].sim_quantities[quantity]
-                            temp_variable = model_quantity.last_val
-                return 'ok | ' + str(temp_variable)
+                            model_quantity = tango_device.model.sim_quantities[quantity]
+                            temp_variables[action[
+                                'source_variable']] = model_quantity.last_val
+                return_value = temp_variables[action['source_variable']]
+                return 'ok | ' + str(return_value)
             else:
-                temp_variable = 'ok'
-                return temp_variable
+                return_value = 'ok'
+                return return_value
         action_handler.__name__ = action_name
         return action_handler
-
 
 class SimModelException(Exception):
     def __init__(self, message):
@@ -790,16 +791,16 @@ def get_tango_device_server(model):
     class TangoDeviceServerCommands(object):
         pass
 
-    def generate_cmd_handler(action, action_handler):
+    def generate_cmd_handler(action_name, action_handler):
         # You might need to figure out how to specialise cmd_handler to different
         # argument types
         def cmd_handler(*args):
             return action_handler(*args)
-        cmd_handler.__name__ = action
-        cmd_info_copy = model.sim_actions_meta[action].copy()
+        cmd_handler.__name__ = action_name
+        cmd_info_copy = model.sim_actions_meta[action_name].copy()
         cmd_info_copy.pop('name')
         tango_cmd_prop = POGO_USER_DEFAULT_CMD_PROP_MAP.values()
-        for prop_key in model.sim_actions_meta[action].keys():
+        for prop_key in model.sim_actions_meta[action_name]:
             if prop_key not in tango_cmd_prop:
                 cmd_info_copy.pop(prop_key)
         return command(f=cmd_handler, **cmd_info_copy)
@@ -815,7 +816,7 @@ def get_tango_device_server(model):
 
         def initialize_dynamic_attributes(self):
             self.model = model
-            model_sim_quants = self.model.sim_quantities
+            model_sim_quants = model.sim_quantities
             attribute_list = set([attr for attr in model_sim_quants.keys()])
             for attribute_name in attribute_list:
                 MODULE_LOGGER.info("Added dynamic {} attribute"
@@ -837,7 +838,6 @@ def get_tango_device_server(model):
                         MODULE_LOGGER.info("No setter function for " + prop + " property")
                 attr.set_default_properties(attr_props)
                 self.add_attribute(attr, self.read_attributes)
-
     return TangoDeviceServer
 
 def get_parser_instance(sim_datafile=None):
@@ -905,11 +905,10 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
         dev_name = test_device_name
 
     parser_instance = get_parser_instance(datafile)
-    model_quants_populater = PopulateModelQuantities(parser_instance, dev_name)
-    model = model_quants_populater.sim_model
+    model_quants_populator = PopulateModelQuantities(parser_instance, dev_name)
+    model = model_quants_populator.sim_model
     cmd_info = parser_instance.get_reformatted_cmd_metadata()
     PopulateModelActions(cmd_info, dev_name, model)
-
     return model
 
 def main():
