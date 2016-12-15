@@ -516,6 +516,11 @@ class Xmi_Parser(object):
         return device_properties
 
     def get_reformatted_override_metadata(self):
+        # TODO(KM 15-12-2016) The PopulateModelQuantities and PopulateModelActions
+        # classes assume that the parsers we have developed have the same interface
+        # so this method does nothing but return an empty dictionary. Might provide
+        # an implementation when the XMI file has such parameter information (provided 
+        # in the SIMDD file).
         return {}
 
 class PopulateModelQuantities(object):
@@ -660,19 +665,17 @@ class PopulateModelActions(object):
                                              klass_info['module_directory'])
                 klass = getattr(module, klass_info['class_name'])
                 instance = klass()
-                for cmd_name , cmd_meta in command_info.items():
-                    handler = getattr(instance, 'action_' + cmd_name,
-                                      self.generate_action_handler(cmd_name,
-                                                                   cmd_meta['dtype_out']))
-                    self.sim_model.setup_sim_actions(cmd_name, handler)
-                    # Might store the action's metadata in the sim_actions dictionary
-                    # instead of creating a separate dict.
-                    self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
         else:
-            for cmd_name, cmd_meta in command_info.items():
-                handler = self.generate_action_handler(cmd_name, cmd_meta['dtype_out'])
-                self.sim_model.setup_sim_actions(cmd_name, handler)
-                self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
+            instance = None
+
+        for cmd_name, cmd_meta in command_info.items():
+            handler = getattr(instance, 'action_' + cmd_name,
+                               self.generate_action_handler(cmd_name,
+                                                            cmd_meta['dtype_out']))
+            self.sim_model.setup_sim_actions(cmd_name, handler)
+            # Might store the action's metadata in the sim_actions dictionary
+            # instead of creating a separate dict.
+            self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
     def generate_action_handler(self, action_name, action_output_type):
         def action_handler(*args):
