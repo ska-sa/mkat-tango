@@ -205,8 +205,7 @@ class test_PopulateModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
-        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
-        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
 
         actual_actions_list = model.sim_actions.keys()
         expected_actions_list = ['On', 'Off']
@@ -220,7 +219,7 @@ class test_PopulateModelActions(GenericSetup):
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
         cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
-        sim_xmi_parser.PopulateModelActions(cmd_info, device_name, model)
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
         sim_model_actions_meta = model.sim_actions_meta
 
         for cmd_name, cmd_metadata in cmd_info.items():
