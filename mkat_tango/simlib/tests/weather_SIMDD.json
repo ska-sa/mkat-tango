@@ -454,12 +454,12 @@
     ],
     "class_overrides": [
         {
-		"override_class": {
-			"name": "Override_Weather_Sim",
-			"module_directory": "None",
-			"module_name": "mkat_tango.simlib.tests.override_class",
-			"class_name": "Override_Weather"
-		}
+	    "override_class": {
+		"name": "Override_Weather_Sim",
+		"module_directory": "None",
+		"module_name": "mkat_tango.simlib.tests.override_class",
+		"class_name": "Override_Weather"
+	    }
 	}
     ]
 }

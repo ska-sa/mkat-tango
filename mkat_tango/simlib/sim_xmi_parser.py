@@ -15,6 +15,7 @@ import os
 import weakref
 import logging
 import importlib
+import imp
 
 import xml.etree.ElementTree as ET
 import PyTango
@@ -652,7 +653,11 @@ class PopulateModelActions(object):
         override_info = self.parser_instance.get_reformatted_override_metadata()
         if override_info != {}:
             for klass_info in override_info.values():
-                module = importlib.import_module(klass_info['module_name'])
+                if klass_info['module_directory'] == 'None':
+                    module = importlib.import_module(klass_info['module_name'])
+                else:
+                    module = imp.load_source(klass_info['module_name'].split('.')[-1],
+                                             klass_info['module_directory'])
                 klass = getattr(module, klass_info['class_name'])
                 instance = klass()
                 for cmd_name , cmd_meta in command_info.items():
