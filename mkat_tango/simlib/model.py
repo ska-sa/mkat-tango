@@ -80,9 +80,9 @@ class Model(object):
         ----------
         name : str
             Name of the action
-        handler : callable(tango_device, action_args)
-            Callable that handles action (name). Is called with the tango
-            device instance as the first parameter.
+        handler : callable(model_instance, action_args)
+            Callable that handles action (name). Is called with the
+            model instance as the first parameter.
         """
         # Perhaps you need to check that the names are valid, or you need to escape
         # stuff to underscores or something, since we need to generate python function

@@ -817,8 +817,11 @@ def get_tango_device_server(model):
     def generate_cmd_handler(action_name, action_handler):
         # You might need to figure out how to specialise cmd_handler to different
         # argument types
-        def cmd_handler(*args):
-            return action_handler(*args)
+        def cmd_handler(tango_device, data_in=None):
+            if data_in:
+                return action_handler(data_in)
+            else:
+                return action_handler()
         cmd_handler.__name__ = action_name
         cmd_info_copy = model.sim_actions_meta[action_name].copy()
         cmd_info_copy.pop('name')
