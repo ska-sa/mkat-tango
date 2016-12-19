@@ -22,7 +22,7 @@ import PyTango
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
 from PyTango import (DevState, DevBoolean, DevString, DevEnum, AttrDataFormat,
-                     CmdArgType, DevDouble, DevFloat, DevLong)
+                     CmdArgType, DevDouble, DevFloat, DevLong, DevVoid)
 from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 from mkat_tango import helper_module
@@ -45,7 +45,8 @@ ARBITRARY_DATA_TYPE_RETURN_VALUES = {
     DevBoolean: True,
     DevDouble: 4.05,
     DevFloat: 8.1,
-    DevLong: 3}
+    DevLong: 3,
+    DevVoid: None}
 
 # TODO(KM 31-10-2016): Need to add xmi attributes' properties that are currently
 # not being handled by the parser e.g. [displayLevel, enumLabels] etc.

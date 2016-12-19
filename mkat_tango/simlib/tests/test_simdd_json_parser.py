@@ -12,7 +12,7 @@ from devicetest import TangoTestContext
 from katcore.testutils import cleanup_tempfile
 from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.simlib import simdd_json_parser
-from mkat_tango.simlib import sim_xmi_parser
+from mkat_tango.simlib import sim_xmi_parser, override_class
 from mkat_tango.testutils import ClassCleanupUnittestMixin
 
 
@@ -189,7 +189,8 @@ class test_PopulateModelActions(GenericSetup):
         model = pmq.sim_model
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
         action_on = model.sim_actions['On']
-        self.assertEqual(action_on(), "On command returning")
+        #import IPython; IPython.embed()
+        self.assertEqual(action_on.func.im_class, override_class.Override_Weather)
 
 
 class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
