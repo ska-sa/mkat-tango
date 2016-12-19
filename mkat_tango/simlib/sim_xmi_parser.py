@@ -716,7 +716,7 @@ def get_data_description_file_name():
     """Gets the xmi/xml/json description file name from the tango-db device properties
 
     Returns
-    =======
+    ======
     sim_data_description_file : str
         Tango device server description file
         (POGO xmi or SDD xml or SIMDD json)
@@ -776,11 +776,16 @@ def get_tango_device_server(model):
     def generate_cmd_handler(action, action_handler):
         # You might need to figure out how to specialise cmd_handler to different
         # argument types
-        def cmd_handler(*args):
-            return action_handler(*args)
+        def cmd_handler(tango_device, *input_parameters):
+            return action_handler(tango_dev=tango_device, data_input=input_parameters)
+
         cmd_handler.__name__ = action
         cmd_info_copy = model.sim_actions_meta[action].copy()
         cmd_info_copy.pop('name')
+        try:
+            cmd_info_copy.pop('description')
+        except KeyError:
+            pass
         return command(**cmd_info_copy)(cmd_handler)
 
     for action_name, action_handler in model.sim_actions.items():

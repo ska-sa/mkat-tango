@@ -16,8 +16,8 @@ import logging
 
 import json
 
-from PyTango import DevState, DevDouble, DevString, DevBoolean
-from PyTango._PyTango import CmdArgType
+from PyTango import DevState, DevDouble, DevString, DevBoolean, DevVoid
+from PyTango._PyTango import CmdArgType, AttrDataFormat
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -311,7 +311,22 @@ class Simdd_Parser(object):
         for param_name, param_val in sim_device_info.items():
             if isinstance(param_val, dict):
                 for item in expand(param_name, param_val):
-                    formated_info[str(item[0])] = str(item[1])
+                    #print item
+                    property_key = str(item[0])
+                    # Since the data type specified in the SIMDD is a string format
+                    # e.g. String, it is require in Tango device as a CmdArgType
+                    # i.e. PyTango._PyTango.CmdargType.DevString
+                    if property_key in ['dtype_in', 'dtype_out']:
+                        # Here we extract the cmdArgType obect since
+                        # for later when creating a Tango command,
+                        # data type is required in this format.
+                        val = getattr(CmdArgType, "Dev%s" % str(item[1]))
+                        formated_info[property_key] = val
+                    elif property_key in ['dformat_in', 'dformat_out']:
+                        val = getattr(AttrDataFormat, str(item[1]).upper())
+                        formated_info[property_key] = val
+                    else:
+                        formated_info[property_key] = str(item[1])
             else:
                 # Since the data type specified in the SIMDD is a string format
                 # e.g. Double, it is require in Tango device as a CmdArgType
@@ -320,7 +335,7 @@ class Simdd_Parser(object):
                     # Here we extract the cmdArgType obect since
                     # for later when creating a Tango attibute,
                     # data type is required in this format.
-                    val = eval(str(getattr(CmdArgType, "Dev%s" % param_val)))
+                    val = getattr(CmdArgType, "Dev%s" % param_val)
                 else:
                     val = str(param_val)
                 formated_info[str(param_name)] = val

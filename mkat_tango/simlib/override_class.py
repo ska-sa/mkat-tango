@@ -1,3 +1,5 @@
+from PyTango import DevState
+
 class Override_Weather(object):
     """An override class for the TANGO device class 'Weather'. It provides all the
     implementations of the command handler functions for the commands specified in the
@@ -8,22 +10,19 @@ class Override_Weather(object):
         """
         pass
 
-    def action_On(self, model):
+    def action_On(self, model, tango_dev=None, data_input=None):
         """Changes the State of the device to ON.
         """
         # Need to update when hooking it up to the TANGO device.
-        #self.device.set_state(DevState.ON)
-        return "On returning"
+        tango_dev.set_state(DevState.ON)
 
-    def action_Off(self, model):
+    def action_Off(self, model, tango_dev=None, data_input=None):
         """Changest the State of the device to OFF.
         """
         # Need to update when hooking it up to the TANGO device.
-        #self.device.set_state(DevState.OFF)
-        return "Off returning"
+        tango_dev.set_state(DevState.OFF)
 
-
-    def action_Do_Something(self, model, *args):
+    def action_Do_Something(self, model, tango_dev=None, data_input=None):
         """Do something using the arguments passed on by the command executer.
         """
         # Need to update when hooking it up to the TANGO device.
@@ -31,11 +30,11 @@ class Override_Weather(object):
         return "Do_Something returning"
 
     # Might need to define this action in the SIMDD commands, for testing purposes
-    def action_Stop_Rainfall(self, model):
+    def action_Stop_Rainfall(self, model, tango_dev=None, data_input=None):
         """
         """
         try:
-            quant_rainfall = self.sim_model.sim_quantities['Rainfall']
+            quant_rainfall = model.sim_quantities['rainfall']
         except KeyError:
             print "Quantity not in the model"
         quant_rainfall.max_bound = 0.0

@@ -433,12 +433,44 @@
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",
-                    "dformat_in": ""
+                    "dformat_in": "Scalar"
                 },
                 "output_parameters": {
-                    "dtype_out": "String",
+                    "dtype_out": "Void",
                     "doc_out": "Command responds",
-                    "dformat_out": ""
+                    "dformat_out": "Scalar"
+                }
+            }
+        },
+    {
+            "basicCommandData": {
+                "name": "Off",
+                "description": "Turns Off Device",
+                "input_parameters": {
+                    "dtype_in": "Void",
+                    "doc_in": "No input parameter",
+                    "dformat_in": "Scalar"
+                },
+                "output_parameters": {
+                    "dtype_out": "Void",
+                    "doc_out": "Command responds",
+                    "dformat_out": "Scalar"
+                }
+            }
+        },
+    {
+            "basicCommandData": {
+                "name": "Stop_Rainfall",
+                "description": "Stops the rain",
+                "input_parameters": {
+                    "dtype_in": "Void",
+                    "doc_in": "No input parameter",
+                    "dformat_in": "Scalar"
+                },
+                "output_parameters": {
+                    "dtype_out": "Void",
+                    "doc_out": "Command responds",
+                    "dformat_out": "Scalar"
                 }
             }
         }

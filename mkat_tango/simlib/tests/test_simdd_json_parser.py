@@ -18,6 +18,14 @@ from mkat_tango.testutils import ClassCleanupUnittestMixin
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
+TANGO_CMD_PARAMS_NAME_MAP = {
+    'name': 'cmd_name',
+    'doc_in': 'in_type_desc',
+    'dtype_in': 'in_type',
+    'doc_out': 'out_type_desc',
+    'dtype_out': 'out_type'}
+
+
 # Mandotary parameters required to create a well configure Tango attribute.
 expected_mandatory_attr_parameters = frozenset([
     "max_dim_x", "max_dim_y", "data_format", "period",
@@ -127,7 +135,7 @@ class test_Simdd_Json_Parser(GenericSetup):
                               "not match with the actual value" % (prop))
 
 
-class test_PopModelQuantities(GenericSetup):
+class test_PopulateModelQuantities(GenericSetup):
 
     def test_model_quantities(self):
         """Testing that the model quantities that are added to the model match with
@@ -170,14 +178,118 @@ class test_PopModelQuantities(GenericSetup):
                     "for the monitoring point '%s'." % (
                         attr_param_name, sim_quantity_name, attr_param_name))
 
+
+class test_PopulateModelActions(GenericSetup):
+
     def test_model_actions_overrides(self):
         """
         """
         device_name = 'tango/device/instance'
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
-        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
-
         action_on = model.sim_actions['On']
-        self.assertEqual(action_on(), "On returning")
+        self.assertEqual(action_on(), "On command returning")
+
+
+class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
+    longMessage = True
+
+    @classmethod
+    def setUpClassWithCleanup(cls):
+        cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
+        cls.data_descr_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
+                                                              'weather_SIMDD.json')
+        # Since the sim_xmi_parser gets the xmi file from the device properties
+        # in the tango database, here the method is mocked to return the xmi
+        # file that found using the pkg_resources since it is included in the
+        # test module
+        with mock.patch(sim_xmi_parser.__name__ + '.get_data_description_file_name'
+                        ) as mock_get_description_file_name:
+            mock_get_description_file_name.return_value = cls.data_descr_file
+            cls.properties = dict(sim_data_description_file=cls.data_descr_file)
+            cls.device_name = 'test/nodb/tangodeviceserver'
+            model = sim_xmi_parser.configure_device_model(cls.data_descr_file, cls.device_name)
+            cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
+            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
+                                                 device_name=cls.device_name,
+                                                 db=cls.tango_db,
+                                                 properties=cls.properties)
+            start_thread_with_cleanup(cls, cls.tango_context)
+
+    def setUp(self):
+        super(test_SimddDeviceIntegration, self).setUp()
+        self.device = self.tango_context.device
+        self.instance = self.TangoDeviceServer.instances[self.device.name()]
+        self.simdd_json_parser = simdd_json_parser.Simdd_Parser(self.data_descr_file)
+
+    def test_attribute_list(self):
+        """ Testing whether the attributes specified in the POGO generated xmi file
+        are added to the TANGO device
+        """
+        attributes = set(self.device.get_attribute_list())
+        expected_attributes = []
+        default_attributes = {'State', 'Status'}
+        expected_attributes = self.simdd_json_parser.get_reformatted_device_attr_metadata().keys()
+
+        self.assertEqual(set(expected_attributes), attributes - default_attributes,
+                         "Actual tango device attribute list differs from expected "
+                         "list!")
+
+
+    def test_command_list(self):
+        """
+        """
+        actual_device_commands = set(self.device.get_command_list()) - {'Init'}
+        expected_command_list = self.simdd_json_parser.get_reformatted_cmd_metadata().keys()
+        expected_command_list.extend(['State', 'Status'])
+        self.assertEquals(actual_device_commands, set(expected_command_list),
+                          "The commands specified in the SIMDD file are not present in"
+                          " the device")
+
+    def test_command_properties(self):
+        command_data = self.simdd_json_parser.get_reformatted_cmd_metadata()
+        extra_command_parameters = ['dformat_in', 'dformat_out', 'description']
+        for cmd_name, cmd_metadata in command_data.items():
+            cmd_config_info = self.device.get_command_config(cmd_name)
+            for cmd_prop, cmd_prop_value in cmd_metadata.items():
+                if cmd_prop in extra_command_parameters:
+                    continue
+                self.assertTrue(
+                    hasattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    "The cmd parameter '%s' for the cmd '%s' was not translated" %
+                    (cmd_prop, cmd_name))
+                if cmd_prop_value == 'none' or cmd_prop_value == '':
+                    cmd_prop_value = 'Uninitialised'
+                self.assertEqual(
+                    getattr(cmd_config_info, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]),
+                    cmd_prop_value, "The cmd %s parameter '%s/%s' values do not match" %
+                    (cmd_name, cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
+
+    def test_On_command(self):
+        """
+        """
+        command_name = 'On'
+        expected_result = None
+        self.device.command_inout(command_name)
+        self.assertEqual(self.device.command_inout(command_name),
+                         expected_result)
+
+
+    def test_Stop_Rainfall_command(self):
+        """
+        """
+
+        command_name = 'Stop_Rainfall'
+        expected_result = 0.0
+        self.device.command_inout(command_name)
+        self.assertEqual(expected_result, self.device.Rainfall)
+
+
+    def test_Off_command(self):
+        """
+        """
+        command_name = 'Off'
+        expected_result = None
+        self.assertEqual(self.device.command_inout(command_name),
+                         expected_result)
