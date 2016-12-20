@@ -311,7 +311,6 @@ class Simdd_Parser(object):
         for param_name, param_val in sim_device_info.items():
             if isinstance(param_val, dict):
                 for item in expand(param_name, param_val):
-                    #print item
                     property_key = str(item[0])
                     # Since the data type specified in the SIMDD is a string format
                     # e.g. String, it is require in Tango device as a CmdArgType

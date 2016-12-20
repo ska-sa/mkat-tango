@@ -19,11 +19,6 @@ class Override_Weather(object):
     implementations of the command handler functions for the commands specified in the
     POGO generated XMI data description file.
     """
-    def __init__(self):
-        """This constructor method takes in nothing and does nothing.
-        """
-        pass
-
     def action_On(self, model, tango_dev=None, data_input=None):
         """Changes the State of the device to ON.
         """
@@ -33,13 +28,6 @@ class Override_Weather(object):
         """Changest the State of the device to OFF.
         """
         tango_dev.set_state(DevState.OFF)
-
-    def action_Do_Something(self, model, tango_dev=None, data_input=None):
-        """Do something using the arguments passed on by the command executer.
-        """
-        # TODO(KM 20-12-2016) Redefine method to take in arguments and use them to
-        # change the state of the device
-        return "Do_Something returning"
 
     def action_Stop_Rainfall(self, model, tango_dev=None, data_input=None):
         """Totally sets the simulated quantity rainfall to a constant value of zero.
