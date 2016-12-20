@@ -320,8 +320,8 @@ class Simdd_Parser(object):
                         # Here we extract the cmdArgType obect since
                         # for later when creating a Tango command,
                         # data type is required in this format.
-                        val = getattr(CmdArgType, "Dev%s" % str(item[1]))
-                        formated_info[property_key] = val
+                        formated_info[property_key] = getattr(
+                            CmdArgType, "Dev%s" % str(item[1]))
                     else:
                         formated_info[property_key] = str(item[1])
             elif param_name in ['actions']:
