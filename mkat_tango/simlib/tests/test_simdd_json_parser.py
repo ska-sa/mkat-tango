@@ -239,7 +239,8 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
 
 
     def test_command_list(self):
-        """
+        """Testing that the command list in the Tango device matches with the one
+        specified in the SIMDD data description file.
         """
         actual_device_commands = set(self.device.get_command_list()) - {'Init'}
         expected_command_list = self.simdd_json_parser.get_reformatted_cmd_metadata().keys()
@@ -249,6 +250,9 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
                           " the device")
 
     def test_command_properties(self):
+        """Testing that the command parameter information matches with the information
+        captured in the SIMDD data description file.
+        """
         command_data = self.simdd_json_parser.get_reformatted_cmd_metadata()
         extra_command_parameters = ['dformat_in', 'dformat_out', 'description']
         for cmd_name, cmd_metadata in command_data.items():
@@ -268,29 +272,41 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
                     (cmd_name, cmd_prop, TANGO_CMD_PARAMS_NAME_MAP[cmd_prop]))
 
     def test_On_command(self):
-        """
+        """Testing that the On command changes the State attribute's value of the Tango
+        device to ON.
         """
         command_name = 'On'
         expected_result = None
         self.device.command_inout(command_name)
         self.assertEqual(self.device.command_inout(command_name),
                          expected_result)
+        self.assertEqual(getattr(self.device.read_attribute('State'), 'value'),
+                                 PyTango.DevState.ON)
 
 
     def test_Stop_Rainfall_command(self):
+        """Testing that the Tango device weather simulator 'detects' no rainfall when
+        the Stop_Rainfall command is executed.
         """
-        """
-
         command_name = 'Stop_Rainfall'
         expected_result = 0.0
         self.device.command_inout(command_name)
-        self.assertEqual(expected_result, self.device.Rainfall)
+        # TODO(KM 20-12-2016) Remove the sleep method invocation when you figure out
+        # a better way to allow the model.quantity_state dictionary to be updated
+        # before reading the attribute.
+        time.sleep(1)
+        self.assertEqual(expected_result,
+                         getattr(self.device.read_attribute('Rainfall'), 'value'),
+                         "The value override action didn't execute successfully")
 
 
     def test_Off_command(self):
-        """
+        """Testing that the Off command changes the State attribute's value of the Tango
+        device to OFF.
         """
         command_name = 'Off'
         expected_result = None
         self.assertEqual(self.device.command_inout(command_name),
                          expected_result)
+        self.assertEqual(getattr(self.device.read_attribute('State'), 'value'),
+                                 PyTango.DevState.OFF)
