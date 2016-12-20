@@ -15,6 +15,7 @@ import os
 import weakref
 import logging
 import importlib
+import imp
 
 import xml.etree.ElementTree as ET
 import PyTango
@@ -516,6 +517,11 @@ class Xmi_Parser(object):
         return device_properties
 
     def get_reformatted_override_metadata(self):
+        # TODO(KM 15-12-2016) The PopulateModelQuantities and PopulateModelActions
+        # classes assume that the parsers we have developed have the same interface
+        # so this method does nothing but return an empty dictionary. Might provide
+        # an implementation when the XMI file has such parameter information (provided 
+        # in the SIMDD file).
         return {}
 
 class PopulateModelQuantities(object):
