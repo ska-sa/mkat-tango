@@ -12,7 +12,6 @@
 """
 
 import os
-import time
 import weakref
 import logging
 import importlib
@@ -717,6 +716,10 @@ class PopulateModelActions(object):
             data_in: float, string, int, etc.
                 Input arguments of tango command
 
+            Returns
+            -------
+            return_value: float, string, int, etc.
+                Output value of an executed tango command
             """
             # args contains the model instance and tango device instance
             # whereby the third item is a value in the case of commands with
@@ -733,27 +736,31 @@ class PopulateModelActions(object):
                 if action['behaviour'] == 'output_return':
                     if 'source_variable' in action and 'source_quantity' in action:
                         raise ValueError(
-                            "Either 'source_variable' or 'source_quantity' "
-                            "for 'output_return' action, not both")
+                            "{}: Either 'source_variable' or 'source_quantity'"
+                            " for 'output_return' action, not both"
+                            .format(action_name))
                     elif 'source_variable' in action:
                         source_variable = action['source_variable']
                         try:
                             return_value = temp_variables[source_variable]
                         except KeyError:
-                            raise ValueError('Source variable {} not defined'
-                                             .format(source_variable))
+                            raise ValueError(
+                                "{}: Source variable {} not defined"
+                                .format(action_name, source_variable))
                     elif 'source_quantity' in action:
                         quantity = action['source_quantity']
                         try:
                             model_quantity = model.sim_quantities[quantity]
                         except KeyError:
-                            raise ValueError('Source quantity {} not defined'
-                                             .format(quantity))
+                            raise ValueError(
+                                "{}: Source quantity {} not defined"
+                                .format(action_name, quantity))
                         return_value = model_quantity.last_val
                     else:
                         raise ValueError(
-                            "Need to specify one of 'source_variable' or "
-                            "'source_quantity' for 'output_return' action")
+                            "{}: Need to specify one of 'source_variable' "
+                            "or 'source_quantity' for 'output_return' action"
+                            .format(action_name))
                 else:
                     # Return a default value if output_return is not specified.
                     return_value = ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
