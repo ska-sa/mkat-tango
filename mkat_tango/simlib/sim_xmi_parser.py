@@ -712,16 +712,32 @@ class PopulateModelActions(object):
                     model_quantity.set_val(data_in, time.time())
                 if action['behaviour'] == 'output_return':
                     if 'source_variable' in action and 'source_quantity' in action:
-                        raise ValueError("Either 'source_variable' or " \
-                                         "'source_quantity', not both")
-                    elif action['source_variable'] == 'temporary_variable':
-                        temp_variables[action['source_variable']] = data_in
-                    else:
+                        raise ValueError(
+                            "Either 'source_variable' or 'source_quantity' "
+                            "for 'output_return' action, not both")
+                    elif 'source_variable' in action:
+                        source_variable = action['source_variable']
+                        try:
+                            return_value = temp_variables[source_variable]
+                        except KeyError:
+                            raise ValueError('Source variable {} not defined'
+                                             .format(source_variable))
+                    elif 'source_quantity' in action:
                         quantity = action['source_quantity']
-                        model_quantity = model.sim_quantities[quantity]
-                        temp_variables[action[
-                            'source_variable']] = model_quantity.last_val
-            return ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
+                        try:
+                            model_quantity = model.sim_quantities[quantity]
+                        except KeyError:
+                            raise ValueError('Source quantity {} not defined'
+                                             .format(quantity))
+                        return_value = model_quantity.last_val
+                    else:
+                        raise ValueError(
+                            "Need to specify one of 'source_variable' or "
+                            "'source_quantity' for 'output_return' action")
+                else:
+                    return_value = ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
+            return return_value
+
         action_handler.__name__ = action_name
         return action_handler
 
