@@ -735,6 +735,7 @@ class PopulateModelActions(object):
                             "Need to specify one of 'source_variable' or "
                             "'source_quantity' for 'output_return' action")
                 else:
+                    # Return a default value if output_return is not specified.
                     return_value = ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
             return return_value
 
