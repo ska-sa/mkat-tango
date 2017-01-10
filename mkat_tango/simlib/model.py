@@ -74,7 +74,7 @@ class Model(object):
         except Exception:
             MODULE_LOGGER.exception('Exception in update loop')
 
-    def setup_sim_actions(self, name, handler):
+    def set_sim_action(self, name, handler):
         """Add an action handler function
         Parameters
         ----------
