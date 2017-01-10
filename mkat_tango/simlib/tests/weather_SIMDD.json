@@ -466,7 +466,7 @@
                     "dformat_in": ""
                 },
                 "output_parameters": {
-                    "dtype_out": "String",
+                    "dtype_out": "Double",
                     "doc_out": "Command responds",
                     "dformat_out": ""
                 }

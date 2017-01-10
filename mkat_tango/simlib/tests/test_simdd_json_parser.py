@@ -272,5 +272,4 @@ class test_PopulateModelActions(GenericSetup):
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
         action_set_temperature = model.sim_actions['set_temperature']
         data_in = 25.0
-        self.assertEqual(action_set_temperature(data_in), 'Ok!')
-
+        self.assertEqual(action_set_temperature(data_in), data_in)

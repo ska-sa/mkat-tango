@@ -686,7 +686,27 @@ class PopulateModelActions(object):
                 # instead of creating a separate dict.
                 self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
-    def generate_action_handler(self, action_name, action_output_type, actions=[]):
+    def generate_action_handler(self, action_name, action_output_type, actions=None):
+        """Generates and returns an action handler to manage tango commands
+
+        Parameters
+        ----------
+        action_name: str
+            Name of action handler to generate
+        action_output_type: PyTango._PyTango.CmdArgType
+            Tango command argument type
+        actions: list
+            List of actions the handler provides
+
+
+        Returns
+        -------
+        action_handler: function
+            action handler, taking command input argument in case of tango
+            commands with input arguments.
+        """
+        if actions is None:
+            actions = []
         def action_handler(model, data_in=None):
             """Action handler taking command input arguments
 
@@ -709,7 +729,7 @@ class PopulateModelActions(object):
                     quantity = action['destination_quantity']
                     temp_variables[action['source_variable']] = data_in
                     model_quantity = model.sim_quantities[quantity]
-                    model_quantity.set_val(data_in, time.time())
+                    model_quantity.set_val(data_in, model.time_func())
                 if action['behaviour'] == 'output_return':
                     if 'source_variable' in action and 'source_quantity' in action:
                         raise ValueError(
