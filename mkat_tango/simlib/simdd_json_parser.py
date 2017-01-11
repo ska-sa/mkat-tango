@@ -11,7 +11,6 @@
 
 import os
 import sys
-import time
 import logging
 
 import json
@@ -25,6 +24,21 @@ MODULE_LOGGER = logging.getLogger(__name__)
 class Simdd_Parser(object):
 
     def __init__(self, simdd_json_file):
+        """Parser class taking a simulator description datafile in json format.
+
+        Creating an instance of this class directly parse the data file and extract
+        all the provided tango attributes, commmands, device property and device
+        override class information. The formated data in a form of a dict structure
+        can be obtained using class methods, `get_reformatted_device_attr_metadata`,
+        `get_reformatted_cmd_metadata`, `get_reformatted_properties_metadata` and
+        `get_reformatted_override_metadata`
+
+        Parameters
+        ----------
+        simdd_json_file: str
+            Name of simulator descrition data file
+
+        """
         # Simulator decription datafile in json format
         self.simdd_json_file = simdd_json_file
         self._device_attributes = {}
