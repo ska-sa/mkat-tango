@@ -26,10 +26,10 @@ class Simdd_Parser(object):
     def __init__(self, simdd_json_file):
         """Parser class taking a simulator description datafile in json format.
 
-        Creating an instance of this class directly parse the data file and extract
+        Creating an instance of this class directly parses the data file and extracts
         all the provided tango attributes, commmands, device property and device
         override class information. The formated data in a form of a dict structure
-        can be obtained using class methods, `get_reformatted_device_attr_metadata`,
+        can be obtained using the methods, `get_reformatted_device_attr_metadata`,
         `get_reformatted_cmd_metadata`, `get_reformatted_properties_metadata` and
         `get_reformatted_override_metadata`
 
