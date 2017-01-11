@@ -92,7 +92,8 @@ class GenericSetup(unittest.TestCase):
             super(GenericSetup, self).setUp()
             self.simdd_json_file = pkg_resources.resource_filename(
                     'mkat_tango.simlib.tests', 'weather_SIMDD.json')
-            self.simdd_parser = simdd_json_parser.Simdd_Parser(self.simdd_json_file)
+            self.simdd_parser = simdd_json_parser.Simdd_Parser()
+            self.simdd_parser.parse(self.simdd_json_file)
 
 class test_Simdd_Json_Parser(GenericSetup):
     def test_parsed_attributes(self):
