@@ -7,7 +7,7 @@
                 "label": "Outside Temperature",
                 "description": "Current temperature outside near the telescope.",
                 "data_type": "Double",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
@@ -60,7 +60,7 @@
                 "label": "Insolation",
                 "description": "Sun intensity in central telescope area.",
                 "data_type": "Double",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
@@ -113,7 +113,7 @@
                 "label": "Barometric pressure",
                 "description": "Barometric pressure in central telescope area.",
                 "data_type": "Double",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "5",
@@ -219,7 +219,7 @@
                 "label": "Air humidity",
                 "description": "Relative humidity in central telescope area.",
                 "data_type": "Double",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
@@ -272,7 +272,7 @@
                 "label": "Wind speed",
                 "description": "Wind speed in central telescope area.",
                 "data_type": "Double",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
@@ -325,7 +325,7 @@
                 "label": "Wind direction",
                 "description": "Wind direction in central telescope area.",
                 "data_type": "Double",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "6.2f",
                 "delta_t": "1000",
                 "delta_val": "0.5",
@@ -378,7 +378,7 @@
                 "label": "Input communication OK",
                 "description": "Communications with all weather sensors are nominal.",
                 "data_type": "Boolean",
-                "data_format": "",
+                "data_format": "Scalar",
                 "format": "",
                 "delta_t": "",
                 "delta_val": "",
@@ -426,10 +426,11 @@
         }
     ],
     "commands": [
-    	{
+        {
             "basicCommandData": {
                 "name": "On",
                 "description": "Turns On Device",
+                "actions": [],
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",
@@ -444,8 +445,38 @@
         },
     {
             "basicCommandData": {
+                "name": "set_temperature",
+                "description": "Sets the temperature value",
+                "actions": [
+                    {
+                     "behaviour": "input_transform",
+                     "destination_variable": "temporary_variable"
+                    },
+                    {
+                     "behaviour": "side_effect",
+                     "source_variable": "temporary_variable",
+                     "destination_quantity": "temperature"
+                    },
+                    {"behaviour": "output_return",
+                     "source_variable": "temporary_variable"
+                    }],
+                "input_parameters": {
+                    "dtype_in": "Double",
+                    "doc_in": "Value to set quantity",
+                    "dformat_in": "Scalar"
+                },
+                "output_parameters": {
+                    "dtype_out": "Double",
+                    "doc_out": "Command responds",
+                    "dformat_out": "Scalar"
+                }
+            }
+        },
+        {
+            "basicCommandData": {
                 "name": "Off",
                 "description": "Turns Off Device",
+                "actions": [],
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",

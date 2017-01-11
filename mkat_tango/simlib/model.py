@@ -74,15 +74,15 @@ class Model(object):
         except Exception:
             MODULE_LOGGER.exception('Exception in update loop')
 
-    def setup_sim_actions(self, name, handler):
+    def set_sim_action(self, name, handler):
         """Add an action handler function
         Parameters
         ----------
         name : str
             Name of the action
         handler : callable(model_instance, action_args)
-            Callable that handles action (name). Is called with the model instance
-            as the first parameter.
+            Callable that handles action (name). Is called with the
+            model instance as the first parameter.
         """
         # Perhaps you need to check that the names are valid, or you need to escape
         # stuff to underscores or something, since we need to generate python function

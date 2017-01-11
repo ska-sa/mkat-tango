@@ -48,7 +48,7 @@ expected_temperature_attr_info = {
         'archive_abs_change': '0.5',
         'archive_period': '1000',
         'archive_rel_change': '10',
-        'data_format': '',
+        'data_format': 'Scalar',
         'data_type': PyTango._PyTango.CmdArgType.DevDouble,
         'format': '6.2f',
         'delta_t': '1000',
@@ -81,13 +81,14 @@ expected_temperature_attr_info = {
 # json file is parsed by the Simdd_Parser.
 expected_on_cmd_info = {
         'description': 'Turns On Device',
-        'dformat_in': '',
-        'dformat_out': '',
+        'dformat_in': 'Scalar',
+        'dformat_out': 'Scalar',
         'doc_in': 'No input parameter',
         'doc_out': 'Command responds',
         'dtype_in': 'Void',
         'dtype_out': 'String',
-        'name': 'On'
+        'name': 'On',
+        'actions': []
     }
 
 
@@ -191,6 +192,26 @@ class test_PopulateModelQuantities(GenericSetup):
                         attr_param_name, sim_quantity_name, attr_param_name))
 
 
+expected_action_set_temperature_metadata = {
+            "name": "set_temperature",
+            "description": "Sets the temperature value",
+            "dtype_in": "Double",
+            "doc_in": "Value to set quantity",
+            "dformat_in": "",
+            "dtype_out": "String",
+            "doc_out": "Command responds",
+            "dformat_out": "",
+            "actions": [
+                {"behaviour": "input_transform",
+                 "destination_variable": "temporary_variable"},
+                {"behaviour": "side_effect",
+                 "source_variable": "temporary_variable",
+                 "destination_quantity": "temperature"},
+                {"behaviour": "output_return",
+                 "source_variable": "temporary_variable"}]
+}
+
+
 class test_PopulateModelActions(GenericSetup):
 
     def test_model_actions(self):
@@ -204,7 +225,7 @@ class test_PopulateModelActions(GenericSetup):
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
 
         actual_actions_list = model.sim_actions.keys()
-        expected_actions_list = ['On', 'Off', 'Stop_Rainfall']
+        expected_actions_list = ['On', 'Off', 'Stop_Rainfall', 'set_temperature']
         self.assertEqual(set(actual_actions_list), set(expected_actions_list),
                          "There are actions missing in the model")
 
@@ -299,7 +320,8 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
         captured in the SIMDD data description file.
         """
         command_data = self.simdd_json_parser.get_reformatted_cmd_metadata()
-        extra_command_parameters = ['dformat_in', 'dformat_out', 'description']
+        extra_command_parameters = ['dformat_in', 'dformat_out', 'description',
+                                    'actions']
         for cmd_name, cmd_metadata in command_data.items():
             cmd_config_info = self.device.get_command_config(cmd_name)
             for cmd_prop, cmd_prop_value in cmd_metadata.items():
@@ -356,3 +378,13 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
                          expected_result)
         self.assertEqual(getattr(self.device.read_attribute('State'), 'value'),
                                  PyTango.DevState.OFF)
+
+
+    def test_model_action_behaviour(self):
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_json_parser, device_name)
+        model = pmq.sim_model
+        sim_xmi_parser.PopulateModelActions(self.simdd_json_parser, device_name, model)
+        action_set_temperature = model.sim_actions['set_temperature']
+        data_in = 25.0
+        self.assertEqual(action_set_temperature(data_in), data_in)
