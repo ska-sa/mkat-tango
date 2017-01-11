@@ -336,10 +336,11 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
         command_name = 'Stop_Rainfall'
         expected_result = 0.0
         self.device.command_inout(command_name)
-        # TODO(KM 20-12-2016) Remove the sleep method invocation when you figure out
-        # a better way to allow the model.quantity_state dictionary to be updated
-        # before reading the attribute.
-        time.sleep(1)
+        # The model needs 'dt' to be greater than the min_update_period for it to update
+        # the model.quantity_state dictionary, so by manipulating the value of the last
+        # update time of the model it will  ensure that the model.quantity_state
+        # dictionary will be updated before reading the attribute value.
+        self.instance.model.last_update_time = 0
         self.assertEqual(expected_result,
                          getattr(self.device.read_attribute('Rainfall'), 'value'),
                          "The value override action didn't execute successfully")

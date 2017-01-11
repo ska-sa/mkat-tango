@@ -25,7 +25,7 @@ class Override_Weather(object):
         tango_dev.set_state(DevState.ON)
 
     def action_Off(self, model, tango_dev=None, data_input=None):
-        """Changest the State of the device to OFF.
+        """Changes the State of the device to OFF.
         """
         tango_dev.set_state(DevState.OFF)
 

@@ -793,7 +793,7 @@ def get_tango_device_server(model):
         try:
             cmd_info_copy.pop('description')
         except KeyError:
-            pass
+            MODULE_LOGGER.info("The cmd_info does not have the 'description' parameter.")
         return command(**cmd_info_copy)(cmd_handler)
 
     for action_name, action_handler in model.sim_actions.items():
