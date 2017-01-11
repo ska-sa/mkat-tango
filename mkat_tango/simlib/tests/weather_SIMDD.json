@@ -426,10 +426,11 @@
         }
     ],
     "commands": [
-    	{
+        {
             "basicCommandData": {
                 "name": "On",
                 "description": "Turns On Device",
+                "actions": [],
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",
@@ -444,8 +445,38 @@
         },
         {
             "basicCommandData": {
+                "name": "set_temperature",
+                "description": "Sets the temperature value",
+                "actions": [
+                    {
+                     "behaviour": "input_transform",
+                     "destination_variable": "temporary_variable"
+                    },
+                    {
+                     "behaviour": "side_effect",
+                     "source_variable": "temporary_variable",
+                     "destination_quantity": "temperature"
+                    },
+                    {"behaviour": "output_return",
+                     "source_variable": "temporary_variable"
+                    }],
+                "input_parameters": {
+                    "dtype_in": "Double",
+                    "doc_in": "Value to set quantity",
+                    "dformat_in": ""
+                },
+                "output_parameters": {
+                    "dtype_out": "Double",
+                    "doc_out": "Command responds",
+                    "dformat_out": ""
+                }
+            }
+        },
+        {
+            "basicCommandData": {
                 "name": "Off",
                 "description": "Turns Off Device",
+                "actions": [],
                 "input_parameters": {
                     "dtype_in": "Void",
                     "doc_in": "No input parameter",

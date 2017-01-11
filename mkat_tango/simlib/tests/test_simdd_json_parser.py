@@ -80,7 +80,8 @@ expected_on_cmd_info = {
         'doc_out': 'Command responds',
         'dtype_in': 'Void',
         'dtype_out': 'String',
-        'name': 'On'
+        'name': 'On',
+        'actions': []
     }
 
 
@@ -192,8 +193,30 @@ expected_action_On_metadata = {
     "dformat_in": "",
     "dtype_out": "String",
     "doc_out": "Command responds",
-    "dformat_out": ""
+    "dformat_out": "",
+    "actions": []
 }
+
+
+expected_action_set_temperature_metadata = {
+            "name": "set_temperature",
+            "description": "Sets the temperature value",
+            "dtype_in": "Double",
+            "doc_in": "Value to set quantity",
+            "dformat_in": "",
+            "dtype_out": "String",
+            "doc_out": "Command responds",
+            "dformat_out": "",
+            "actions": [
+                {"behaviour": "input_transform",
+                 "destination_variable": "temporary_variable"},
+                {"behaviour": "side_effect",
+                 "source_variable": "temporary_variable",
+                 "destination_quantity": "temperature"},
+                {"behaviour": "output_return",
+                 "source_variable": "temporary_variable"}]
+}
+
 
 class test_PopulateModelActions(GenericSetup):
 
@@ -208,8 +231,8 @@ class test_PopulateModelActions(GenericSetup):
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
 
         actual_actions_list = model.sim_actions.keys()
-        expected_actions_list = ['On', 'Off']
-        self.assertEqual(actual_actions_list, expected_actions_list,
+        expected_actions_list = ['On', 'Off', 'set_temperature']
+        self.assertEqual(set(actual_actions_list), set(expected_actions_list),
                          "There are actions missing in the model")
 
     def test_model_actions_metadata(self):
@@ -237,8 +260,16 @@ class test_PopulateModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
         model = pmq.sim_model
-        cmd_info = self.simdd_parser.get_reformatted_cmd_metadata()
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
-
         action_on = model.sim_actions['On']
         self.assertEqual(action_on(), "On returning")
+
+
+    def test_model_action_behaviour(self):
+        device_name = 'tango/device/instance'
+        pmq = sim_xmi_parser.PopulateModelQuantities(self.simdd_parser, device_name)
+        model = pmq.sim_model
+        sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
+        action_set_temperature = model.sim_actions['set_temperature']
+        data_in = 25.0
+        self.assertEqual(action_set_temperature(data_in), data_in)

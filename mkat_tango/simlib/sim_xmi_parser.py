@@ -309,7 +309,7 @@ class Xmi_Parser(object):
         attribute_data = dict()
         attribute_data['dynamicAttributes'] = description_data.attrib
 
-        attType =  attribute_data['dynamicAttributes']['attType']
+        attType = attribute_data['dynamicAttributes']['attType']
         if attType in POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP.keys():
             attribute_data['dynamicAttributes']['attType'] = (
                     POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP[attType])
@@ -482,14 +482,13 @@ class Xmi_Parser(object):
             for cmd_prop_name, cmd_prop_value in cmd_metadata.items():
                 try:
                     commands_metadata.update(
-                        {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name] :cmd_prop_value})
+                        {POGO_USER_DEFAULT_CMD_PROP_MAP[cmd_prop_name]: cmd_prop_value})
                 except KeyError:
                     MODULE_LOGGER.info(
                         "The property '%s' cannot be translated to a "
-                        "corresponding parameter in the TANGO library" %(cmd_prop_name))
-
+                        "corresponding parameter in the TANGO library",
+                        cmd_prop_name)
             commands[cmd_name] = commands_metadata
-
         return commands
 
     def get_reformatted_properties_metadata(self):
@@ -650,7 +649,6 @@ class PopulateModelActions(object):
             self.sim_model = model.Model(tango_device_name)
         else:
             self.sim_model = model_instance
-
         self.add_actions()
 
     def add_actions(self):
@@ -669,20 +667,107 @@ class PopulateModelActions(object):
             instance = None
 
         for cmd_name, cmd_meta in command_info.items():
-            handler = getattr(instance, 'action_' + cmd_name,
-                               self.generate_action_handler(cmd_name,
-                                                            cmd_meta['dtype_out']))
-            self.sim_model.setup_sim_actions(cmd_name, handler)
-            # Might store the action's metadata in the sim_actions dictionary
-            # instead of creating a separate dict.
-            self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
+                # Every command is to be declared to have one or more  action behaviour.
+                # Example of a list of actions handle at this moment is as follows
+                # [{'behaviour': 'input_transform',
+                # 'destination_variable': 'temporary_variable'},
+                # {'behaviour': 'side_effect',
+                # 'destination_quantity': 'temperature',
+                # 'source_variable': 'temporary_variable'},
+                # {'behaviour': 'output_return',
+                # 'source_variable': 'temporary_variable'}]
+                actions = cmd_meta.get('actions', [])
+                handler = getattr(instance, 'action_{}'.format(cmd_name),
+                                  self.generate_action_handler(
+                                      cmd_name, cmd_meta['dtype_out'], actions))
+                self.sim_model.set_sim_action(cmd_name, handler)
+                # Might store the action's metadata in the sim_actions dictionary
+                # instead of creating a separate dict.
+                self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
-    def generate_action_handler(self, action_name, action_output_type):
-        def action_handler(*args):
-            return ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
+    def generate_action_handler(self, action_name, action_output_type, actions=None):
+        """Generates and returns an action handler to manage tango commands
+
+        Parameters
+        ----------
+        action_name: str
+            Name of action handler to generate
+        action_output_type: PyTango._PyTango.CmdArgType
+            Tango command argument type
+        actions: list
+            List of actions that the handler will provide
+
+        Returns
+        -------
+        action_handler: function
+            action handler, taking command input argument in case of tango
+            commands with input arguments.
+        """
+        if actions is None:
+            actions = []
+
+        def action_handler(model, data_in=None):
+            """Action handler taking command input arguments
+
+            Parameters
+            ----------
+            model: model.Model
+                Model instance
+            data_in: float, string, int, etc.
+                Input arguments of tango command
+
+            Returns
+            -------
+            return_value: float, string, int, etc.
+                Output value of an executed tango command
+            """
+            # args contains the model instance and tango device instance
+            # whereby the third item is a value in the case of commands with
+            # input parameters.
+            temp_variables = {}
+            for action in actions:
+                if action['behaviour'] == 'input_transform':
+                    temp_variables[action['destination_variable']] = data_in
+                if action['behaviour'] == 'side_effect':
+                    quantity = action['destination_quantity']
+                    temp_variables[action['source_variable']] = data_in
+                    model_quantity = model.sim_quantities[quantity]
+                    model_quantity.set_val(data_in, model.time_func())
+                if action['behaviour'] == 'output_return':
+                    if 'source_variable' in action and 'source_quantity' in action:
+                        raise ValueError(
+                            "{}: Either 'source_variable' or 'source_quantity'"
+                            " for 'output_return' action, not both"
+                            .format(action_name))
+                    elif 'source_variable' in action:
+                        source_variable = action['source_variable']
+                        try:
+                            return_value = temp_variables[source_variable]
+                        except KeyError:
+                            raise ValueError(
+                                "{}: Source variable {} not defined"
+                                .format(action_name, source_variable))
+                    elif 'source_quantity' in action:
+                        quantity = action['source_quantity']
+                        try:
+                            model_quantity = model.sim_quantities[quantity]
+                        except KeyError:
+                            raise ValueError(
+                                "{}: Source quantity {} not defined"
+                                .format(action_name, quantity))
+                        return_value = model_quantity.last_val
+                    else:
+                        raise ValueError(
+                            "{}: Need to specify one of 'source_variable' "
+                            "or 'source_quantity' for 'output_return' action"
+                            .format(action_name))
+                else:
+                    # Return a default value if output_return is not specified.
+                    return_value = ARBITRARY_DATA_TYPE_RETURN_VALUES[action_output_type]
+            return return_value
+
         action_handler.__name__ = action_name
         return action_handler
-
 
 class SimModelException(Exception):
     def __init__(self, message):
@@ -780,16 +865,24 @@ def get_tango_device_server(model):
     class TangoDeviceServerCommands(object):
         pass
 
-
-    def generate_cmd_handler(action, action_handler):
+    def generate_cmd_handler(action_name, action_handler):
         # You might need to figure out how to specialise cmd_handler to different
         # argument types
-        def cmd_handler(*args):
-            return action_handler(*args)
-        cmd_handler.__name__ = action
-        cmd_info_copy = model.sim_actions_meta[action].copy()
+        def cmd_handler(tango_device, data_in=None):
+            if data_in:
+                return action_handler(data_in)
+            else:
+                return action_handler()
+        cmd_handler.__name__ = action_name
+        cmd_info_copy = model.sim_actions_meta[action_name].copy()
         cmd_info_copy.pop('name')
-        return command(**cmd_info_copy)(cmd_handler)
+        tango_cmd_prop = POGO_USER_DEFAULT_CMD_PROP_MAP.values()
+        for prop_key in model.sim_actions_meta[action_name]:
+            if prop_key not in tango_cmd_prop:
+                MODULE_LOGGER.info(
+                    "Warning! Property %s is not a tango command prop" % prop_key)
+                cmd_info_copy.pop(prop_key)
+        return command(f=cmd_handler, **cmd_info_copy)
 
     for action_name, action_handler in model.sim_actions.items():
         cmd_handler = generate_cmd_handler(action_name, action_handler)
@@ -802,7 +895,7 @@ def get_tango_device_server(model):
 
         def initialize_dynamic_attributes(self):
             self.model = model
-            model_sim_quants = self.model.sim_quantities
+            model_sim_quants = model.sim_quantities
             attribute_list = set([attr for attr in model_sim_quants.keys()])
             for attribute_name in attribute_list:
                 MODULE_LOGGER.info("Added dynamic {} attribute"
@@ -824,7 +917,6 @@ def get_tango_device_server(model):
                         MODULE_LOGGER.info("No setter function for " + prop + " property")
                 attr.set_default_properties(attr_props)
                 self.add_attribute(attr, self.read_attributes)
-
     return TangoDeviceServer
 
 def get_parser_instance(sim_datafile=None):
@@ -892,8 +984,8 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
         dev_name = test_device_name
 
     parser_instance = get_parser_instance(datafile)
-    model_quants_populater = PopulateModelQuantities(parser_instance, dev_name)
-    model = model_quants_populater.sim_model
+    model_quants_populator = PopulateModelQuantities(parser_instance, dev_name)
+    model = model_quants_populator.sim_model
     PopulateModelActions(parser_instance, dev_name, model)
 
     return model
