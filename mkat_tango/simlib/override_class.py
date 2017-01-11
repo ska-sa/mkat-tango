@@ -14,7 +14,7 @@ from PyTango import DevState
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
-class Override_Weather(object):
+class OverrideWeather(object):
     """An override class for the TANGO device class 'Weather'. It provides all the
     implementations of the command handler functions for the commands specified in the
     POGO generated XMI data description file.

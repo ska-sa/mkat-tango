@@ -235,7 +235,7 @@ class test_PopulateModelActions(GenericSetup):
         model = pmq.sim_model
         sim_xmi_parser.PopulateModelActions(self.simdd_parser, device_name, model)
         action_on = model.sim_actions['On']
-        self.assertEqual(action_on.func.im_class, override_class.Override_Weather)
+        self.assertEqual(action_on.func.im_class, override_class.OverrideWeather)
 
 
 class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
