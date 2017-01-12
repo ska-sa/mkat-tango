@@ -27,7 +27,7 @@ class Simdd_Parser(object):
         """Parser class handling a simulator description datafile in json format.
 
         Creating an instance of this class requires directly calling parse
-        method afterwards to extract all the provided tango attributes, commmands,
+        method afterwards to extract all the provided tango attributes, commands,
         device property and device override class information. The formated data
         in a form of a dict structure can be obtained using the methods,
         `get_reformatted_device_attr_metadata`, `get_reformatted_cmd_metadata`,
