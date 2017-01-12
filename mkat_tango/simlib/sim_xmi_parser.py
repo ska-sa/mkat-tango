@@ -693,9 +693,7 @@ class PopulateModelActions(object):
                 handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
                                   self.generate_action_handler(
                                   cmd_name, cmd_meta['dtype_out'], actions))
-            #handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
-             #                 self.generate_action_handler(
-              #                    cmd_name, cmd_meta['dtype_out'], actions))
+
             self.sim_model.set_sim_action(cmd_name, handler)
             # Might store the action's metadata in the sim_actions dictionary
             # instead of creating a separate dict.
