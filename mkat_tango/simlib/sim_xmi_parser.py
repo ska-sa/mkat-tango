@@ -823,7 +823,7 @@ def get_data_description_file_name():
     """Gets the xmi/xml/json description file name from the tango-db device properties
 
     Returns
-    ======
+    =======
     sim_data_description_file : str
         Tango device server description file
         (POGO xmi or SDD xml or SIMDD json)
