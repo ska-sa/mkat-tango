@@ -148,7 +148,8 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         super(test_SimXmiDeviceIntegration, self).setUp()
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
-        self.xmi_parser = sim_xmi_parser.XmiParser(self.xmi_file)
+        self.xmi_parser = sim_xmi_parser.XmiParser()
+        self.xmi_parser.parse(self.xmi_file)
 
     def test_attribute_list(self):
         """ Testing whether the attributes specified in the POGO generated xmi file
@@ -298,7 +299,8 @@ class GenericSetup(unittest.TestCase):
         super(GenericSetup, self).setUp()
         self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
                                                         'weather_sim.xmi')
-        self.xmi_parser = sim_xmi_parser.XmiParser(self.xmi_file)
+        self.xmi_parser = sim_xmi_parser.XmiParser()
+        self.xmi_parser.parse(self.xmi_file)
 
 class test_XmiParser(GenericSetup):
     def test_parsed_attributes(self):

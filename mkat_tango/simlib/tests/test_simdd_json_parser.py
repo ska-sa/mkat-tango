@@ -102,7 +102,8 @@ class GenericSetup(unittest.TestCase):
         super(GenericSetup, self).setUp()
         self.simdd_json_file = pkg_resources.resource_filename(
             'mkat_tango.simlib.tests', 'weather_SIMDD.json')
-        self.simdd_parser = simdd_json_parser.SimddParser(self.simdd_json_file)
+        self.simdd_parser = simdd_json_parser.SimddParser()
+        self.simdd_parser.parse(self.simdd_json_file)
 
 class test_SimddJsonParser(GenericSetup):
     """A test class that tests that the SimddJsonParser works correctly.
@@ -296,7 +297,8 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
         super(test_SimddDeviceIntegration, self).setUp()
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
-        self.simdd_json_parser = simdd_json_parser.SimddParser(self.data_descr_file)
+        self.simdd_json_parser = simdd_json_parser.SimddParser()
+        self.simdd_json_parser.parse(self.data_descr_file)
 
     def test_attribute_list(self):
         """ Testing whether the attributes specified in the POGO generated xmi file

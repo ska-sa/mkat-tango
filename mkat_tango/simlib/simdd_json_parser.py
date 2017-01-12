@@ -23,24 +23,20 @@ MODULE_LOGGER = logging.getLogger(__name__)
 
 class SimddParser(object):
 
-    def __init__(self, simdd_json_file):
-        """Parser class taking a simulator description datafile in json format.
+    def __init__(self):
+        """Parser class handling a simulator description datafile in json format.
 
-        Creating an instance of this class directly parses the data file and extracts
-        all the provided tango attributes, commmands, device property and device
-        override class information. The formated data in a form of a dict structure
-        can be obtained using the methods, `get_reformatted_device_attr_metadata`,
-        `get_reformatted_cmd_metadata`, `get_reformatted_properties_metadata` and
-        `get_reformatted_override_metadata`
-
-        Parameters
-        ----------
-        simdd_json_file: str
-            Name of simulator descrition data file
+        Creating an instance of this class requires calling :meth:`parse` method
+        afterwards to extract all the provided tango attributes, commands,
+        device property and device override class information from the specified
+        file. The formated data is a dict structure and can be obtained using
+        :meth:`get_reformatted_device_attr_metadata`,
+        :meth:`get_reformatted_cmd_metadata`,
+        :meth:`get_reformatted_properties_metadata` and
+        :meth:`get_reformatted_override_metadata`.
 
         """
         # Simulator decription datafile in json format
-        self.simdd_json_file = simdd_json_file
         self._device_attributes = {}
         """The Data structure format is a dict containing attribute info in a dict
 
@@ -108,12 +104,9 @@ class SimddParser(object):
         }
 
         """
-
         self._device_override_class = {}
 
-        self.parse_simdd_json_file()
-
-    def parse_simdd_json_file(self):
+    def parse(self, simdd_json_file):
         """
         Read simulator description data from json file into `self._device_properties`
 
@@ -124,13 +117,18 @@ class SimddParser(object):
         commands into `self._device_commands`, and device_properties into
         `self._device_properties`.
 
+        Parameters
+        ----------
+        simdd_json_file: str
+            Name of simulator descrition data file
+
         Notes
-        =====
+        -----
         - Data structures, are type dict with dictionary elements keyed with
           element name and values must be the corresponding data value.
 
         """
-        with open(self.simdd_json_file) as simdd_file:
+        with open(simdd_json_file) as simdd_file:
             device_data = json.load(simdd_file)
         for data_component, elements in device_data.items():
             if data_component in ['dynamicAttributes']:
