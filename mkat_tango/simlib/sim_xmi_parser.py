@@ -192,7 +192,7 @@ class Xmi_Parser(object):
 
         Parameters
         ----------
-        simdd_json_file: str
+        sim_xmi_file: str
             Name of simulator descrition data file
 
         Notes
