@@ -21,7 +21,7 @@ expected_mandatory_cmd_parameters = frozenset([
 
 
 # The desired information for the monitoring point pressure when the WeatherSimulator_CN
-# xml file is parsed by the SDD_Parser.
+# xml file is parsed by the SDDParser.
 expected_pressure_mnt_pt_info = {
     'name': 'Pressure',
     'data_type': DevDouble,
@@ -69,7 +69,7 @@ class GenericSetup(unittest.TestCase):
         super(GenericSetup, self).setUp()
         self.xml_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
                                                         'WeatherSimulator_CN.xml')
-        self.xml_parser = sim_sdd_xml_parser.SDD_Parser()
+        self.xml_parser = sim_sdd_xml_parser.SDDParser()
         self.xml_parser.parse(self.xml_file)
 
 class test_Sdd_Xml_Parser(GenericSetup):

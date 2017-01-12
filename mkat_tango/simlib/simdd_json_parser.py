@@ -21,7 +21,7 @@ from PyTango._PyTango import CmdArgType, AttrDataFormat
 MODULE_LOGGER = logging.getLogger(__name__)
 
 
-class Simdd_Parser(object):
+class SimddParser(object):
 
     def __init__(self, simdd_json_file):
         """Parser class taking a simulator description datafile in json format.

@@ -30,7 +30,7 @@ SDD_TYPES_TO_TANGO_TYPES = {
     'boolean': DevBoolean,
     'string': DevString}
 
-class SDD_Parser(object):
+class SDDParser(object):
     """Parses the SDD XML file generated from DSL.
 
     Attributes

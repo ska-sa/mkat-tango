@@ -43,7 +43,7 @@ EXPECTED_MANDATORY_OVERRIDE_CLASS_PARAMETERS = frozenset([
     'class_name', 'module_directory', 'module_name', 'name'])
 
 # The desired information for the attribute temperature when the weather_SIMDD
-# json file is parsed by the Simdd_Parser.
+# json file is parsed by the SimddParser.
 EXPECTED_TEMPERATURE_ATTR_INFO = {
         'abs_change': '0.5',
         'archive_abs_change': '0.5',
@@ -79,7 +79,7 @@ EXPECTED_TEMPERATURE_ATTR_INFO = {
     }
 
 # The desired information for the On command when the weather_SIMDD
-# json file is parsed by the Simdd_Parser.
+# json file is parsed by the SimddParser.
 EXPECTED_ON_CMD_INFO = {
         'description': 'Turns On Device',
         'dformat_in': 'Scalar',
@@ -102,7 +102,7 @@ class GenericSetup(unittest.TestCase):
         super(GenericSetup, self).setUp()
         self.simdd_json_file = pkg_resources.resource_filename(
             'mkat_tango.simlib.tests', 'weather_SIMDD.json')
-        self.simdd_parser = simdd_json_parser.Simdd_Parser(self.simdd_json_file)
+        self.simdd_parser = simdd_json_parser.SimddParser(self.simdd_json_file)
 
 class test_SimddJsonParser(GenericSetup):
     """A test class that tests that the SimddJsonParser works correctly.
@@ -296,7 +296,7 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
         super(test_SimddDeviceIntegration, self).setUp()
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
-        self.simdd_json_parser = simdd_json_parser.Simdd_Parser(self.data_descr_file)
+        self.simdd_json_parser = simdd_json_parser.SimddParser(self.data_descr_file)
 
     def test_attribute_list(self):
         """ Testing whether the attributes specified in the POGO generated xmi file

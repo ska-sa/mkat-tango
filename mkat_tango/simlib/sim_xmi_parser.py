@@ -32,8 +32,8 @@ from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 
-from mkat_tango.simlib.simdd_json_parser import Simdd_Parser
-from mkat_tango.simlib.sim_sdd_xml_parser import SDD_Parser
+from mkat_tango.simlib.simdd_json_parser import SimddParser
+from mkat_tango.simlib.sim_sdd_xml_parser import SDDParser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -951,11 +951,11 @@ def get_parser_instance(sim_datafile=None):
     extension = extension.lower()
     parser_instance = None
     if extension in [".xmi"]:
-        parser_instance = Xmi_Parser(sim_datafile)
+        parser_instance = XmiParser(sim_datafile)
     elif extension in [".json"]:
-        parser_instance = Simdd_Parser(sim_datafile)
+        parser_instance = SimddParser(sim_datafile)
     elif extension in [".xml"]:
-        parser_instance = SDD_Parser()
+        parser_instance = SDDParser()
         parser_instance.parse(sim_datafile)
     return parser_instance
 

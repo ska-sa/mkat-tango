@@ -73,7 +73,7 @@ expected_mandatory_default_cmds_info = [
 ]
 
 # The desired information for the atttribute pressure when the weather_sim xmi file is
-# parsed by the Xmi_Parser.
+# parsed by the XmiParser.
 expected_pressure_attr_info = {
     'name': 'pressure',
     'data_type': PyTango.CmdArgType.DevDouble,
@@ -112,7 +112,7 @@ expected_on_cmd_info = {
     'dtype_out': PyTango.CmdArgType.DevString}
 
 # The expected information that would be obtained for the device property when the
-# weather_sim xmi file is parsed by the Xmi_Parser.
+# weather_sim xmi file is parsed by the XmiParser.
 expected_sim_xmi_file_device_property_info = {
     'name': 'sim_xmi_description_file',
     'mandatory': 'true',
@@ -148,7 +148,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         super(test_SimXmiDeviceIntegration, self).setUp()
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
-        self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
+        self.xmi_parser = sim_xmi_parser.XmiParser(self.xmi_file)
 
     def test_attribute_list(self):
         """ Testing whether the attributes specified in the POGO generated xmi file
@@ -298,7 +298,7 @@ class GenericSetup(unittest.TestCase):
         super(GenericSetup, self).setUp()
         self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
                                                         'weather_sim.xmi')
-        self.xmi_parser = sim_xmi_parser.Xmi_Parser(self.xmi_file)
+        self.xmi_parser = sim_xmi_parser.XmiParser(self.xmi_file)
 
 class test_XmiParser(GenericSetup):
     def test_parsed_attributes(self):
