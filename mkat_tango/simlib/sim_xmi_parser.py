@@ -37,6 +37,7 @@ from mkat_tango.simlib.sim_sdd_xml_parser import SDDParser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
+DEFAULT_TANGO_COMMANDS = ['State', 'Status', 'Init']
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
 MAX_NUM_OF_CLASS_ATTR_OCCURENCE = 1
 POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
@@ -671,6 +672,10 @@ class PopulateModelActions(object):
             instance = None
 
         for cmd_name, cmd_meta in command_info.items():
+            # Exclude the TANGO default commands as they have their own built in handlers
+            # provided.
+            if cmd_name in DEFAULT_TANGO_COMMANDS:
+                continue
             # Every command is to be declared to have one or more  action behaviour.
             # Example of a list of actions handle at this moment is as follows
             # [{'behaviour': 'input_transform',
@@ -689,10 +694,18 @@ class PopulateModelActions(object):
             if attr_occurences > MAX_NUM_OF_CLASS_ATTR_OCCURENCE:
                 raise Exception("The command '{}' has multiple override methods defined"
                                 " in the override class".format(cmd_name))
-            else:
-                handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
-                                  self.generate_action_handler(
-                                  cmd_name, cmd_meta['dtype_out'], actions))
+            # Assuming that there is only one override method defined, now we check if
+            # it is in the correct letter case.
+            elif attr_occurences == MAX_NUM_OF_CLASS_ATTR_OCCURENCE:
+                try:
+                    instance_attributes.index('action_{}'.format(cmd_name.lower()))
+                except ValueError:
+                    raise Exception(
+                        "Only lower-case override method names are supported")
+
+            handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
+                              self.generate_action_handler(
+                              cmd_name, cmd_meta['dtype_out'], actions))
 
             self.sim_model.set_sim_action(cmd_name, handler)
             # Might store the action's metadata in the sim_actions dictionary
