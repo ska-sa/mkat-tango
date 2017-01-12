@@ -7,7 +7,10 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-
+"""
+An example of the user-defined override class.
+@author MeerKAT CAM team <cam@ska.ac.za>
+"""
 
 import logging
 from PyTango import DevState
@@ -15,21 +18,21 @@ from PyTango import DevState
 MODULE_LOGGER = logging.getLogger(__name__)
 
 class OverrideWeather(object):
-    """An override class for the TANGO device class 'Weather'. It provides all the
-    implementations of the command handler functions for the commands specified in the
-    POGO generated XMI data description file.
+    """An example of the override class for the TANGO device class 'Weather'. It
+    provides all the implementations of the command handler functions for the commands
+    specified in the POGO generated XMI data description file.
     """
-    def action_On(self, model, tango_dev=None, data_input=None):
+    def action_on(self, model, tango_dev=None, data_input=None):
         """Changes the State of the device to ON.
         """
         tango_dev.set_state(DevState.ON)
 
-    def action_Off(self, model, tango_dev=None, data_input=None):
+    def action_off(self, model, tango_dev=None, data_input=None):
         """Changes the State of the device to OFF.
         """
         tango_dev.set_state(DevState.OFF)
 
-    def action_Stop_Rainfall(self, model, tango_dev=None, data_input=None):
+    def action_stoprainfall(self, model, tango_dev=None, data_input=None):
         """Totally sets the simulated quantity rainfall to a constant value of zero.
         """
         try:

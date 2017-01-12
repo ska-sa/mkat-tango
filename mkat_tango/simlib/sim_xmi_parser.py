@@ -8,7 +8,9 @@
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
 """
-
+Simlib library generic simulator generator utility to be used to generate an actual
+TANGO device that exhibits the behaviour defined in the data description file.
+@author MeerKAT CAM team <cam@ska.ac.za>
 """
 
 import os
@@ -36,6 +38,7 @@ from mkat_tango.simlib.sim_sdd_xml_parser import SDD_Parser
 MODULE_LOGGER = logging.getLogger(__name__)
 
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
+MAX_NUM_OF_CLASS_ATTR_OCCURENCE = 1
 POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
         'Image': AttrDataFormat.IMAGE,
         'Scalar': AttrDataFormat.SCALAR,
@@ -92,7 +95,7 @@ POGO_USER_DEFAULT_CMD_PROP_MAP = {
         'argoutDescription': 'doc_out',
         'argoutType': 'dtype_out'}
 
-class Xmi_Parser(object):
+class XmiParser(object):
 
     def __init__(self, xmi_file):
         self.xmi_file = xmi_file
@@ -322,8 +325,8 @@ class Xmi_Parser(object):
                 if attribute_data['dynamicAttributes']['maxY'] == ''
                 else int(attribute_data['dynamicAttributes']['maxY']))
 
-
-        attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
+        attribute_data['dynamicAttributes']['dataType'] = (
+            self._get_arg_type(description_data))
         attribute_data['properties'] = description_data.find('properties').attrib
         # TODO(KM 31-10-2016): Events information is not mandatory for attributes, need
         # to handle this properly as it raises an AttributeError error when trying to
@@ -519,7 +522,7 @@ class Xmi_Parser(object):
         # TODO(KM 15-12-2016) The PopulateModelQuantities and PopulateModelActions
         # classes assume that the parsers we have developed have the same interface
         # so this method does nothing but return an empty dictionary. Might provide
-        # an implementation when the XMI file has such parameter information (provided 
+        # an implementation when the XMI file has such parameter information (provided
         # in the SIMDD file).
         return {}
 
@@ -678,9 +681,21 @@ class PopulateModelActions(object):
             # {'behaviour': 'output_return',
             # 'source_variable': 'temporary_variable'}]
             actions = cmd_meta.get('actions', [])
-            handler = getattr(instance, 'action_{}'.format(cmd_name),
-                              self.generate_action_handler(
+            instance_attributes = dir(instance)
+            instance_attributes_list = [attr.lower() for attr in instance_attributes]
+            attr_occurences = instance_attributes_list.count(
+                'action_{}'.format(cmd_name.lower()))
+            # Check if there is only one override class method defined for each command
+            if attr_occurences > MAX_NUM_OF_CLASS_ATTR_OCCURENCE:
+                raise Exception("The command '{}' has multiple override methods defined"
+                                " in the override class".format(cmd_name))
+            else:
+                handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
+                                  self.generate_action_handler(
                                   cmd_name, cmd_meta['dtype_out'], actions))
+            #handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
+             #                 self.generate_action_handler(
+              #                    cmd_name, cmd_meta['dtype_out'], actions))
             self.sim_model.set_sim_action(cmd_name, handler)
             # Might store the action's metadata in the sim_actions dictionary
             # instead of creating a separate dict.
@@ -843,10 +858,10 @@ def get_data_description_file_name():
     #This function should perhaps take the device name
 
     server_name = helper_module.get_server_name()
-    db = Database()
-    server_class = db.get_server_class_list(server_name).value_string[0]
-    device_name = db.get_device_name(server_name, server_class).value_string[0]
-    sim_data_description_file = db.get_device_property(device_name,
+    db_instance = Database()
+    server_class = db_instance.get_server_class_list(server_name).value_string[0]
+    device_name = db_instance.get_device_name(server_name, server_class).value_string[0]
+    sim_data_description_file = db_instance.get_device_property(device_name,
         'sim_data_description_file')['sim_data_description_file'][0]
     return sim_data_description_file
 
@@ -969,12 +984,12 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
     server_name = helper_module.get_server_name()
 
     if test_device_name is None:
-        db = Database()
+        db_instance = Database()
         # db_datum is a PyTango.DbDatum structure with attribute name and value_string.
         # The name attribute represents the name of the device server and the
         # value_string attribute is a list of all the registered device instances in
         # that device server instance for the TANGO class 'TangoDeviceServer'.
-        db_datum = db.get_device_name(server_name, 'TangoDeviceServer')
+        db_datum = db_instance.get_device_name(server_name, 'TangoDeviceServer')
         # We assume that at least one device instance has been
         # registered for that class and device server.
         dev_name = getattr(db_datum, 'value_string')[0]

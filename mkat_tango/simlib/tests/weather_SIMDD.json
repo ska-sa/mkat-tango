@@ -445,7 +445,7 @@
         },
     {
             "basicCommandData": {
-                "name": "set_temperature",
+                "name": "SetTemperature",
                 "description": "Sets the temperature value",
                 "actions": [
                     {
@@ -491,7 +491,7 @@
         },
     {
             "basicCommandData": {
-                "name": "Stop_Rainfall",
+                "name": "StopRainfall",
                 "description": "Stops the rain",
                 "input_parameters": {
                     "dtype_in": "Void",
@@ -520,7 +520,7 @@
 	    "override_class": {
 		"name": "Override_Weather_Sim",
 		"module_directory": "None",
-		"module_name": "mkat_tango.simlib.override_class",
+		"module_name": "mkat_tango.simlib.examples.override_class",
 		"class_name": "OverrideWeather"
 	    }
 	}
