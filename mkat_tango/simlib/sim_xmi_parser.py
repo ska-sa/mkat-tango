@@ -93,8 +93,19 @@ POGO_USER_DEFAULT_CMD_PROP_MAP = {
 
 class Xmi_Parser(object):
 
-    def __init__(self, xmi_file):
-        self.xmi_file = xmi_file
+    def __init__(self):
+        """Parser class handling a simulator description datafile in xmi format.
+
+        Creating an instance of this class requires calling :meth:`parse`
+        afterwards to extract all the provided tango attributes, commands,
+        device property and device override class information from the specified
+        file.  The formated data is a dict structure and can be obtained using
+        :meth:`get_reformatted_device_attr_metadata`,
+        :meth:`get_reformatted_cmd_metadata`,
+        :meth:`get_reformatted_properties_metadata` and
+        :meth:`get_reformatted_override_metadata`
+
+        """
         self.device_class_name = ''
         self.device_attributes = []
         """The Data structure format is a list containing attribute info in a dict
@@ -169,9 +180,8 @@ class Xmi_Parser(object):
         }]
         """
         # TODO(KM 31-10-2016): Need to also parse the class properties.
-        self.parse_xmi_file()
 
-    def parse_xmi_file(self):
+    def parse(self, sim_xmi_file):
         """
         Read simulator description data from xmi file into `self.device_properties`
 
@@ -182,13 +192,18 @@ class Xmi_Parser(object):
         commands into `self.device_commands`, and device_properties into
         `self.device_properties`.
 
+        Parameters
+        ----------
+        sim_xmi_file: str
+            Name of simulator descrition data file
+
         Notes
         =====
         - Data structures, are type list with dictionary elements keyed with
           description data and values must be the corresponding data value.
 
         """
-        tree = ET.parse(self.xmi_file)
+        tree = ET.parse(sim_xmi_file)
         root = tree.getroot()
         device_class = root.find('classes')
         self.device_class_name = device_class.attrib['name']
@@ -322,14 +337,16 @@ class Xmi_Parser(object):
                 else int(attribute_data['dynamicAttributes']['maxY']))
 
 
-        attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(description_data)
+        attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(
+                description_data)
         attribute_data['properties'] = description_data.find('properties').attrib
         # TODO(KM 31-10-2016): Events information is not mandatory for attributes, need
         # to handle this properly as it raises an AttributeError error when trying to
         # parse an xmi file with an attribute with not event information specified.
-        attribute_data['eventCriteria'] = description_data.find('eventCriteria').attrib
+        attribute_data['eventCriteria'] = description_data.find(
+                'eventCriteria').attrib
         attribute_data['eventArchiveCriteria'] = description_data.find(
-            'evArchiveCriteria').attrib
+                'evArchiveCriteria').attrib
         return attribute_data
 
     def extract_device_property_description_data(self, description_data):
@@ -938,9 +955,11 @@ def get_parser_instance(sim_datafile=None):
     extension = extension.lower()
     parser_instance = None
     if extension in [".xmi"]:
-        parser_instance = Xmi_Parser(sim_datafile)
+        parser_instance = Xmi_Parser()
+        parser_instance.parse(sim_datafile)
     elif extension in [".json"]:
-        parser_instance = Simdd_Parser(sim_datafile)
+        parser_instance = Simdd_Parser()
+        parser_instance.parse(sim_datafile)
     elif extension in [".xml"]:
         parser_instance = SDD_Parser()
         parser_instance.parse(sim_datafile)
