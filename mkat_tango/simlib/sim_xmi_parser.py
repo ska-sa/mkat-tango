@@ -8,7 +8,9 @@
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
 """
-
+Simlib library generic simulator generator utility to be used to generate an actual
+TANGO device that exhibits the behaviour defined in the data description file.
+@author MeerKAT CAM team <cam@ska.ac.za>
 """
 
 import os
@@ -23,19 +25,21 @@ import PyTango
 from functools import partial
 from PyTango import Attr, AttrWriteType, UserDefaultAttrProp, AttrQuality, Database
 from PyTango import (DevState, DevBoolean, DevString, DevEnum, AttrDataFormat,
-                     CmdArgType, DevDouble, DevFloat, DevLong)
+                     CmdArgType, DevDouble, DevFloat, DevLong, DevVoid)
 from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 from mkat_tango import helper_module
 from mkat_tango.simlib import quantities
 from mkat_tango.simlib import model
 
-from mkat_tango.simlib.simdd_json_parser import Simdd_Parser
-from mkat_tango.simlib.sim_sdd_xml_parser import SDD_Parser
+from mkat_tango.simlib.simdd_json_parser import SimddParser
+from mkat_tango.simlib.sim_sdd_xml_parser import SDDParser
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
+DEFAULT_TANGO_COMMANDS = ['State', 'Status', 'Init']
 CONSTANT_DATA_TYPES = [DevBoolean, DevEnum, DevString]
+MAX_NUM_OF_CLASS_ATTR_OCCURENCE = 1
 POGO_PYTANGO_ATTR_FORMAT_TYPES_MAP = {
         'Image': AttrDataFormat.IMAGE,
         'Scalar': AttrDataFormat.SCALAR,
@@ -46,7 +50,8 @@ ARBITRARY_DATA_TYPE_RETURN_VALUES = {
     DevBoolean: True,
     DevDouble: 4.05,
     DevFloat: 8.1,
-    DevLong: 3}
+    DevLong: 3,
+    DevVoid: None}
 
 # TODO(KM 31-10-2016): Need to add xmi attributes' properties that are currently
 # not being handled by the parser e.g. [displayLevel, enumLabels] etc.
@@ -91,7 +96,7 @@ POGO_USER_DEFAULT_CMD_PROP_MAP = {
         'argoutDescription': 'doc_out',
         'argoutType': 'dtype_out'}
 
-class Xmi_Parser(object):
+class XmiParser(object):
 
     def __init__(self):
         """Parser class handling a simulator description datafile in xmi format.
@@ -336,9 +341,8 @@ class Xmi_Parser(object):
                 if attribute_data['dynamicAttributes']['maxY'] == ''
                 else int(attribute_data['dynamicAttributes']['maxY']))
 
-
-        attribute_data['dynamicAttributes']['dataType'] = self._get_arg_type(
-                description_data)
+        attribute_data['dynamicAttributes']['dataType'] = (
+            self._get_arg_type(description_data))
         attribute_data['properties'] = description_data.find('properties').attrib
         # TODO(KM 31-10-2016): Events information is not mandatory for attributes, need
         # to handle this properly as it raises an AttributeError error when trying to
@@ -535,7 +539,7 @@ class Xmi_Parser(object):
         # TODO(KM 15-12-2016) The PopulateModelQuantities and PopulateModelActions
         # classes assume that the parsers we have developed have the same interface
         # so this method does nothing but return an empty dictionary. Might provide
-        # an implementation when the XMI file has such parameter information (provided 
+        # an implementation when the XMI file has such parameter information (provided
         # in the SIMDD file).
         return {}
 
@@ -684,23 +688,45 @@ class PopulateModelActions(object):
             instance = None
 
         for cmd_name, cmd_meta in command_info.items():
-                # Every command is to be declared to have one or more  action behaviour.
-                # Example of a list of actions handle at this moment is as follows
-                # [{'behaviour': 'input_transform',
-                # 'destination_variable': 'temporary_variable'},
-                # {'behaviour': 'side_effect',
-                # 'destination_quantity': 'temperature',
-                # 'source_variable': 'temporary_variable'},
-                # {'behaviour': 'output_return',
-                # 'source_variable': 'temporary_variable'}]
-                actions = cmd_meta.get('actions', [])
-                handler = getattr(instance, 'action_{}'.format(cmd_name),
-                                  self.generate_action_handler(
-                                      cmd_name, cmd_meta['dtype_out'], actions))
-                self.sim_model.set_sim_action(cmd_name, handler)
-                # Might store the action's metadata in the sim_actions dictionary
-                # instead of creating a separate dict.
-                self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
+            # Exclude the TANGO default commands as they have their own built in handlers
+            # provided.
+            if cmd_name in DEFAULT_TANGO_COMMANDS:
+                continue
+            # Every command is to be declared to have one or more  action behaviour.
+            # Example of a list of actions handle at this moment is as follows
+            # [{'behaviour': 'input_transform',
+            # 'destination_variable': 'temporary_variable'},
+            # {'behaviour': 'side_effect',
+            # 'destination_quantity': 'temperature',
+            # 'source_variable': 'temporary_variable'},
+            # {'behaviour': 'output_return',
+            # 'source_variable': 'temporary_variable'}]
+            actions = cmd_meta.get('actions', [])
+            instance_attributes = dir(instance)
+            instance_attributes_list = [attr.lower() for attr in instance_attributes]
+            attr_occurences = instance_attributes_list.count(
+                'action_{}'.format(cmd_name.lower()))
+            # Check if there is only one override class method defined for each command
+            if attr_occurences > MAX_NUM_OF_CLASS_ATTR_OCCURENCE:
+                raise Exception("The command '{}' has multiple override methods defined"
+                                " in the override class".format(cmd_name))
+            # Assuming that there is only one override method defined, now we check if
+            # it is in the correct letter case.
+            elif attr_occurences == MAX_NUM_OF_CLASS_ATTR_OCCURENCE:
+                try:
+                    instance_attributes.index('action_{}'.format(cmd_name.lower()))
+                except ValueError:
+                    raise Exception(
+                        "Only lower-case override method names are supported")
+
+            handler = getattr(instance, 'action_{}'.format(cmd_name.lower()),
+                              self.generate_action_handler(
+                              cmd_name, cmd_meta['dtype_out'], actions))
+
+            self.sim_model.set_sim_action(cmd_name, handler)
+            # Might store the action's metadata in the sim_actions dictionary
+            # instead of creating a separate dict.
+            self.sim_model.sim_actions_meta[cmd_name] = cmd_meta
 
     def generate_action_handler(self, action_name, action_output_type, actions=None):
         """Generates and returns an action handler to manage tango commands
@@ -859,10 +885,10 @@ def get_data_description_file_name():
     #This function should perhaps take the device name
 
     server_name = helper_module.get_server_name()
-    db = Database()
-    server_class = db.get_server_class_list(server_name).value_string[0]
-    device_name = db.get_device_name(server_name, server_class).value_string[0]
-    sim_data_description_file = db.get_device_property(device_name,
+    db_instance = Database()
+    server_class = db_instance.get_server_class_list(server_name).value_string[0]
+    device_name = db_instance.get_device_name(server_name, server_class).value_string[0]
+    sim_data_description_file = db_instance.get_device_property(device_name,
         'sim_data_description_file')['sim_data_description_file'][0]
     return sim_data_description_file
 
@@ -883,15 +909,12 @@ def get_tango_device_server(model):
         pass
 
     def generate_cmd_handler(action_name, action_handler):
-        # You might need to figure out how to specialise cmd_handler to different
-        # argument types
-        def cmd_handler(tango_device, data_in=None):
-            if data_in:
-                return action_handler(data_in)
-            else:
-                return action_handler()
+        def cmd_handler(tango_device, *input_parameters):
+            return action_handler(tango_dev=tango_device, data_input=input_parameters)
+
         cmd_handler.__name__ = action_name
         cmd_info_copy = model.sim_actions_meta[action_name].copy()
+        # Delete all the keys that are not part of the Tango command parameters.
         cmd_info_copy.pop('name')
         tango_cmd_prop = POGO_USER_DEFAULT_CMD_PROP_MAP.values()
         for prop_key in model.sim_actions_meta[action_name]:
@@ -955,13 +978,13 @@ def get_parser_instance(sim_datafile=None):
     extension = extension.lower()
     parser_instance = None
     if extension in [".xmi"]:
-        parser_instance = Xmi_Parser()
+        parser_instance = XmiParser()
         parser_instance.parse(sim_datafile)
     elif extension in [".json"]:
-        parser_instance = Simdd_Parser()
+        parser_instance = SimddParser()
         parser_instance.parse(sim_datafile)
     elif extension in [".xml"]:
-        parser_instance = SDD_Parser()
+        parser_instance = SDDParser()
         parser_instance.parse(sim_datafile)
     return parser_instance
 
@@ -990,12 +1013,12 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
     server_name = helper_module.get_server_name()
 
     if test_device_name is None:
-        db = Database()
+        db_instance = Database()
         # db_datum is a PyTango.DbDatum structure with attribute name and value_string.
         # The name attribute represents the name of the device server and the
         # value_string attribute is a list of all the registered device instances in
         # that device server instance for the TANGO class 'TangoDeviceServer'.
-        db_datum = db.get_device_name(server_name, 'TangoDeviceServer')
+        db_datum = db_instance.get_device_name(server_name, 'TangoDeviceServer')
         # We assume that at least one device instance has been
         # registered for that class and device server.
         dev_name = getattr(db_datum, 'value_string')[0]

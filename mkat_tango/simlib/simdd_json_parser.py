@@ -15,13 +15,13 @@ import logging
 
 import json
 
-from PyTango import DevVoid, DevState, DevDouble, DevString, DevBoolean
-from PyTango._PyTango import CmdArgType
+from PyTango import DevState, DevDouble, DevString, DevBoolean, DevVoid
+from PyTango._PyTango import CmdArgType, AttrDataFormat
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
 
-class Simdd_Parser(object):
+class SimddParser(object):
 
     def __init__(self):
         """Parser class handling a simulator description datafile in json format.
@@ -332,8 +332,11 @@ class Simdd_Parser(object):
                         # Here we extract the cmdArgType obect since
                         # for later when creating a Tango command,
                         # data type is required in this format.
-                        formated_info[property_key] = getattr(
-                            CmdArgType, "Dev%s" % str(item[1]))
+                        val = getattr(CmdArgType, "Dev%s" % str(item[1]))
+                        formated_info[property_key] = val
+                    elif property_key in ['dformat_in', 'dformat_out']:
+                        val = getattr(AttrDataFormat, str(item[1]).upper())
+                        formated_info[property_key] = val
                     else:
                         formated_info[property_key] = str(item[1])
             elif param_name in ['actions']:
