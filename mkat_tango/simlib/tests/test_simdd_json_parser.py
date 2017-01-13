@@ -11,6 +11,7 @@ from katcore.testutils import cleanup_tempfile
 from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.simlib import simdd_json_parser
 from mkat_tango.simlib import sim_xmi_parser
+from mkat_tango.simlib import tango_sim_generator
 from mkat_tango.simlib.examples import override_class
 from mkat_tango.testutils import ClassCleanupUnittestMixin
 
@@ -279,14 +280,14 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
         # in the tango database, here the method is mocked to return the simdd
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch(sim_xmi_parser.__name__ + '.get_data_description_file_name'
+        with mock.patch(tango_sim_generator.__name__ + '.get_data_description_file_name'
                         ) as mock_get_description_file_name:
             mock_get_description_file_name.return_value = cls.data_descr_file
             cls.properties = dict(sim_data_description_file=cls.data_descr_file)
             cls.device_name = 'test/nodb/tangodeviceserver'
-            model = sim_xmi_parser.configure_device_model(cls.data_descr_file,
-                                                          cls.device_name)
-            cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
+            model = tango_sim_generator.configure_device_model(cls.data_descr_file,
+                                                               cls.device_name)
+            cls.TangoDeviceServer = tango_sim_generator.get_tango_device_server(model)
             cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
                                                  device_name=cls.device_name,
                                                  db=cls.tango_db,

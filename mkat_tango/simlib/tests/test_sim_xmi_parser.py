@@ -1,4 +1,3 @@
-import time
 import mock
 import logging
 import unittest
@@ -9,7 +8,7 @@ from devicetest import TangoTestContext
 
 from katcore.testutils import cleanup_tempfile
 from katcp.testutils import start_thread_with_cleanup
-from mkat_tango.simlib import sim_xmi_parser
+from mkat_tango.simlib import sim_xmi_parser, tango_sim_generator
 from mkat_tango.testutils import ClassCleanupUnittestMixin
 
 import PyTango
@@ -131,13 +130,14 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
-        with mock.patch(sim_xmi_parser.__name__ + '.get_data_description_file_name'
+        with mock.patch(tango_sim_generator.__name__ + '.get_data_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
             mock_get_xmi_description_file_name.return_value = cls.xmi_file
             cls.properties = dict(sim_data_description_file=cls.xmi_file)
             cls.device_name = 'test/nodb/tangodeviceserver'
-            model = sim_xmi_parser.configure_device_model(cls.xmi_file, cls.device_name)
-            cls.TangoDeviceServer = sim_xmi_parser.get_tango_device_server(model)
+            model = tango_sim_generator.configure_device_model(cls.xmi_file,
+                                                               cls.device_name)
+            cls.TangoDeviceServer = tango_sim_generator.get_tango_device_server(model)
             cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
                                                  device_name=cls.device_name,
                                                  db=cls.tango_db,
@@ -431,7 +431,8 @@ class test_PopModelActions(GenericSetup):
         device_name = 'tango/device/instance'
         cmd_info = self.xmi_parser.get_reformatted_cmd_metadata()
 
-        sim_model = sim_xmi_parser.PopulateModelActions(self.xmi_parser, device_name).sim_model
+        sim_model = (sim_xmi_parser.PopulateModelActions(self.xmi_parser, device_name).
+                     sim_model)
         self.assertEqual(len(sim_model.sim_quantities), 0,
                          "The model has some unexpected quantities")
 
