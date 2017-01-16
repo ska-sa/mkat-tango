@@ -124,16 +124,17 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        cls.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                       'weather_sim.xmi')
+        cls.xmi_file = [pkg_resources.resource_filename('mkat_tango.simlib.tests',
+                                                        'weather_sim.xmi')]
+
         # Since the sim_xmi_parser gets the xmi file from the device properties
         # in the tango database, here the method is mocked to return the xmi
         # file that found using the pkg_resources since it is included in the
         # test module
         with mock.patch(tango_sim_generator.__name__ + '.get_data_description_file_name'
                                          ) as mock_get_xmi_description_file_name:
-            mock_get_xmi_description_file_name.return_value = cls.xmi_file
-            cls.properties = dict(sim_data_description_file=cls.xmi_file)
+            mock_get_xmi_description_file_name.return_value = cls.xmi_file[0]
+            cls.properties = dict(sim_data_description_file=cls.xmi_file[0])
             cls.device_name = 'test/nodb/tangodeviceserver'
             model = tango_sim_generator.configure_device_model(cls.xmi_file,
                                                                cls.device_name)
@@ -149,7 +150,7 @@ class test_SimXmiDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase)
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.xmi_parser = sim_xmi_parser.XmiParser()
-        self.xmi_parser.parse(self.xmi_file)
+        self.xmi_parser.parse(self.xmi_file[0])
 
     def test_attribute_list(self):
         """ Testing whether the attributes specified in the POGO generated xmi file
@@ -297,10 +298,10 @@ class GenericSetup(unittest.TestCase):
 
     def setUp(self):
         super(GenericSetup, self).setUp()
-        self.xmi_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                        'weather_sim.xmi')
+        self.xmi_file = [pkg_resources.resource_filename('mkat_tango.simlib.tests',
+                                                         'weather_sim.xmi')]
         self.xmi_parser = sim_xmi_parser.XmiParser()
-        self.xmi_parser.parse(self.xmi_file)
+        self.xmi_parser.parse(self.xmi_file[0])
 
 class test_XmiParser(GenericSetup):
     def test_parsed_attributes(self):

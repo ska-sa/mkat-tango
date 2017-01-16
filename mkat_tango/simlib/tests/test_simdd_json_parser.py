@@ -101,10 +101,10 @@ class GenericSetup(unittest.TestCase):
 
     def setUp(self):
         super(GenericSetup, self).setUp()
-        self.simdd_json_file = pkg_resources.resource_filename(
-            'mkat_tango.simlib.tests', 'weather_SIMDD.json')
+        self.simdd_json_file = [pkg_resources.resource_filename(
+            'mkat_tango.simlib.tests', 'weather_SIMDD.json')]
         self.simdd_parser = simdd_json_parser.SimddParser()
-        self.simdd_parser.parse(self.simdd_json_file)
+        self.simdd_parser.parse(self.simdd_json_file[0])
 
 class test_SimddJsonParser(GenericSetup):
     """A test class that tests that the SimddJsonParser works correctly.
@@ -274,16 +274,16 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        cls.data_descr_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                              'weather_SIMDD.json')
+        cls.data_descr_file = [pkg_resources.resource_filename('mkat_tango.simlib.tests',
+                                                               'weather_SIMDD.json')]
         # Since the sim_xmi_parser gets the simdd file from the device properties
         # in the tango database, here the method is mocked to return the simdd
         # file that found using the pkg_resources since it is included in the
         # test module
         with mock.patch(tango_sim_generator.__name__ + '.get_data_description_file_name'
                         ) as mock_get_description_file_name:
-            mock_get_description_file_name.return_value = cls.data_descr_file
-            cls.properties = dict(sim_data_description_file=cls.data_descr_file)
+            mock_get_description_file_name.return_value = cls.data_descr_file[0]
+            cls.properties = dict(sim_data_description_file=cls.data_descr_file[0])
             cls.device_name = 'test/nodb/tangodeviceserver'
             model = tango_sim_generator.configure_device_model(cls.data_descr_file,
                                                                cls.device_name)
@@ -299,7 +299,7 @@ class test_SimddDeviceIntegration(ClassCleanupUnittestMixin, unittest.TestCase):
         self.device = self.tango_context.device
         self.instance = self.TangoDeviceServer.instances[self.device.name()]
         self.simdd_json_parser = simdd_json_parser.SimddParser()
-        self.simdd_json_parser.parse(self.data_descr_file)
+        self.simdd_json_parser.parse(self.data_descr_file[0])
 
     def test_attribute_list(self):
         """ Testing whether the attributes specified in the POGO generated xmi file

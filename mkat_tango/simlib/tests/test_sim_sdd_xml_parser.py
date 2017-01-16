@@ -67,10 +67,10 @@ class GenericSetup(unittest.TestCase):
 
     def setUp(self):
         super(GenericSetup, self).setUp()
-        self.xml_file = pkg_resources.resource_filename('mkat_tango.simlib.tests',
-                                                        'WeatherSimulator_CN.xml')
+        self.xml_file = [pkg_resources.resource_filename('mkat_tango.simlib.tests',
+                                                         'WeatherSimulator_CN.xml')]
         self.xml_parser = sim_sdd_xml_parser.SDDParser()
-        self.xml_parser.parse(self.xml_file)
+        self.xml_parser.parse(self.xml_file[0])
 
 class test_Sdd_Xml_Parser(GenericSetup):
 

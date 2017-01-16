@@ -22,6 +22,7 @@ from PyTango import DevState
 from PyTango.server import Device, DeviceMeta, server_run, device_property, command
 
 
+from mkat_tango.simlib.model import Model
 from mkat_tango.simlib.simdd_json_parser import SimddParser
 from mkat_tango.simlib.sim_sdd_xml_parser import SDDParser
 from mkat_tango.simlib.sim_xmi_parser import (XmiParser, PopulateModelQuantities,
@@ -75,10 +76,9 @@ def get_data_description_file_name():
 
     Returns
     =======
-    sim_data_description_file : str
-        Tango device server description file
-        (POGO xmi or SDD xml or SIMDD json)
-        e.g. 'home/user/weather.xmi'
+    sim_data_description_file_list : list
+        Tango device server description file(s) (POGO xmi or SDD xml or SIMDD json)
+        e.g. ['home/user/weather.xmi']
 
     """
 
@@ -110,9 +110,9 @@ def get_data_description_file_name():
     db_instance = Database()
     server_class = db_instance.get_server_class_list(server_name).value_string[0]
     device_name = db_instance.get_device_name(server_name, server_class).value_string[0]
-    sim_data_description_file = db_instance.get_device_property(device_name,
-        'sim_data_description_file')['sim_data_description_file'][0]
-    return sim_data_description_file
+    sim_data_description_file_list = db_instance.get_device_property(device_name,
+        'sim_data_description_file')['sim_data_description_file']
+    return sim_data_description_file_list
 
 
 def get_tango_device_server(model):
@@ -211,7 +211,7 @@ def get_parser_instance(sim_datafile=None):
         parser_instance.parse(sim_datafile)
     return parser_instance
 
-def configure_device_model(sim_datafile=None, test_device_name=None):
+def configure_device_model(sim_data_file=None, test_device_name=None):
     """In essence this function should get the xmi file, parse it,
     take the attribute and command information, populate the model quantities and
     actions to be simulated and return that model.
@@ -228,10 +228,10 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
     -------
     model : model.Model instance
     """
-    if sim_datafile is None:
-        datafile = get_data_description_file_name()
+    if sim_data_file is None:
+        data_file = get_data_description_file_name()
     else:
-        datafile = sim_datafile
+        data_file = sim_data_file
 
     server_name = helper_module.get_server_name()
 
@@ -248,10 +248,29 @@ def configure_device_model(sim_datafile=None, test_device_name=None):
     else:
         dev_name = test_device_name
 
-    parser_instance = get_parser_instance(datafile)
-    model_quants_populator = PopulateModelQuantities(parser_instance, dev_name)
-    model = model_quants_populator.sim_model
-    PopulateModelActions(parser_instance, dev_name, model)
+    # In case there are more than one data description files to be used to configure the
+    # device.
+    parsers = []
+    for file_descriptor in data_file:
+        parsers.append(get_parser_instance(file_descriptor))
+
+    # In case there is more than one parser instance for each file
+    #if len(parsers) > 1:
+    model = Model(dev_name)
+    for parser in parsers:
+        model_quantity_populator = PopulateModelQuantities(parser, dev_name, model)
+        sim_model = model_quantity_populator.sim_model
+        PopulateModelActions(parser, dev_name, sim_model)
+    return model
+    #for parser in parsers:
+     #   model_quantity_populator = PopulateModelQuantities(parser, dev_name)
+      #  model = model_quantity_populator.sim_model
+       # PopulateModelActions(parser, dev_name, model)
+
+    #parser_instance = get_parser_instance(data_file[0])
+    #model_quants_populator = PopulateModelQuantities(parser_instance, dev_name)
+    #model = model_quants_populator.sim_model
+    #PopulateModelActions(parser_instance, dev_name, model)
 
     return model
 
