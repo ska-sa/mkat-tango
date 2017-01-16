@@ -45,16 +45,11 @@ class TangoDeviceServerBase(Device):
     sim_xmi_description_file = device_property(dtype=str,
             doc='Complete path name of the POGO xmi file to be parsed')
 
-    def __init__(self, *args, **kwargs):
-        Device.__init__(self, args, kwargs)
-        self.model = None
-
     def init_device(self):
-        TangoDeviceServerBase.init_device(self)
-        #super(TangoDeviceServerBase, self).init_device()
+        Device.init_device(self)
         name = self.get_name()
+        self.model = None
         self.instances[name] = self
-        #self.model = None
         self.set_state(DevState.ON)
 
     def always_executed_hook(self):
@@ -149,12 +144,12 @@ def get_tango_device_server(model):
                 MODULE_LOGGER.info(
                     "Warning! Property %s is not a tango command prop", prop_key)
                 cmd_info_copy.pop(prop_key)
-        return command(f=cmd_handler, dtype_in=cmd_info_copy['dtype_in'],
-                       dformat_in=cmd_info_copy['dformat_in'],
-                       doc_in=cmd_info_copy['doc_in'],
-                       dtype_out=cmd_info_copy['dtype_out'],
-                       dformat_out=cmd_info_copy['dformat_out'],
-                       doc_out=cmd_info_copy['doc_in'])
+        """
+        The command method signature:
+        command(f=None, dtype_in=None, dformat_in=None, doc_in="",
+                dtype_out=None, dformat_out=None, doc_out="", green_mode=None)
+        """
+        return command(f=cmd_handler, **cmd_info_copy)
 
     for action_name, action_handler in model.sim_actions.items():
         cmd_handler = generate_cmd_handler(action_name, action_handler)
