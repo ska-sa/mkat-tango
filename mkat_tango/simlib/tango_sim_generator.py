@@ -46,10 +46,10 @@ class TangoDeviceServerBase(Device):
             doc='Complete path name of the POGO xmi file to be parsed')
 
     def init_device(self):
-        super(TangoDeviceServerBase, self).init_device()
+        Device.init_device(self)
         name = self.get_name()
-        self.instances[name] = self
         self.model = None
+        self.instances[name] = self
         self.set_state(DevState.ON)
 
     def always_executed_hook(self):
@@ -142,8 +142,13 @@ def get_tango_device_server(model):
         for prop_key in model.sim_actions_meta[action_name]:
             if prop_key not in tango_cmd_prop:
                 MODULE_LOGGER.info(
-                    "Warning! Property %s is not a tango command prop" % prop_key)
+                    "Warning! Property %s is not a tango command prop", prop_key)
                 cmd_info_copy.pop(prop_key)
+        """
+        The command method signature:
+        command(f=None, dtype_in=None, dformat_in=None, doc_in="",
+                dtype_out=None, dformat_out=None, doc_out="", green_mode=None)
+        """
         return command(f=cmd_handler, **cmd_info_copy)
 
     for action_name, action_handler in model.sim_actions.items():
@@ -261,17 +266,6 @@ def configure_device_model(sim_data_file=None, test_device_name=None):
         model_quantity_populator = PopulateModelQuantities(parser, dev_name, model)
         sim_model = model_quantity_populator.sim_model
         PopulateModelActions(parser, dev_name, sim_model)
-    return model
-    #for parser in parsers:
-     #   model_quantity_populator = PopulateModelQuantities(parser, dev_name)
-      #  model = model_quantity_populator.sim_model
-       # PopulateModelActions(parser, dev_name, model)
-
-    #parser_instance = get_parser_instance(data_file[0])
-    #model_quants_populator = PopulateModelQuantities(parser_instance, dev_name)
-    #model = model_quants_populator.sim_model
-    #PopulateModelActions(parser_instance, dev_name, model)
-
     return model
 
 def main():
