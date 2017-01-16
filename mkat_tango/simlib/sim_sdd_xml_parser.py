@@ -212,7 +212,7 @@ class SDDParser(object):
                         # Stores the properties of the parameter
                         resp_params_prop = {}
                         for parameter_prop in parameter:
-                            resp_params_prop[parameter_prop.tag] =(
+                            resp_params_prop[parameter_prop.tag] = (
                                     parameter_prop.text)
                         response_params[resp_params_prop['ParameterName']] = (
                             resp_params_prop)
@@ -319,6 +319,9 @@ class SDDParser(object):
     def get_reformatted_cmd_metadata(self):
         return self._formatted_cmds_info
 
+    def get_reformatted_override_metadata(self):
+        return {}
+
     def _convert_mnt_pt_info(self):
         """Converts the monitoring points data structure into a dictionary
         to make searching easier.
@@ -365,5 +368,6 @@ class SDDParser(object):
                         parameter_name = SDD_MP_PARAMS_TANGO_MAP[metadata_prop_name]
                         monitoring_pts[mpt_name][parameter_name] = metadata_prop_val
                     except KeyError:
-                        monitoring_pts[mpt_name][metadata_prop_name.lower()] = metadata_prop_val
-        self._formatted_mnt_pts_info =  monitoring_pts
+                        monitoring_pts[mpt_name][metadata_prop_name.lower()] = (
+                            metadata_prop_val)
+        self._formatted_mnt_pts_info = monitoring_pts
