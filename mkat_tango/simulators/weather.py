@@ -10,7 +10,7 @@
 """
 MeerKAT weather simulator and weather simulator control.
     @author MeerKAT CAM team <cam@ska.ac.za>
-    """
+"""
 
 import time
 import weakref
@@ -28,10 +28,10 @@ from PyTango import DevString, DevDouble, DevBoolean
 from PyTango.server import Device, DeviceMeta
 from PyTango.server import attribute, command
 
-from mkat_tango.simlib import sim_test_interface
-from mkat_tango.simlib import quantities
-from mkat_tango.simlib import model
-from mkat_tango.simlib import main
+from tango_simlib import sim_test_interface
+from tango_simlib import quantities
+from tango_simlib import model
+from tango_simlib import main
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
