@@ -185,7 +185,8 @@ class WeatherModel(model.Model):
         super(WeatherModel, self).setup_sim_quantities()
 
 
-weather_main = partial(main.simulator_main, Weather, sim_test_interface.SimControl)
+weather_main = partial(main.simulator_main, Weather,
+                       sim_test_interface.TangoTestDeviceServerBase)
 
 if __name__ == "__main__":
     weather_main()
