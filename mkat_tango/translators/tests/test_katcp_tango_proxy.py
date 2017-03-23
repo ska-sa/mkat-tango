@@ -156,8 +156,6 @@ class test_TangoDevice2KatcpProxy(
             ('State', '?State DevVoid -> DevState'),
             ('ReverseString', KATCP_REQUEST_DOC_TEMPLATE.format(
                 cmd_name='ReverseString',  **tango_td.ReverseString_command_kwargs)),
-            #('MultiplyInts', '?MultiplyInts Untranslated tango command.'),
-            ## TODO NM 2016-05-20 MultiplyInts should be as below, but unimplemented
             ('MultiplyInts', KATCP_REQUEST_DOC_TEMPLATE.format(
                  cmd_name='MultiplyInts', **tango_td.MultiplyInts_command_kwargs)),
             ('Void', KATCP_REQUEST_DOC_TEMPLATE.format(
@@ -220,7 +218,6 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                      request_args=['abcdef'],
                                      expected_reply_args=['ok', 'fedcba'])
 
-#    @unittest.skip("We don't yet implement array parameters")
     @tornado.testing.gen_test
     def test_cmd2request_MultiplyInts(self):
         """Test request handler for the TangoTestServer MultiplyInts command
