@@ -207,13 +207,21 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
-    def request_handler_with_input(server, req, *input_param):
+    def request_handler_with_input(server, req, input_param):
         # TODO docstring using stuff?
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
-        tango_retval = yield tango_request(cmd_name, input_param[0] if
-                                           len(input_param) == 1 else
-                                           input_param)
+        tango_retval = yield tango_request(cmd_name, input_param)
+        raise Return(
+            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+
+    @kattypes.request(*request_args)
+    @tornado.gen.coroutine
+    def request_handler_with_array_input(server, req, *input_param):
+        # TODO docstring using stuff?
+        # A reference for debugging ease so that it is in the closure
+        tango_device_proxy
+        tango_retval = yield tango_request(cmd_name, input_param)
         raise Return(
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
@@ -227,7 +235,10 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
     if in_kattype:
-        handler = request_handler_with_input
+        if 'Array' in str(tango_command_descr.in_type):
+            handler = request_handler_with_array_input
+        else:
+            handler = request_handler_with_input
         in_type_desc = tango_command_descr.in_type_desc
     else:
         handler = request_handler_without_input

@@ -228,6 +228,16 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                      expected_reply_args=['ok', 1*3*7*9])
 
     @tornado.testing.gen_test
+    def test_cmd2request_MultiplyInt(self):
+        """Test request handler for the TangoTestServer MultiplyInts command
+        with a single item
+
+        """
+        yield self._test_cmd_handler(cmd_name='MultiplyInts',
+                                     request_args=[88],
+                                     expected_reply_args=['ok', 88])
+
+    @tornado.testing.gen_test
     def test_cmd2request_MultiplyDoubleBy3(self):
         """Test request handler for the TangoTestServer MultiplyDoubleBy2MultiplyInts command
 
