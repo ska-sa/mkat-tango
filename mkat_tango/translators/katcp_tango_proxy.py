@@ -149,7 +149,7 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         min_value = (katcp_type_info.params[0]
                      if attr_min_val == 'Not specified' else int(attr_min_val))
         max_value = (katcp_type_info.params[1]
-                     if attr_max_val == 'Not specified' else  int(attr_max_val))
+                     if attr_max_val == 'Not specified' else int(attr_max_val))
         sensor_params = [min_value, max_value]
     elif attr_descr.data_type in TANGO_FLOAT_TYPES:
         min_value = (katcp_type_info.params[0]
@@ -217,6 +217,16 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
+    def request_handler_with_array_input(server, req, *input_param):
+        # TODO docstring using stuff?
+        # A reference for debugging ease so that it is in the closure
+        tango_device_proxy
+        tango_retval = yield tango_request(cmd_name, input_param)
+        raise Return(
+            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+
+    @kattypes.request(*request_args)
+    @tornado.gen.coroutine
     def request_handler_without_input(server, req):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
@@ -225,11 +235,14 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
     if in_kattype:
-        handler = request_handler_with_input
+        if 'Array' in str(tango_command_descr.in_type):
+            handler = request_handler_with_array_input
+        else:
+            handler = request_handler_with_input
         in_type_desc = tango_command_descr.in_type_desc
     else:
         handler = request_handler_without_input
-        # Fill in 'Void' as input description for commands that do not tak
+        # Fill in 'Void' as input description for commands that do not take
         # an input value so that the KATCP docstring makes sense
         in_type_desc = 'Void'
 
@@ -267,14 +280,18 @@ def tango_type2kattype_object(tango_type):
         matching the min/max values of the corresponing tango type.
 
     """
+    kattype_kwargs = {}
     if tango_type == PyTango.DevVoid:
         return None
     try:
+        if 'Array' in str(tango_type):
+            kattype_kwargs['multiple'] = True
+            tango_type = getattr(PyTango, str(tango_type).replace('Array', '')
+                                 .replace('Var', ''), None)
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
     except KeyError as ke:
         raise NotImplementedError("Tango wrapping not implemented for tango type {}"
                                   .format(tango_type))
-    kattype_kwargs = {}
     if tango_type in TANGO_NUMERIC_TYPES:
         kattype_kwargs['min'], kattype_kwargs['max'] = katcp_type_info.params
     elif tango_type == CmdArgType.DevState:
@@ -282,9 +299,6 @@ def tango_type2kattype_object(tango_type):
         # TANGO2KATCP_TYPE_INFO better?
         kattype_kwargs = [name for name in katcp_type_info.params]
         return katcp_type_info.KatcpType(kattype_kwargs)
-    # TODO NM We should be able to handle the DevVar* variants by checking if
-    # in_type.name starts with DevVar, and then lookup the 'scalar' type. The we
-    # can just use multiple=True on the KATCP type
     return katcp_type_info.KatcpType(**kattype_kwargs)
 
 def is_tango_device_running(tango_device_proxy):
@@ -407,7 +421,6 @@ class TangoDevice2KatcpProxy(object):
                     cmd_name, str(exc))
 
             self.katcp_server.add_request(cmd_name, req_handler)
-
 
     def _dummy_request_handler_factory(self, request_name, entrails):
         # Make a dummy request handler for tango commands that could not be

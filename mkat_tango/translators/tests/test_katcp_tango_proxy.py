@@ -156,10 +156,8 @@ class test_TangoDevice2KatcpProxy(
             ('State', '?State DevVoid -> DevState'),
             ('ReverseString', KATCP_REQUEST_DOC_TEMPLATE.format(
                 cmd_name='ReverseString',  **tango_td.ReverseString_command_kwargs)),
-            ('MultiplyInts', '?MultiplyInts Untranslated tango command.'),
-            ## TODO NM 2016-05-20 MultiplyInts should be as below, but unimplemented
-            # ('MultiplyInts', KATCP_REQUEST_DOC_TEMPLATE.format(
-            #     cmd_name='MultiplyInts', **tango_td.MultiplyInts_command_kwargs)),
+            ('MultiplyInts', KATCP_REQUEST_DOC_TEMPLATE.format(
+                 cmd_name='MultiplyInts', **tango_td.MultiplyInts_command_kwargs)),
             ('Void', KATCP_REQUEST_DOC_TEMPLATE.format(
                 cmd_name='Void', dtype_in='DevVoid', doc_in='Void',
                 dtype_out='DevVoid', doc_out='Void')),
@@ -220,15 +218,24 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                      request_args=['abcdef'],
                                      expected_reply_args=['ok', 'fedcba'])
 
-    @unittest.skip("We don't yet implement array parameters")
     @tornado.testing.gen_test
     def test_cmd2request_MultiplyInts(self):
-        """Test request handler for the TangoTestServer ReverseString command
+        """Test request handler for the TangoTestServer MultiplyInts command
 
         """
         yield self._test_cmd_handler(cmd_name='MultiplyInts',
                                      request_args=[1, 3, 7, 9],
                                      expected_reply_args=['ok', 1*3*7*9])
+
+    @tornado.testing.gen_test
+    def test_cmd2request_MultiplyInt(self):
+        """Test request handler for the TangoTestServer MultiplyInts command
+        with a single item
+
+        """
+        yield self._test_cmd_handler(cmd_name='MultiplyInts',
+                                     request_args=[88],
+                                     expected_reply_args=['ok', 88])
 
     @tornado.testing.gen_test
     def test_cmd2request_MultiplyDoubleBy3(self):
