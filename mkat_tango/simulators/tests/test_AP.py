@@ -52,8 +52,6 @@ class AntennaPositionerTestCase(DeviceTestCase):
         self.assertEqual(self.device.requested_azimuth_rate , 0.0)
         self.assertEqual(self.device.requested_elevation_rate , 0.0)
 
-#       import IPython ; IPython.embed()
-
     def test_active_threads(self):
         '''Testing of active threads running the device'''
         self.assertEqual(self.device_server_instance
