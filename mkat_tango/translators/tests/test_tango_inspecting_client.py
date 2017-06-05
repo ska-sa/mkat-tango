@@ -86,6 +86,7 @@ class TangoTestDevice(TS.Device):
             ScalarDevLong=(1234567890, None, AttrQuality.ATTR_VALID),
             ScalarDevDouble=(3.1415, None, AttrQuality.ATTR_VALID),
             ScalarDevString=('The quick brown fox.', None, AttrQuality.ATTR_VALID),
+            ScalarDevEnum=('ONLINE', None, AttrQuality.ATTR_VALID),
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
             )
@@ -121,6 +122,12 @@ class TangoTestDevice(TS.Device):
                   polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevEncoded(self): pass
+
+    @TS.attribute(dtype='DevEnum', doc='An example scalar Enum attribute',
+                  enum_labels=['ONLINE', 'OFFLINE', 'RESERVE'],
+                  polling_period=1000, event_period=25)
+    @_test_attr
+    def ScalarDevEnum(self): pass
 
     static_commands = ('ReverseString', 'MultiplyInts', 'Void',
                        'MultiplyDoubleBy3')
