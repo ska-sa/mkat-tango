@@ -110,6 +110,9 @@ class test_TangoDevice2KatcpProxy(
             else:
                 attribute_value = attributes[sensor.name][0]
                 self.assertEqual(sensor_value, attribute_value)
+                if sensor.name in ['ScalarDevEnum']:
+                    self.assertEqual(set(['ONLINE', 'OFFLINE', 'RESERVE']),
+                                     set(sensor.params))
 
     def test_attribute_sensor_update(self):
         sensors = []
