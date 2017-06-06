@@ -86,9 +86,9 @@ class TangoTestDevice(TS.Device):
             ScalarDevLong=(1234567890, None, AttrQuality.ATTR_VALID),
             ScalarDevDouble=(3.1415, None, AttrQuality.ATTR_VALID),
             ScalarDevString=('The quick brown fox.', None, AttrQuality.ATTR_VALID),
-            ScalarDevEnum=('ONLINE', None, AttrQuality.ATTR_VALID),
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
+            ScalarDevEnum=(0, None, AttrQuality.ATTR_VALID)
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
