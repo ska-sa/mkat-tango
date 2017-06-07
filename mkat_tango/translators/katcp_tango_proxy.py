@@ -161,8 +161,8 @@ def tango_attr_descr2katcp_sensor(attr_descr):
         sensor_params = attr_descr.enum_labels
     elif attr_descr.data_type == CmdArgType.DevState:
         sensor_params = katcp_type_info.params
-
-    return Sensor(sensor_type, attr_descr.name, attr_descr.description,
+    katcp_equivalent_sensor_name = attr_descr.name.replace('_', '-')
+    return Sensor(sensor_type, katcp_equivalent_sensor_name, attr_descr.description,
                   attr_descr.unit, sensor_params)
 
 def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
@@ -445,7 +445,7 @@ class TangoDevice2KatcpProxy(object):
 
         """
         try:
-            sensor = self.katcp_server.get_sensor(name)
+            sensor = self.katcp_server.get_sensor(name.replace('_', '-'))
         except ValueError as verr:
             # AR 2016-05-19 TODO Need a robust way of dealing
             # with not implemented sensors
