@@ -84,8 +84,12 @@ class test_TangoDevice2KatcpProxy(
         reply, informs = self.client.blocking_request(Message.request('sensor-list'))
         sensor_list = set([inform.arguments[0] for inform in informs])
         attribute_list = set(self.tango_device_proxy.get_attribute_list())
+        attribute_list_with_katcp_equivalent_names = set(
+            [attr.replace('_', '-') for attr in attribute_list])
         NOT_IMPLEMENTED_SENSORS = set(['ScalarDevEncoded'])
-        self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
+        self.assertEqual(
+            attribute_list_with_katcp_equivalent_names -
+            NOT_IMPLEMENTED_SENSORS, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
             "attribute list!\n\nThese sensors are"
             " extra:\n%s\n\nFound these attributes with no corresponding sensors:\n%s"
@@ -108,7 +112,8 @@ class test_TangoDevice2KatcpProxy(
                     status = self.tango_device_proxy.status()
                     self.assertEqual(sensor_value, status)
             else:
-                attribute_value = attributes[sensor.name][0]
+                tango_equivalent_attribute_name = sensor.name.replace('-', '_')
+                attribute_value = attributes[tango_equivalent_attribute_name][0]
                 if sensor.name in ['ScalarDevEnum']:
                     self.assertEqual(set(['ONLINE', 'OFFLINE', 'RESERVE']),
                                      set(sensor.params))
@@ -140,9 +145,11 @@ class test_TangoDevice2KatcpProxy(
             if attr_name not in EXCLUDED_ATTRS:
                 # Instantiating observers and attaching them onto the katcp
                 # sensors to allow logging of periodic event updates into a list
-                observers[attr_name] = observer = SensorObserver()
-                self.katcp_server.get_sensor(attr_name).attach(observer)
-                sensors.append(attr_name)
+                katcp_equivalent_sensor_name = attr_name.replace('_', '-')
+                observers[katcp_equivalent_sensor_name] = observer = SensorObserver()
+                self.katcp_server.get_sensor(
+                    katcp_equivalent_sensor_name).attach(observer)
+                sensors.append(katcp_equivalent_sensor_name)
             else:
                 LOGGER.debug('Found unexpected attributes')
         time.sleep(sleep_time)

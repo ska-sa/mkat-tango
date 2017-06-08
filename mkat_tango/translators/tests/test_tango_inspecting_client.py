@@ -88,7 +88,9 @@ class TangoTestDevice(TS.Device):
             ScalarDevString=('The quick brown fox.', None, AttrQuality.ATTR_VALID),
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
-            ScalarDevEnum=(0, None, AttrQuality.ATTR_VALID)
+            ScalarDevEnum=(0, None, AttrQuality.ATTR_VALID),
+            ScalarDevString_katcp_name_tester=('tango-katcp equivalent name.',
+                                               None, AttrQuality.ATTR_VALID)
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
@@ -128,6 +130,11 @@ class TangoTestDevice(TS.Device):
                   polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevEnum(self): pass
+
+    @TS.attribute(dtype='DevString', doc='String attribute to test katcp equivalent name',
+                  polling_period=1000, event_period=25)
+    @_test_attr
+    def ScalarDevString_katcp_name_tester(self): pass
 
     static_commands = ('ReverseString', 'MultiplyInts', 'Void',
                        'MultiplyDoubleBy3')
