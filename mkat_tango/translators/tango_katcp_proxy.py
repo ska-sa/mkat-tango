@@ -10,13 +10,10 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
-import sys
 import weakref
 import logging
-import os
 
 import tornado
-import PyTango
 
 from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager, Message
@@ -26,7 +23,8 @@ from katcp.client import BlockingClient
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
 
-from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
+from PyTango import DevFailed, DevState
+from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevEnum
 from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
 from PyTango.server import Device, DeviceMeta, command, attribute
 from PyTango.server import server_run, device_property
@@ -38,8 +36,7 @@ KATCP_TYPE_TO_TANGO_TYPE = {
     'float': DevDouble,
     'boolean': DevBoolean,
     'lru': DevString,
-    'discrete': DevString,  # TODO (KM) 2016-06-10 : Need to change to DevEnum
-                            # once solution is found
+    'discrete': DevEnum,
     'string': DevString,
     'timestamp': DevDouble,
     'address': DevString
@@ -95,7 +92,9 @@ def katcp_sensor2tango_attr(sensor):
         if sensor.params:
             attr_props.set_min_value(str(sensor.params[0]))
             attr_props.set_max_value(str(sensor.params[1]))
-
+    if sensor.stype in ['discrete']:
+        enum_labels = sensor.params
+        attr_props.set_enum_labels(enum_labels)
     attr_props.set_label(sensor.name)
     attr_props.set_description(sensor.description)
     if sensor.units:
