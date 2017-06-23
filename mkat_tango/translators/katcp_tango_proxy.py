@@ -454,7 +454,7 @@ class TangoDevice2KatcpProxy(object):
             # KM 2016-05-18 TODO Might need to figure out how to map the
             # AttrQuality values to the sensor status constants
             if sensor.type == 'discrete':
-                value = str(value)
+                value = sensor.params[value]
             status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
             sensor.set_value(value, status=status, timestamp=timestamp)
 
