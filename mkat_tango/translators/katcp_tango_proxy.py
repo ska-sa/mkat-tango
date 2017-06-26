@@ -27,7 +27,7 @@ from tornado.gen import Return
 from katcp import Sensor, kattypes
 from katcp import server as katcp_server
 from PyTango import DevState, AttrDataFormat, CmdArgType
-from PyTango import (DevFloat, DevDouble,AttrQuality,
+from PyTango import (DevFloat, DevDouble, AttrQuality,
                      DevUChar, DevShort, DevUShort, DevLong, DevULong,
                      DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
@@ -36,7 +36,7 @@ from tango_inspecting_client import TangoInspectingClient
 MODULE_LOGGER = logging.getLogger(__name__)
 
 KATCP_REQUEST_DOC_TEMPLATE = (
-"""?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
+    """?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
 
 Input Parameter
 ---------------
@@ -49,6 +49,7 @@ Returns
 {out_type_desc}
 """
 )
+
 
 def dtype_params(dtype):
     try:
@@ -66,6 +67,7 @@ TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
                              for name, num in PyTango.CmdArgType.names.items()}
 
+
 class TangoStateDiscrete(kattypes.Discrete):
     """A kattype that is compatible with the PyTango.DevState enumeration"""
 
@@ -77,6 +79,7 @@ class TangoStateDiscrete(kattypes.Discrete):
 
     def decode(self, value, major):
         return getattr(PyTango.DevState, value)
+
 
 TANGO2KATCP_TYPE_INFO = {
     DevFloat: KatcpTypeInfo(KatcpType=kattypes.Float, sensor_type=Sensor.FLOAT,
@@ -115,6 +118,7 @@ TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS = {
         AttrQuality.ATTR_ALARM: Sensor.ERROR,
         AttrQuality.ATTR_INVALID: Sensor.FAILURE
 }
+
 
 def tango_attr_descr2katcp_sensor(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object
@@ -164,6 +168,7 @@ def tango_attr_descr2katcp_sensor(attr_descr):
 
     return Sensor(sensor_type, attr_descr.name, attr_descr.description,
                   attr_descr.unit, sensor_params)
+
 
 def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     """Convert tango command description to equivalent KATCP reply handler
@@ -289,7 +294,7 @@ def tango_type2kattype_object(tango_type):
             tango_type = getattr(PyTango, str(tango_type).replace('Array', '')
                                  .replace('Var', ''), None)
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
-    except KeyError as ke:
+    except KeyError:
         raise NotImplementedError("Tango wrapping not implemented for tango type {}"
                                   .format(tango_type))
     if tango_type in TANGO_NUMERIC_TYPES:
@@ -297,9 +302,10 @@ def tango_type2kattype_object(tango_type):
     elif tango_type == CmdArgType.DevState:
         # TODO (NM, KM) 2016-05-30 can we get rid of this if statement by using
         # TANGO2KATCP_TYPE_INFO better?
-        kattype_kwargs = [name for name in katcp_type_info.params]
-        return katcp_type_info.KatcpType(kattype_kwargs)
+        kattype_values = [name for name in katcp_type_info.params]
+        return katcp_type_info.KatcpType(kattype_values)
     return katcp_type_info.KatcpType(**kattype_kwargs)
+
 
 def is_tango_device_running(tango_device_proxy):
     """Checks if the TANGO device server is running.
@@ -391,7 +397,6 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.clear_attribute_sampling()
         # TODO NM 2016-05-17 Is it possible to stop a Tango DeviceProxy?
 
-
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
 
@@ -451,8 +456,6 @@ class TangoDevice2KatcpProxy(object):
             # with not implemented sensors
             MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
         else:
-            # KM 2016-05-18 TODO Might need to figure out how to map the
-            # AttrQuality values to the sensor status constants
             if sensor.type == 'discrete':
                 value = sensor.params[value]
             status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
@@ -508,6 +511,7 @@ class TangoDevice2KatcpProxy(object):
             else:
                 is_device_connected = True
 
+
 def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
     from katcore.utils import address
@@ -519,8 +523,8 @@ def tango2katcp_main(args=None, start_ioloop=True):
                         '"NO" for no log config. Default: %(default)s')
     parser.add_argument("--katcp-server-address", type=address,
                         help="HOST:PORT for the device to listen on", required=True)
-    parser.add_argument('tango_device_address', type=str, help=
-                        'Address of the tango device to connect to '
+    parser.add_argument('tango_device_address', type=str,
+                        help='Address of the tango device to connect to '
                         '(in tango format)')
 
     opts = parser.parse_args(args=args)
@@ -529,8 +533,8 @@ def tango2katcp_main(args=None, start_ioloop=True):
     if loglevel != 'NO':
         python_loglevel = getattr(logging, loglevel)
         logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
-        '%(pathname)s : %(lineno)d - %(message)s',
+            format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
+            '%(pathname)s : %(lineno)d - %(message)s',
             level=python_loglevel)
 
     ioloop = tornado.ioloop.IOLoop.current()

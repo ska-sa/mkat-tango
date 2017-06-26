@@ -29,19 +29,20 @@ parser = argparse.ArgumentParser(
 required_argument = partial(parser.add_argument, required=True)
 
 required_argument('--name', action='append',
-                  help="TANGO name(s) for the devices i.e.specified multiple times",)
+                  help="TANGO name(s) for the devices, i.e. specified multiple times",)
 required_argument('--class', dest='device_class', action='append',
                   help="TANGO class name(s) for the device(s) i.e. specified the " +
                   "same number of times and the names and classes are matched in order")
 required_argument('--server-command', help="TANGO server executable command")
 required_argument('--server-instance', help="TANGO server instance name")
 required_argument('--port', help="TCP port where TANGO server should listen")
-parser.add_argument('--put-device-property', action='append', help=
-                    "Put a device property into the TANGO DB, format is: "
+parser.add_argument('--put-device-property', action='append',
+                    help="Put a device property into the TANGO DB, format is: "
                     "'device/name/X:property_name:property_value'. Only allows "
                     "properties to be set on devices started with this command. "
                     "Can be specified multiple times.",
                     dest='device_properties', default=[])
+
 
 def register_device(name, device_class, server_name, instance):
     dev_info = PyTango.DbDevInfo()
@@ -54,16 +55,18 @@ def register_device(name, device_class, server_name, instance):
     db = PyTango.Database()
     db.add_device(dev_info)
 
+
 def put_device_property(dev_name, property_name, property_value):
     db = PyTango.Database()
     print "Setting device {!r} property {!r}: {!r}".format(
         dev_name, property_name, property_value)
-    db.put_device_property(dev_name, {property_name:[property_value]})
+    db.put_device_property(dev_name, {property_name: [property_value]})
+
 
 def start_device(opts):
     server_name = os.path.basename(opts.server_command)
     number_of_devices = len(opts.name)
-    #Register tango devices
+    # Register tango devices
     for i in range(number_of_devices):
         register_device(
             opts.name[i], opts.device_class[i], server_name, opts.server_instance)
@@ -86,6 +89,7 @@ def start_device(opts):
     sys.stdout.flush()
     sys.stderr.flush()
     os.execvp(opts.server_command, args)
+
 
 def main():
     opts = parser.parse_args()

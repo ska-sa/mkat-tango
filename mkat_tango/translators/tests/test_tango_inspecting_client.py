@@ -1,9 +1,17 @@
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+
 import unittest
 import logging
 import weakref
 import time
 import operator
-import sys
 import mock
 
 from functools import wraps
@@ -22,6 +30,7 @@ from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMix
 from mkat_tango.translators import tango_inspecting_client
 
 LOGGER = logging.getLogger(__name__)
+
 
 def _test_attr(attr_dummy_fn):
     """Decorator for a :class:`PyTango.server.Device` test attribute
@@ -59,8 +68,8 @@ def _test_attr(attr_dummy_fn):
         if ts is None:
             ts = self.attr_time()
         if self.log_attribute_reads:
-            LOGGER.debug('Attr {!r} returning {!r}'.format(
-                attr_name, (val, ts, qual)) )
+            LOGGER.debug('Attr {!r} returning {!r}'
+                         .format(attr_name, (val, ts, qual)))
         return val, ts, qual
 
     return attr_fn
@@ -68,7 +77,7 @@ def _test_attr(attr_dummy_fn):
 
 class TangoTestDevice(TS.Device):
     __metaclass__ = TS.DeviceMeta
-    instances = weakref.WeakValueDictionary() # Access instances for debugging
+    instances = weakref.WeakValueDictionary()  # Access instances for debugging
     # Can be mocked to control timestamps returned by attributes
     attr_time = time.time
     log_attribute_reads = False
@@ -134,12 +143,12 @@ class TangoTestDevice(TS.Device):
     # Commands that come from the Tango library
     standard_commands = ('Init', 'State', 'Status')
 
-
     ReverseString_command_kwargs = dict(
         doc_in='A string to reverse',
         dtype_in='DevString',
         doc_out='The reversed string',
         dtype_out='DevString')
+
     @TS.command(**ReverseString_command_kwargs)
     def ReverseString(self, in_str):
         """A scalar string -> scalar string command"""
@@ -150,12 +159,14 @@ class TangoTestDevice(TS.Device):
         dtype_in='DevVarLong64Array',
         doc_out='Sum of input integer array',
         dtype_out='DevLong64')
+
     @TS.command(**MultiplyInts_command_kwargs)
     def MultiplyInts(self, in_ints):
         return reduce(operator.mul, in_ints)
 
     # Need empty dict for tests to work
     Void_command_kwargs = {}
+
     @TS.command(**Void_command_kwargs)
     def Void(self):
         pass
@@ -165,6 +176,7 @@ class TangoTestDevice(TS.Device):
         dtype_in='DevDouble',
         doc_out='Input multiplied by 3',
         dtype_out='DevDouble')
+
     @TS.command(**MultiplyDoubleBy3_command_kwargs)
     def MultiplyDoubleBy3(self, a_double):
         return a_double * 3.0
@@ -185,7 +197,7 @@ class TangoTestDevice(TS.Device):
 
 
 class TangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
-    longMessage=True
+    longMessage = True
 
     @classmethod
     def setUpClassWithCleanup(cls):

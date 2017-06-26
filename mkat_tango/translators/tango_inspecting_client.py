@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ###############################################################################
 # SKA South Africa (http://ska.ac.za/)                                        #
 # Author: cam@ska.ac.za                                                       #
@@ -16,6 +15,7 @@ import PyTango
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
+
 
 class TangoInspectingClient(object):
     """Wrapper around a Tango DeviceProxy that tracks commands/attributes
@@ -121,7 +121,7 @@ class TangoInspectingClient(object):
             name_trimmed = name.split('#')[0]
             attr_name = self.orig_attr_names_map[name_trimmed.lower()]
             self.sample_event_callback(attr_name, received_timestamp,
-                                      timestamp, value, quality, event_type)
+                                       timestamp, value, quality, event_type)
         else:
             # TODO KM needs to handle errors accordingly
             MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
@@ -158,8 +158,9 @@ class TangoInspectingClient(object):
                     time.sleep(retry_time)
                     dp.poll_attribute(attr_name, poll_period)
             try:
-                subs = lambda etype: dp.subscribe_event(
-                    attr_name, etype, self.tango_event_handler)
+                def subs(etype):
+                    dp.subscribe_event(attr_name, etype, self.tango_event_handler)
+
                 # TODO NM Need an individual try-except around each of these
                 if periodic:
                     self._event_ids.add(subs(PyTango.EventType.PERIODIC_EVENT))

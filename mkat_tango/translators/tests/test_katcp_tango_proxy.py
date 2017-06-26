@@ -1,3 +1,12 @@
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+
 import time
 import logging
 import unittest
@@ -85,7 +94,8 @@ class test_TangoDevice2KatcpProxy(
         sensor_list = set([inform.arguments[0] for inform in informs])
         attribute_list = set(self.tango_device_proxy.get_attribute_list())
         NOT_IMPLEMENTED_SENSORS = set(['ScalarDevEncoded'])
-        self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
+        self.assertEqual(
+            attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
             "attribute list!\n\nThese sensors are"
             " extra:\n%s\n\nFound these attributes with no corresponding sensors:\n%s"
@@ -126,9 +136,11 @@ class test_TangoDevice2KatcpProxy(
         num_periods = 10
         # sleep time is 10 poll periods plus a little
         sleep_time = poll_period/1000. * (num_periods + 0.5)
-        testutils.set_attributes_polling(self, self.tango_device_proxy,
-                           self.tango_test_device, {attr: poll_period
-                           for attr in self.tango_device_proxy.get_attribute_list()})
+        testutils.set_attributes_polling(
+            self, self.tango_device_proxy,
+            self.tango_test_device, {
+                attr: poll_period
+                for attr in self.tango_device_proxy.get_attribute_list()})
         EXCLUDED_ATTRS = set([
                 'State',    # Tango library attribute, Cannot change event_period
                 'Status',   # Tango library attribute, Cannot change event_period
@@ -172,11 +184,12 @@ class test_TangoDevice2KatcpProxy(
         ))
 
     def test_request(self):
-        mid=5
+        mid = 5
         reply, _ = self.client.blocking_request(Message.request(
             'ReverseString', 'polony', mid=mid))
         self.assertEqual(str(reply),
                          "!ReverseString[{}] ok ynolop".format(mid))
+
 
 class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                        tornado.testing.AsyncTestCase):
@@ -189,10 +202,10 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         handler = katcp_tango_proxy.tango_cmd_descr2katcp_request(
             cmd_info, device_proxy_spy)
 
-        ## Check that the docstring is correct
+        # ## Check that the docstring is correct
         # Do dict(...) to make a copy so that we don't mess with the original
         command_kwargs = dict(getattr(self.tango_test_device,
-                                 cmd_name+'_command_kwargs'))
+                                      cmd_name+'_command_kwargs'))
         if 'dtype_in' not in command_kwargs:
             command_kwargs['dtype_in'] = 'DevVoid'
             command_kwargs['doc_in'] = 'Void'
@@ -204,7 +217,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
             cmd_name=cmd_name, **command_kwargs)
         self.assertEqual(handler.__doc__, expected_docstring)
 
-        ## To a test request
+        # ## To a test request
         mock_katcp_server = mock.Mock(spec_set=self.DUT.katcp_server)
         req = mock_req(cmd_name, *request_args, server=mock_katcp_server)
         result = yield handler(mock_katcp_server, req, req.msg)
@@ -268,6 +281,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
         yield self._test_cmd_handler(cmd_name='State',
                                      request_args=[],
                                      expected_reply_args=['ok', 'ON'])
+
 
 class SensorObserver(object):
     def __init__(self):

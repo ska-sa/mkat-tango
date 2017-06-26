@@ -10,13 +10,10 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
-import sys
 import weakref
 import logging
-import os
 
 import tornado
-import PyTango
 
 from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager, Message
@@ -55,6 +52,7 @@ KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY = {
         #  probably rather remove the TANGO attribute if the KATCP sensor is 'inactive'.
         }
 
+
 def kattype2tangotype_object(katcp_sens_type):
     """Convert KATCP Sensor type to A corresponding TANGO type object
 
@@ -70,10 +68,11 @@ def kattype2tangotype_object(katcp_sens_type):
     """
     try:
         tango_type = KATCP_TYPE_TO_TANGO_TYPE[katcp_sens_type]
-    except KeyError as ke:
+    except KeyError:
         raise NotImplementedError("Sensor type {} not yet implemented or is invalid"
                                   .format(tango_type))
     return tango_type
+
 
 def katcp_sensor2tango_attr(sensor):
     """Convert KATCP type object to corresponding TANGO type object
@@ -103,6 +102,7 @@ def katcp_sensor2tango_attr(sensor):
         attr_props.set_unit(sensor.units)
     attribute.set_default_properties(attr_props)
     return attribute
+
 
 def add_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
     """Add in new TANGO attributes.
@@ -136,6 +136,7 @@ def add_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
             if error_list is not None:
                 error_list.append(sensor.name)
 
+
 def remove_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
     """Remove existing TANGO attributes.
 
@@ -168,6 +169,7 @@ def remove_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
             tango_dserver.remove_attribute(attr_name)
         except DevFailed:
             MODULE_LOGGER.debug("Attribute {} does not exist".format(attr_name))
+
 
 def create_command2request_handler(req_name, req_doc):
     """Convert katcp request decription into a tango command handler
@@ -204,15 +206,16 @@ def create_command2request_handler(req_name, req_doc):
         return command(f=cmd_handler, doc_in='No input parameters',
                        dtype_out=(str,), doc_out=req_doc)
 
+
 class TangoDeviceServerBase(Device):
     instances = weakref.WeakValueDictionary()
 
     katcp_address = device_property(
-        dtype=str, doc=
-        'katcp address of the device to translate as <host>:<port>')
+        dtype=str,
+        doc='katcp address of the device to translate as <host>:<port>')
     katcp_sync_timeout = device_property(
-        dtype=float, default_value=5, doc=
-        'Timeout (in seconds) for syncing with the KATCP device at startup')
+        dtype=float, default_value=5,
+        doc='Timeout (in seconds) for syncing with the KATCP device at startup')
 
     def __init__(self, *args, **kwargs):
         self.tango_katcp_proxy = None
@@ -287,13 +290,14 @@ class TangoDeviceServerBase(Device):
 
         '''
         name = attr.get_name()
-        sensor_updates = self.tango_katcp_proxy.sensor_observer.updates[name]
+        sensor_update = self.tango_katcp_proxy.sensor_observer.updates[name]
         quality = KATCP_SENSOR_STATUS_TO_TANGO_ATTRIBUTE_QUALITY[
-                sensor_updates['status']]
-        timestamp = sensor_updates['timestamp']
-        value = sensor_updates['value']
-        self.info_stream("Reading attribute {} : {}".format(name, sensor_updates))
+                sensor_update['status']]
+        timestamp = sensor_update['timestamp']
+        value = sensor_update['value']
+        self.info_stream("Reading attribute {} : {}".format(name, sensor_update))
         attr.set_value_date_quality(value, timestamp, quality)
+
 
 class KatcpTango2DeviceProxy(object):
     def __init__(self, katcp_inspecting_client, tango_device_server, ioloop):
@@ -359,7 +363,7 @@ class KatcpTango2DeviceProxy(object):
             request_args = []
 
         @tornado.gen.coroutine
-        def _wait_synced():
+        def _wait_request():
             try:
                 reply, informs = yield self.katcp_inspecting_client.simple_request(
                                                 req, *request_args)
@@ -367,7 +371,7 @@ class KatcpTango2DeviceProxy(object):
                 f.set_exception(exc)
             else:
                 f.set_result([reply, informs])
-        self.ioloop.add_callback(_wait_synced)
+        self.ioloop.add_callback(_wait_request)
         reply, informs = f.result(timeout=katcp_request_timeout)
         self.replies = reply.arguments
         self.informs = []
@@ -407,12 +411,12 @@ class KatcpTango2DeviceProxy(object):
             reply, informs = yield self.katcp_inspecting_client.simple_request(
                     'sensor-sampling', sensor_name, 'event')
             if not reply.reply_ok():
-                MODULE_LOGGER.debug("Unexpected failure reply for {} sensor. \n" +
-                        " Informs: {} \n Reply: {}".format(sensor_name, informs, reply))
+                MODULE_LOGGER.debug(
+                    "Unexpected failure reply for {} sensor. \n" +
+                    " Informs: {} \n Reply: {}".format(sensor_name, informs, reply))
 
     @classmethod
-    def from_katcp_address_tango_device(cls,
-            katcp_server_address, tango_device_server):
+    def from_katcp_address_tango_device(cls, katcp_server_address, tango_device_server):
         """Instatiate KatcpTango2DeviceProxy from network address
 
         Parameters
@@ -432,6 +436,7 @@ class KatcpTango2DeviceProxy(object):
             katcp_host, katcp_port, ioloop=ioloop)
         return cls(katcp_inspecting_client, tango_device_server, ioloop)
 
+
 class SensorObserver(object):
     """The observer class attached to KATCP sensor to recieve updates after the
     sensor strategy is set."""
@@ -440,13 +445,15 @@ class SensorObserver(object):
 
     def update(self, sensor, reading):
         read_dict = {'timestamp': reading.timestamp,
-                'status': reading.status, 'value': reading.value}
+                     'status': reading.status,
+                     'value': reading.value}
         if sensor.stype in ['address']:
             # Address sensor type contains a Tuple contaning (host, port) and
             # mapped to tango DevString type i.e "host:port"
             read_dict['value'] = ':'.join(str(s) for s in reading.value)
         self.updates[katcpname2tangoname(sensor.name)] = read_dict
         MODULE_LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
+
 
 def get_katcp_address(server_name):
     """Gets the KATCP address of a running KATCP device form the tango-db device
@@ -469,9 +476,10 @@ def get_katcp_address(server_name):
     db = Database()
     server_class = db.get_server_class_list(server_name).value_string[0]
     device_name = db.get_device_name(server_name, server_class).value_string[0]
-    katcp_address = db.get_device_property(device_name,
-            'katcp_address')['katcp_address'][0]
+    katcp_property = db.get_device_property(device_name, 'katcp_address')
+    katcp_address = katcp_property['katcp_address'][0]
     return katcp_address
+
 
 def get_katcp_request_data(katcp_connect_timeout=60.0):
     """Inspects the KATCP device for requests using a temporary BlockingClient.
@@ -508,6 +516,7 @@ def get_katcp_request_data(katcp_connect_timeout=60.0):
         req_dict[req[0]] = req[1]
     return req_dict
 
+
 def get_tango_device_server():
     """Declares a tango device class that inherits the Device class and then
     adds tango commands.
@@ -536,6 +545,7 @@ def get_tango_device_server():
         __metaclass__ = DeviceMeta
 
     return TangoDeviceServer
+
 
 def main():
     TangoDeviceServer = get_tango_device_server()

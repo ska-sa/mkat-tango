@@ -1,9 +1,19 @@
+###############################################################################
+# SKA South Africa (http://ska.ac.za/)                                        #
+# Author: cam@ska.ac.za                                                       #
+# Copyright @ 2013 SKA SA. All rights reserved.                               #
+#                                                                             #
+# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
+# WRITTEN PERMISSION OF SKA SA.                                               #
+###############################################################################
+
 import sys
 import logging
 import time
 import mock
 
 LOGGER = logging.getLogger(__name__)
+
 
 def set_attributes_polling(test_case, device_proxy, device_server, poll_periods):
     """Set attribute polling and restore after test
@@ -88,6 +98,7 @@ def set_attributes_polling(test_case, device_proxy, device_server, poll_periods)
 
     test_case.addCleanup(restore_polling)
     return restore_polling
+
 
 def disable_attributes_polling(test_case, device_proxy, device_server, attributes):
     """Disable polling for a tango device server, en re-eable at end of test"""
