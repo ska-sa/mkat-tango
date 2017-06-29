@@ -121,7 +121,7 @@ class TangoInspectingClient(object):
             name_trimmed = name.split('#')[0]
             attr_name = self.orig_attr_names_map[name_trimmed.lower()]
             self.sample_event_callback(attr_name, received_timestamp,
-                                      timestamp, value, quality, event_type)
+                                       timestamp, value, quality, event_type)
         else:
             # TODO KM needs to handle errors accordingly
             MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
@@ -145,18 +145,21 @@ class TangoInspectingClient(object):
         dp = self.tango_dp
         poll_period = 1000      # in milliseconds
         retry_time = 0.5        # in seconds
+        retries = 2             # Maximum number of retries
 
         for attr_name in self.device_attributes:
             if not dp.is_attribute_polled(attr_name):
-                try:
-                    dp.poll_attribute(attr_name, poll_period)
-                except Exception:
-                    retry = True
-                else:
-                    retry = False
-                if retry:
-                    time.sleep(retry_time)
-                    dp.poll_attribute(attr_name, poll_period)
+                _retries = 0
+                retry = True
+                while retry and _retries < retries:
+                    try:
+                        dp.poll_attribute(attr_name, poll_period)
+                    except PyTango.CommunicationFailed:
+                        _retries += 1
+                        time.sleep(retry_time)
+                    else:
+                        retry = False
+
             try:
                 subs = lambda etype: dp.subscribe_event(
                     attr_name, etype, self.tango_event_handler)
