@@ -45,7 +45,7 @@ def register_device(name, device_class, server_name, instance):
     dev_info = PyTango.DbDevInfo()
     dev_info.name = name
     dev_info._class = device_class
-    dev_info.server = "{}/{}".format(server_name.split('.')[0], instance)
+    dev_info.server = "{}/{}".format(server_name, instance)
     print """Attempting to register TANGO device {!r}
     class: {!r}  server: {!r}.""".format(
             dev_info.name, dev_info._class, dev_info.server)
@@ -60,8 +60,10 @@ def put_device_property(dev_name, property_name, property_value):
 
 def start_device(opts):
     server_name = os.path.basename(opts.server_command)
+    if server_name.endswith('.py'):
+        server_name = server_name.split('.')[0]
     number_of_devices = len(opts.name)
-    #Register tango devices
+    # Register tango devices
     for i in range(number_of_devices):
         register_device(
             opts.name[i], opts.device_class[i], server_name, opts.server_instance)
@@ -76,7 +78,7 @@ def start_device(opts):
             "Device {!r} not launched by this command".format(dev_name))
         put_device_property(dev_name, dev_property_name, dev_property_val)
 
-    if '.py' in opts.server_command:
+    if opts.server_command.endwith('.py'):
         args = ['python %s' % opts.server_command, opts.server_instance]
         print "Starting TANGO device server:\n{}".format(
               " ".join(["{!r}".format(arg) for arg in args]))
@@ -86,7 +88,7 @@ def start_device(opts):
     else:
         args = [opts.server_command,
                 opts.server_instance,
-               '-ORBendPoint', 'giop:tcp::{}'.format(opts.port)]
+                '-ORBendPoint', 'giop:tcp::{}'.format(opts.port)]
         print "Starting TANGO device server:\n{}".format(
               " ".join(["{!r}".format(arg) for arg in args]))
         sys.stdout.flush()
