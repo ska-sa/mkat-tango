@@ -78,7 +78,7 @@ def start_device(opts):
             "Device {!r} not launched by this command".format(dev_name))
         put_device_property(dev_name, dev_property_name, dev_property_val)
 
-    if opts.server_command.endwith('.py'):
+    if opts.server_command.endswith('.py'):
         args = ['python %s' % opts.server_command, opts.server_instance]
         print "Starting TANGO device server:\n{}".format(
               " ".join(["{!r}".format(arg) for arg in args]))
