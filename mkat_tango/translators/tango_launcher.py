@@ -10,9 +10,7 @@
 
 
 """Utility to help launch a TANGO device in a KATCP eco-system
-
 Helps by auto-registering a TANGO device if needed
-
 """
 import os
 import sys
@@ -62,8 +60,10 @@ def put_device_property(dev_name, property_name, property_value):
 
 def start_device(opts):
     server_name = os.path.basename(opts.server_command)
+    if server_name.endswith('.py'):
+        server_name = server_name.split('.')[0]
     number_of_devices = len(opts.name)
-    #Register tango devices
+    # Register tango devices
     for i in range(number_of_devices):
         register_device(
             opts.name[i], opts.device_class[i], server_name, opts.server_instance)
@@ -78,14 +78,22 @@ def start_device(opts):
             "Device {!r} not launched by this command".format(dev_name))
         put_device_property(dev_name, dev_property_name, dev_property_val)
 
-    args = [opts.server_command,
-            opts.server_instance,
-            '-ORBendPoint', 'giop:tcp::{}'.format(opts.port)]
-    print "Starting TANGO device server:\n{}".format(
-        " ".join(["{!r}".format(arg) for arg in args]))
-    sys.stdout.flush()
-    sys.stderr.flush()
-    os.execvp(opts.server_command, args)
+    if opts.server_command.endswith('.py'):
+        args = ['python %s' % opts.server_command, opts.server_instance]
+        print "Starting TANGO device server:\n{}".format(
+              " ".join(["{!r}".format(arg) for arg in args]))
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.system(" ".join(args))
+    else:
+        args = [opts.server_command,
+                opts.server_instance,
+                '-ORBendPoint', 'giop:tcp::{}'.format(opts.port)]
+        print "Starting TANGO device server:\n{}".format(
+              " ".join(["{!r}".format(arg) for arg in args]))
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.execvp(opts.server_command, args)
 
 def main():
     opts = parser.parse_args()

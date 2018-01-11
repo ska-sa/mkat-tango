@@ -16,9 +16,10 @@ def get_server_name():
     (i.e.sim_xmi_parser.py -> sim_xmi_parser or
     /usr/local/bin/mkat-tango-katcpdevice2tango-DS ->
     mkat-tango-katcpdevice2tango-DS) from the command line
-    arguments passed, where sys.argv[1] is the server instance.
+    arguments passed, where sys.argv[0] is the server executable name
+    and sys.argv[1] is the server instance.
 
     """
-    executable_name = os.path.split(sys.argv[0].split('.')[0])[1]
+    executable_name = os.path.split(sys.argv[0])[-1].split('.')[0]
     server_name = executable_name + '/' + sys.argv[1]
     return server_name
