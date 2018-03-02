@@ -17,9 +17,9 @@ import mock
 
 import tornado.testing
 import tornado.gen
-import devicetest
-import PyTango
 
+from tango.test_context import DeviceTestContext
+import PyTango
 from PyTango.server import DeviceMeta
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
@@ -38,8 +38,6 @@ from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
         ClassCleanupUnittestMixin)
-
-from devicetest import DeviceTestCase, TangoTestContext
 
 logger = logging.getLogger(__name__)
 
@@ -139,9 +137,9 @@ class TangoDeviceServer(TangoDeviceServerBase):
     __metaclass__ = DeviceMeta
 
 
-class _test_KatcpTango2DeviceProxy(DeviceTestCase):
+class _test_KatcpTango2DeviceProxy(unittest.TestCase):
     longMessage = True
-    device = TangoDeviceServer
+    klass = TangoDeviceServer
     KatcpTestDeviceClass = KatcpTestDevice
 
     @classmethod
@@ -152,10 +150,18 @@ class _test_KatcpTango2DeviceProxy(DeviceTestCase):
         katcp_server_host, katcp_server_port = address
         cls.properties = dict(katcp_address=katcp_server_host + ':' +
                               str(katcp_server_port))
-        super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
+        cls.tango_context = DeviceTestContext(cls.klass, properties=cls.properties)
+        cls.tango_context.start()
+        #super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Kill the device server."""
+        cls.tango_context.stop()
 
     def setUp(self):
         super(_test_KatcpTango2DeviceProxy, self).setUp()
+        self.device = self.tango_context.device
         self.instance = TangoDeviceServer.instances[self.device.name()]
         self.ioloop = self.instance.tango_katcp_proxy.ioloop
         self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
@@ -207,9 +213,9 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
             mock_get_katcp_address.return_value = '{}:{}'.format(
                     katcp_server_host, katcp_server_port)
             cls.TangoDeviceServer = get_tango_device_server()
-            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
-                                                 db=cls.tango_db,
-                                                 properties=cls.properties)
+            cls.tango_context = DeviceTestContext(cls.TangoDeviceServer,
+                                                  db=cls.tango_db,
+                                                  properties=cls.properties)
         start_thread_with_cleanup(cls, cls.tango_context)
 
     def setUp(self):

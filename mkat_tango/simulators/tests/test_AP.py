@@ -15,14 +15,24 @@ import mock
 import unittest
 import threading
 
-from devicetest import DeviceTestCase
+from tango.test_context import DeviceTestContext
 
 from mkat_tango.simulators import AntennaPositionerDS
 
-class AntennaPositionerTestCase(DeviceTestCase):
+class AntennaPositionerTestCase(unittest.TestCase):
     '''Test case for the Antenna Positioner device server'''
 
-    device = AntennaPositionerDS.AntennaPositioner
+    klass = AntennaPositionerDS.AntennaPositioner
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tango_context = DeviceTestContext(cls.klass)
+        cls.tango_context.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Kill the device server."""
+        cls.tango_context.stop()
 
     def setUp(self):
         '''Setting up server instance and update period patcher'''
@@ -32,6 +42,7 @@ class AntennaPositionerTestCase(DeviceTestCase):
         update_period_patcher.start()
         AntennaPositionerDS.AntennaPositioner.UPDATE_PERDIOD = 0.1
         super(AntennaPositionerTestCase, self).setUp()
+        self.device = self.tango_context.device
         self.device_server_instance = (AntennaPositionerDS.AntennaPositioner
                                        .instances[self.device.name()])
         self.az_state = self.device_server_instance.azimuth_quantities
