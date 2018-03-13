@@ -9,11 +9,10 @@ import mock
 from functools import wraps
 from collections import defaultdict
 
-from PyTango import server as TS
-from PyTango import AttrQuality
-from PyTango import DevState
-
+from tango import server as TS
+from tango import AttrQuality, DevState
 from tango.test_context import DeviceTestContext
+
 from katcp.testutils import start_thread_with_cleanup
 from katcore.testutils import cleanup_tempfile
 

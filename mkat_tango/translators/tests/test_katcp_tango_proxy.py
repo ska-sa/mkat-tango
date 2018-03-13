@@ -8,9 +8,9 @@ import tornado.testing
 import tornado.gen
 
 from tango.test_context import DeviceTestContext
+
 from katcp import Message
-from katcp.testutils import mock_req
-from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
+from katcp.testutils import BlockingTestClient, mock_req, start_thread_with_cleanup
 from katcore.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
@@ -269,6 +269,7 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
 
 class SensorObserver(object):
     def __init__(self):
+        LOGGER.debug('*******Creating an observer instance********')
         self.updates = []
 
     def update(self, sensor, reading):

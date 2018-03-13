@@ -18,9 +18,9 @@ import mock
 import tornado.testing
 import tornado.gen
 
+import tango
 from tango.test_context import DeviceTestContext
-import PyTango
-from PyTango.server import DeviceMeta
+from tango.server import DeviceMeta
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
@@ -29,15 +29,12 @@ from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcore.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
-                                                      remove_tango_server_attribute_list,
-                                                      add_tango_server_attribute_list,
-                                                      create_command2request_handler,
-                                                      TangoDeviceServerBase,
-                                                      get_katcp_request_data)
+    remove_tango_server_attribute_list, add_tango_server_attribute_list,
+    create_command2request_handler, TangoDeviceServerBase, get_katcp_request_data)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
-        ClassCleanupUnittestMixin)
+    ClassCleanupUnittestMixin)
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +285,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         # Check that the correct number and alarm quality are reported:
         reading = self.device.read_attribute('NumErrorTranslatingSensors')
         self.assertEqual(reading.value, len(invalid_sensor_names))
-        self.assertEqual(reading.quality, PyTango.AttrQuality.ATTR_ALARM)
+        self.assertEqual(reading.quality, tango.AttrQuality.ATTR_ALARM)
         # And the correct sensor names
         self.assertEqual(sorted(self.device.ErrorTranslatingSensors),
                          sorted(invalid_sensor_names))
@@ -543,7 +540,7 @@ class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
         """No spurious sensor translation errors are reported?"""
         reading = self.device.read_attribute('NumErrorTranslatingSensors')
         self.assertEqual(reading.value, 0)
-        self.assertEqual(reading.quality, PyTango.AttrQuality.ATTR_VALID)
+        self.assertEqual(reading.quality, tango.AttrQuality.ATTR_VALID)
         # And the no sensor names
         # TODO NM 2016-08-31 For some reason None is returned instead of an
         # empty list, PyTango bug?
