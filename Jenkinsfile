@@ -23,8 +23,8 @@ node('docker') {
             timeout(time: 30, unit: 'MINUTES') {
                 try {
                     sh 'sudo service tango-db restart'
-                    sh 'sudo pip install . -U --pre'
-                    sh 'python setup.py nosetests'
+                    sh 'sudo pip install . -U'
+                    sh 'python setup.py test'
                 } finally {
                     step([$class: 'JUnitResultArchiver', testResults: 'nosetests.xml'])
                 }
