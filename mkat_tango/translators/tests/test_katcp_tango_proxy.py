@@ -269,7 +269,6 @@ class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
 
 class SensorObserver(object):
     def __init__(self):
-        LOGGER.debug('*******Creating an observer instance********')
         self.updates = []
 
     def update(self, sensor, reading):
