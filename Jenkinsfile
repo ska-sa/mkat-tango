@@ -22,7 +22,9 @@ node('docker') {
         timestamps {
             timeout(time: 30, unit: 'MINUTES') {
                 try {
-                    sh 'sudo service tango-db restart'
+                    sh 'nohup service mysql restart'
+                    sh 'nohup service tango-db restart'
+                    sh 'git checkout user/kmadisa/CB-2672/unit-testing-using-pytango-test-features'
                     sh 'sudo pip install . -U'
                     sh 'python setup.py test'
                 } finally {
