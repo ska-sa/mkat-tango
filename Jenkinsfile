@@ -1,7 +1,7 @@
 node('docker') {
 
     withDockerContainer(
-        image: 'camtango_db:latest',
+        image: 'camtango_nodb:latest',
         args: '-u root'
     ) {
         stage 'Cleanup workspace'
