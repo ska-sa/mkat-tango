@@ -1,11 +1,11 @@
 import time
 import logging
-
 import mock
+import unittest
 
 from random import gauss
 
-from devicetest import DeviceTestCase
+from tango.test_context import DeviceTestContext
 
 from mkat_tango.testutils import disable_attributes_polling
 
@@ -57,8 +57,8 @@ def read_attributes_as_dicts(dev, attrs):
     return result
 
 
-class test_Weather(DeviceTestCase):
-    device = weather.Weather
+class test_Weather(unittest.TestCase):
+    klass = weather.Weather
     longMessage = True
 
     expected_attributes = frozenset([
@@ -70,9 +70,19 @@ class test_Weather(DeviceTestCase):
         'wind-speed', 'wind-direction', 'temperature', 'insolation',
         'rainfall', 'relative-humidity', 'pressure'])
 
+    @classmethod
+    def setUpClass(cls):
+        cls.tango_context = DeviceTestContext(cls.klass)
+        cls.tango_context.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Kill the device server."""
+        cls.tango_context.stop()
 
     def setUp(self):
         super(test_Weather, self).setUp()
+        self.device = self.tango_context.device
         self.instance = weather.Weather.instances[self.device.name()]
         def cleanup_refs(): del self.instance
         self.addCleanup(cleanup_refs)

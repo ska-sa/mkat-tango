@@ -15,12 +15,11 @@ import time
 import threading
 import logging
 import weakref
-
 from functools import partial
 
-from PyTango.server import Device, DeviceMeta, attribute, command, server_run
+from tango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
+from tango.server import Device, DeviceMeta, attribute, command, server_run
 
-from PyTango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 
 #Module logger reporting events that occur during normal operation of device
 LOGGER = logging.getLogger(__name__)

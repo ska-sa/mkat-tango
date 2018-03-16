@@ -6,12 +6,11 @@ import mock
 
 import tornado.testing
 import tornado.gen
-import devicetest
 
-from devicetest import TangoTestContext
+from tango.test_context import DeviceTestContext
+
 from katcp import Message
-from katcp.testutils import mock_req
-from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
+from katcp.testutils import BlockingTestClient, mock_req, start_thread_with_cleanup
 from katcore.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
@@ -44,10 +43,9 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        cls.tango_context = TangoTestContext(TangoTestDevice, db=cls.tango_db)
+        cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db)
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
-        devicetest.Patcher.unpatch_device_proxy()
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()

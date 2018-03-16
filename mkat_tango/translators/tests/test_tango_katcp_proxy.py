@@ -17,10 +17,10 @@ import mock
 
 import tornado.testing
 import tornado.gen
-import devicetest
-import PyTango
 
-from PyTango.server import DeviceMeta
+import tango
+from tango.test_context import DeviceTestContext
+from tango.server import DeviceMeta
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
@@ -29,17 +29,12 @@ from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcore.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
-                                                      remove_tango_server_attribute_list,
-                                                      add_tango_server_attribute_list,
-                                                      create_command2request_handler,
-                                                      TangoDeviceServerBase,
-                                                      get_katcp_request_data)
+    remove_tango_server_attribute_list, add_tango_server_attribute_list,
+    create_command2request_handler, TangoDeviceServerBase, get_katcp_request_data)
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
-        ClassCleanupUnittestMixin)
-
-from devicetest import DeviceTestCase, TangoTestContext
+    ClassCleanupUnittestMixin)
 
 logger = logging.getLogger(__name__)
 
@@ -139,9 +134,9 @@ class TangoDeviceServer(TangoDeviceServerBase):
     __metaclass__ = DeviceMeta
 
 
-class _test_KatcpTango2DeviceProxy(DeviceTestCase):
+class _test_KatcpTango2DeviceProxy(unittest.TestCase):
     longMessage = True
-    device = TangoDeviceServer
+    klass = TangoDeviceServer
     KatcpTestDeviceClass = KatcpTestDevice
 
     @classmethod
@@ -152,10 +147,18 @@ class _test_KatcpTango2DeviceProxy(DeviceTestCase):
         katcp_server_host, katcp_server_port = address
         cls.properties = dict(katcp_address=katcp_server_host + ':' +
                               str(katcp_server_port))
-        super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
+        cls.tango_context = DeviceTestContext(cls.klass, properties=cls.properties)
+        cls.tango_context.start()
+        #super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        """Kill the device server."""
+        cls.tango_context.stop()
 
     def setUp(self):
         super(_test_KatcpTango2DeviceProxy, self).setUp()
+        self.device = self.tango_context.device
         self.instance = TangoDeviceServer.instances[self.device.name()]
         self.ioloop = self.instance.tango_katcp_proxy.ioloop
         self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
@@ -207,9 +210,9 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
             mock_get_katcp_address.return_value = '{}:{}'.format(
                     katcp_server_host, katcp_server_port)
             cls.TangoDeviceServer = get_tango_device_server()
-            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
-                                                 db=cls.tango_db,
-                                                 properties=cls.properties)
+            cls.tango_context = DeviceTestContext(cls.TangoDeviceServer,
+                                                  db=cls.tango_db,
+                                                  properties=cls.properties)
         start_thread_with_cleanup(cls, cls.tango_context)
 
     def setUp(self):
@@ -282,7 +285,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         # Check that the correct number and alarm quality are reported:
         reading = self.device.read_attribute('NumErrorTranslatingSensors')
         self.assertEqual(reading.value, len(invalid_sensor_names))
-        self.assertEqual(reading.quality, PyTango.AttrQuality.ATTR_ALARM)
+        self.assertEqual(reading.quality, tango.AttrQuality.ATTR_ALARM)
         # And the correct sensor names
         self.assertEqual(sorted(self.device.ErrorTranslatingSensors),
                          sorted(invalid_sensor_names))
@@ -537,7 +540,7 @@ class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
         """No spurious sensor translation errors are reported?"""
         reading = self.device.read_attribute('NumErrorTranslatingSensors')
         self.assertEqual(reading.value, 0)
-        self.assertEqual(reading.quality, PyTango.AttrQuality.ATTR_VALID)
+        self.assertEqual(reading.quality, tango.AttrQuality.ATTR_VALID)
         # And the no sensor names
         # TODO NM 2016-08-31 For some reason None is returned instead of an
         # empty list, PyTango bug?
