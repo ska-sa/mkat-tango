@@ -506,7 +506,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
 
         """
         stoptime = time.time() + timeout
-        value = getattr(self.device, attr_name)
+        value = getattr(self.device, attr_name, None)
         while value is None:
             value = getattr(self.device, attr_name, None)
             time.sleep(poll_period)
