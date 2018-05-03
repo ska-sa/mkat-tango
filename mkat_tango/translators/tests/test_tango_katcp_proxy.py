@@ -155,6 +155,7 @@ class _test_KatcpTango2DeviceProxy(unittest.TestCase):
     def tearDownClass(cls):
         """Kill the device server."""
         cls.tango_context.stop()
+        cls.katcp_server.stop()
 
     def setUp(self):
         super(_test_KatcpTango2DeviceProxy, self).setUp()
@@ -185,11 +186,6 @@ class _test_KatcpTango2DeviceProxy(unittest.TestCase):
         for sens_name in self.katcp_server._sensors.keys():
             if sens_name not in sensors.keys():
                 self.katcp_server.remove_sensor(sens_name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.katcp_server.stop()
-        super(_test_KatcpTango2DeviceProxy, cls).tearDownClass()
 
 
 class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
