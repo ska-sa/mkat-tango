@@ -102,7 +102,7 @@ class test_TangoDevice2KatcpProxy(
                 # Attributes with State returning a device state object
                 if sensor.name in ['State']:
                     state = str(self.tango_device_proxy.state())
-                    # PyTango._PyTango.DevState.ON is device state object
+                    # tango._PyTango.DevState.ON is device state object
                     self.assertEqual(sensor_value, state)
                 else:
                     status = self.tango_device_proxy.status()

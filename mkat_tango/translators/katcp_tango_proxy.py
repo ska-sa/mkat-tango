@@ -18,7 +18,7 @@ import time
 
 import numpy as np
 import tornado
-import PyTango
+import tango
 
 from collections import namedtuple
 from functools import partial
@@ -26,8 +26,8 @@ from functools import partial
 from tornado.gen import Return
 from katcp import Sensor, kattypes
 from katcp import server as katcp_server
-from PyTango import DevState, AttrDataFormat, CmdArgType
-from PyTango import (DevFloat, DevDouble,AttrQuality,
+from tango import DevState, AttrDataFormat, CmdArgType
+from tango import (DevFloat, DevDouble,AttrQuality,
                      DevUChar, DevShort, DevUShort, DevLong, DevULong,
                      DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
@@ -64,10 +64,10 @@ TANGO_INT_TYPES = set([DevUChar, DevShort, DevUShort, DevLong,
                        DevULong, DevLong64, DevULong64])
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
-                             for name, num in PyTango.CmdArgType.names.items()}
+                             for name, num in tango.CmdArgType.names.items()}
 
 class TangoStateDiscrete(kattypes.Discrete):
-    """A kattype that is compatible with the PyTango.DevState enumeration"""
+    """A kattype that is compatible with the tango.DevState enumeration"""
 
     def check(self, value, major):
         return super(TangoStateDiscrete, self).check(str(value), major)
@@ -76,7 +76,7 @@ class TangoStateDiscrete(kattypes.Discrete):
         return super(TangoStateDiscrete, self).encode(str(value), major)
 
     def decode(self, value, major):
-        return getattr(PyTango.DevState, value)
+        return getattr(tango.DevState, value)
 
 TANGO2KATCP_TYPE_INFO = {
     DevFloat: KatcpTypeInfo(KatcpType=kattypes.Float, sensor_type=Sensor.FLOAT,
@@ -122,7 +122,7 @@ def tango_attr_descr2katcp_sensor(attr_descr):
     Parameters
     ==========
 
-    attr_descr : PyTango.AttributeInfoEx data structure
+    attr_descr : tango.AttributeInfoEx data structure
 
     Return Value
     ============
@@ -170,8 +170,8 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
 
     Parameters
     ==========
-    tango_command_descr : :class:`PyTango.CommandInfo` data structure
-    tango_device_proxy : :class:`PyTango.DeviceProxy` instance
+    tango_command_descr : :class:`tango.CommandInfo` data structure
+    tango_device_proxy : :class:`tango.DeviceProxy` instance
         When called, request_handler will use this tango device proxy to execute
         the command.
 
@@ -196,7 +196,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     out_kattype = tango_type2kattype_object(tango_command_descr.out_type)
     cmd_name = tango_command_descr.cmd_name
     tango_request = partial(tango_device_proxy.command_inout,
-                            green_mode=PyTango.GreenMode.Futures,
+                            green_mode=tango.GreenMode.Futures,
                             wait=False)
 
     request_args = [in_kattype] if in_kattype else []
@@ -269,7 +269,7 @@ def tango_type2kattype_object(tango_type):
     ----------------
 
     tango_type : `Pytango.CmdArgType` enum
-        Tango type to translate, e.g. PyTango.CmdArgType.DevFloat
+        Tango type to translate, e.g. tango.CmdArgType.DevFloat
 
     Returns
     -------
@@ -281,12 +281,12 @@ def tango_type2kattype_object(tango_type):
 
     """
     kattype_kwargs = {}
-    if tango_type == PyTango.DevVoid:
+    if tango_type == tango.DevVoid:
         return None
     try:
         if 'Array' in str(tango_type):
             kattype_kwargs['multiple'] = True
-            tango_type = getattr(PyTango, str(tango_type).replace('Array', '')
+            tango_type = getattr(tango, str(tango_type).replace('Array', '')
                                  .replace('Var', ''), None)
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
     except KeyError as ke:
@@ -307,7 +307,7 @@ def is_tango_device_running(tango_device_proxy):
     Input Parameters
     ----------------
 
-    tango_device_proxy : PyTango.DeviceProxy instance
+    tango_device_proxy : tango.DeviceProxy instance
 
     Returns
     -------
@@ -317,7 +317,7 @@ def is_tango_device_running(tango_device_proxy):
     """
     try:
         tango_device_proxy.ping()
-    except PyTango.DevFailed as deverr:
+    except tango.DevFailed as deverr:
         deverr_reasons = set([arg.reason for arg in deverr.args])
         deverr_desc = set([arg.desc for arg in deverr.args])
         for reason, description in zip(deverr_reasons, deverr_desc):
@@ -482,8 +482,8 @@ class TangoDevice2KatcpProxy(object):
         tango_dp = None
         while not tango_dp:
             try:
-                tango_dp = PyTango.DeviceProxy(device_name)
-            except PyTango.DevFailed as dferr:
+                tango_dp = tango.DeviceProxy(device_name)
+            except tango.DevFailed as dferr:
                 dferr_reasons = set([arg.reason for arg in dferr.args])
                 dferr_desc = set([arg.desc for arg in dferr.args])
                 for reason, description in zip(dferr_reasons, dferr_desc):
@@ -499,7 +499,7 @@ class TangoDevice2KatcpProxy(object):
         while not is_device_connected:
             try:
                 tango_device_proxy.reconnect(True)
-            except PyTango.DevFailed as conerr:
+            except tango.DevFailed as conerr:
                 conerr_reasons = set([arg.reason for arg in conerr.args])
                 conerr_desc = set([arg.desc for arg in conerr.args])
                 for reason, description in zip(conerr_reasons, conerr_desc):
