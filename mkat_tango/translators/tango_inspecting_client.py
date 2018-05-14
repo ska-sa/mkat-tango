@@ -12,7 +12,7 @@
 import time
 import logging
 
-import PyTango
+import tango
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class TangoInspectingClient(object):
     Parameters
     ==========
 
-    tango_device_proxy : :class:`PyTango.DeviceProxy` instance.
+    tango_device_proxy : :class:`tango.DeviceProxy` instance.
 
     """
     def __init__(self, tango_device_proxy):
@@ -74,7 +74,7 @@ class TangoInspectingClient(object):
 
         attributes : dict
             Attribute names as keys, value is the return value of
-            :meth:`PyTango.DeviceProxy.get_attribute_config` of each attribute
+            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute
 
         """
         return {attr_name: self.tango_dp.get_attribute_config(attr_name)
@@ -87,8 +87,8 @@ class TangoInspectingClient(object):
         ============
 
         commands : dict
-            Command name as keys, value is instance of :class:`PyTango.CommandInfo`
-            (the return value of :meth:`PyTango.DeviceProxy.command_list_query`)
+            Command name as keys, value is instance of :class:`tango.CommandInfo`
+            (the return value of :meth:`tango.DeviceProxy.command_list_query`)
             for each command.
 
         """
@@ -154,7 +154,7 @@ class TangoInspectingClient(object):
                 while retry and _retries < retries:
                     try:
                         dp.poll_attribute(attr_name, poll_period)
-                    except PyTango.CommunicationFailed:
+                    except tango.CommunicationFailed:
                         _retries += 1
                         time.sleep(retry_time)
                     else:
@@ -165,16 +165,16 @@ class TangoInspectingClient(object):
                     attr_name, etype, self.tango_event_handler)
                 # TODO NM Need an individual try-except around each of these
                 if periodic:
-                    self._event_ids.add(subs(PyTango.EventType.PERIODIC_EVENT))
+                    self._event_ids.add(subs(tango.EventType.PERIODIC_EVENT))
                 if change:
-                    self._event_ids.add(subs(PyTango.EventType.CHANGE_EVENT))
+                    self._event_ids.add(subs(tango.EventType.CHANGE_EVENT))
                 if archive:
-                    self._event_ids.add(subs(PyTango.EventType.ARCHIVE_EVENT))
+                    self._event_ids.add(subs(tango.EventType.ARCHIVE_EVENT))
                 if data_ready:
-                    self._event_ids.add(subs(PyTango.EventType.DATA_READY_EVENT))
+                    self._event_ids.add(subs(tango.EventType.DATA_READY_EVENT))
                 if user:
-                    self._event_ids.add(subs(PyTango.EventType.USER_EVENT))
-            except PyTango.DevFailed, exc:
+                    self._event_ids.add(subs(tango.EventType.USER_EVENT))
+            except tango.DevFailed, exc:
                 exc_reasons = set([arg.reason for arg in exc.args])
                 if 'API_AttributePollingNotStarted' in exc_reasons:
                     MODULE_LOGGER.warn('TODO NM: Need to implement something for '

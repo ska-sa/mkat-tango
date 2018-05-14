@@ -16,7 +16,7 @@ import logging
 import os
 
 import tornado
-import PyTango
+import tango
 
 from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager, Message
@@ -26,10 +26,10 @@ from katcp.client import BlockingClient
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
 
-from PyTango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
-from PyTango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
-from PyTango.server import Device, DeviceMeta, command, attribute
-from PyTango.server import server_run, device_property
+from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
+from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
+from tango.server import Device, DeviceMeta, command, attribute
+from tango.server import server_run, device_property
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def kattype2tangotype_object(katcp_sens_type):
 
     Returns
     -------
-    tango_type: PyTango.CmdArgType enum
+    tango_type: tango.CmdArgType enum
 
     """
     try:
@@ -84,7 +84,7 @@ def katcp_sensor2tango_attr(sensor):
 
     Returns
     -------
-    attribute: A PyTango.Attr object
+    attribute: A tango.Attr object
 
     """
     tango_type = kattype2tangotype_object(sensor.stype)
@@ -109,7 +109,7 @@ def add_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
 
     Parameters
     ----------
-    tango_dserver: A PyTango.TangoDeviceServer instance
+    tango_dserver: A tango.TangoDeviceServer instance
         Tango Attributes mirroring the KATCP sensors in sensor_list are added to
         tango_dserver.
     sensors: dict()
@@ -141,7 +141,7 @@ def remove_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
 
     Parameters
     ----------
-    tango_dserver: A PyTango.TangoDeviceServer instance
+    tango_dserver: A tango.TangoDeviceServer instance
         Tango Attributes mirroring the KATCP sensors in sensor_list are added to
         tango_dserver.
     sensors: dict()
@@ -181,7 +181,7 @@ def create_command2request_handler(req_name, req_doc):
 
     Returns
     -------
-    command : PyTango.server.command obj
+    command : tango.server.command obj
         Tango device server command
     """
     if 'Parameters' in req_doc:
@@ -280,7 +280,7 @@ class TangoDeviceServerBase(Device):
 
         Parameters
         ----------
-        attribute : PyTango.Attribute
+        attribute : tango.Attribute
             The attribute into which the value is read from the katcp sensor observer.
 
         Note: `attr` is modified in place.
@@ -419,7 +419,7 @@ class KatcpTango2DeviceProxy(object):
         ----------
         katcp_server_address : tuple (hostname : str, port : int)
             Address where the KATCP server interface is listening
-        tango_device_server : PyTango.Device
+        tango_device_server : tango.Device
             Tango device that has the results of the translated katcp proxy
 
         """
@@ -514,7 +514,7 @@ def get_tango_device_server():
 
     Returns
     -------
-    TangoDeviceServer : PyTango.Device
+    TangoDeviceServer : tango.Device
         Tango device that has the results of the translated KATCP server
 
     """

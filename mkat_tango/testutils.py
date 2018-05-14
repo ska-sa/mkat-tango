@@ -12,8 +12,8 @@ def set_attributes_polling(test_case, device_proxy, device_server, poll_periods)
     ----------
 
     test_case : unittest.TestCase instance
-    device_proxy : PyTango.DeviceProxy instance
-    device_server : PyTango.Device instance
+    device_proxy : tango.DeviceProxy instance
+    device_server : tango.Device instance
         The instance of the device class `device_proxy` is talking to
     poll_periods : dict {"attribute_name" : poll_period}
         `poll_poriod` in milliseconds as per Tango APIs, 0 or falsy to disable

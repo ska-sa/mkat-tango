@@ -16,17 +16,17 @@ import time
 import weakref
 import logging
 import collections
-import PyTango
+import tango
 import numpy
 
 from functools import partial
 
-from PyTango import UserDefaultAttrProp
-from PyTango import AttrQuality, DevState, DevLong
-from PyTango import Attr, AttrWriteType, WAttribute
-from PyTango import DevString, DevDouble, DevBoolean
-from PyTango.server import Device, DeviceMeta
-from PyTango.server import attribute, command
+from tango import UserDefaultAttrProp
+from tango import AttrQuality, DevState, DevLong
+from tango import Attr, AttrWriteType, WAttribute
+from tango import DevString, DevDouble, DevBoolean
+from tango.server import Device, DeviceMeta
+from tango.server import attribute, command
 
 from tango_simlib import sim_test_interface
 from tango_simlib import quantities
@@ -86,7 +86,7 @@ class Weather(Device):
         Arguments
         ==========
 
-        attr : PyTango.DevAttr
+        attr : tango.DevAttr
             The attribute to read from.
 
         """

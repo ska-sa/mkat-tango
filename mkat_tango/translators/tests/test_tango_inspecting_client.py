@@ -9,9 +9,9 @@ import mock
 from functools import wraps
 from collections import defaultdict
 
-from PyTango import server as TS
-from PyTango import AttrQuality
-from PyTango import DevState
+from tango import server as TS
+from tango import AttrQuality
+from tango import DevState
 
 from devicetest import TangoTestContext
 from katcp.testutils import start_thread_with_cleanup
@@ -24,7 +24,7 @@ from mkat_tango.translators import tango_inspecting_client
 LOGGER = logging.getLogger(__name__)
 
 def _test_attr(attr_dummy_fn):
-    """Decorator for a :class:`PyTango.server.Device` test attribute
+    """Decorator for a :class:`tango.server.Device` test attribute
 
     Allows an empty reading function. Attribute values are instead read from the
     device instance's `attr_return_vals` dict.
@@ -32,15 +32,15 @@ def _test_attr(attr_dummy_fn):
     Example
     =======
 
-    class TangoTestDevice(PyTango.server.Device):
-        __metaclass__ = PyTango.server..DeviceMeta
+    class TangoTestDevice(tango.server.Device):
+        __metaclass__ = tango.server..DeviceMeta
 
         def init_device(self):
             super(TangoTestDevice, self).init_device()
             self.attr_return_vals = dict(
-                blah=(123.456, time.time(), PyTango.AttrQuality.ATTR_VALID))
+                blah=(123.456, time.time(), tango.AttrQuality.ATTR_VALID))
 
-        @PyTango.Server.attribute(dtype=float)
+        @tango.Server.attribute(dtype=float)
         @_test_attr
         def blah(self): pass
 
