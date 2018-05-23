@@ -13,7 +13,7 @@ from tango import server as TS
 from tango import AttrQuality
 from tango import DevState
 
-from devicetest import TangoTestContext
+from tango.test_context import DeviceTestContext
 from katcp.testutils import start_thread_with_cleanup
 from katcore.testutils import cleanup_tempfile
 
@@ -197,11 +197,10 @@ class TangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
 
         """
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        cls.tango_context = TangoTestContext(
+        cls.tango_context = DeviceTestContext(
             TangoTestDevice, db=cls.tango_db)
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_dp = cls.tango_context.device
-        cls.tango_ds = cls.tango_context.server
         cls.test_device = TangoTestDevice.instances[cls.tango_dp.name()]
         cls.test_device.log_attribute_reads = True
         cls.DUT = tango_inspecting_client.TangoInspectingClient(cls.tango_dp)
