@@ -138,6 +138,27 @@ class TangoInspectingClient(object):
         """
         pass
 
+    def _subscribe_to_event(self, attr_name, event_type):
+
+        dp = self.tango_dp
+
+        subs = lambda etype: dp.subscribe_event(
+                    attr_name, etype, self.tango_event_handler)
+
+        try:
+            self._event_ids.add(subs(event_type))
+        except tango.DevFailed, exc:
+            exc_reasons = set([arg.reason for arg in exc.args])
+            if 'API_AttributePollingNotStarted' in exc_reasons:
+                MODULE_LOGGER.warn('TODO NM: Need to implement something for '
+                                    'attributes that are not polled, processing '
+                                    'attribute {}'.format(attr_name))
+            elif 'API_EventPropertiesNotSet' in exc_reasons:
+                MODULE_LOGGER.info('Attribute {} has no event properties set'
+                                    .format(attr_name))
+            else:
+                raise
+
     def setup_attribute_sampling(self, periodic=True, change=True, archive=True,
                                  data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
@@ -158,32 +179,21 @@ class TangoInspectingClient(object):
                         time.sleep(retry_time)
                     else:
                         retry = False
+   
+            if periodic:
+                self._subscribe_to_event(attr_name, tango.EventType.PERIODIC_EVENT)
+            
+            if change:
+                self._subscribe_to_event(attr_name, tango.EventType.CHANGE_EVENT)
+            
+            if archive:
+                self._subscribe_to_event(attr_name, tango.EventType.ARCHIVE_EVENT)
 
-            try:
-                subs = lambda etype: dp.subscribe_event(
-                    attr_name, etype, self.tango_event_handler)
-                # TODO NM Need an individual try-except around each of these
-                if periodic:
-                    self._event_ids.add(subs(tango.EventType.PERIODIC_EVENT))
-                if change:
-                    self._event_ids.add(subs(tango.EventType.CHANGE_EVENT))
-                if archive:
-                    self._event_ids.add(subs(tango.EventType.ARCHIVE_EVENT))
-                if data_ready:
-                    self._event_ids.add(subs(tango.EventType.DATA_READY_EVENT))
-                if user:
-                    self._event_ids.add(subs(tango.EventType.USER_EVENT))
-            except tango.DevFailed, exc:
-                exc_reasons = set([arg.reason for arg in exc.args])
-                if 'API_AttributePollingNotStarted' in exc_reasons:
-                    MODULE_LOGGER.warn('TODO NM: Need to implement something for '
-                                       'attributes that are not polled, processing '
-                                       'attribute {}'.format(attr_name))
-                elif 'API_EventPropertiesNotSet' in exc_reasons:
-                    MODULE_LOGGER.info('Attribute {} has no event properties set'
-                                       .format(attr_name))
-                else:
-                    raise
+            if data_ready:
+                self._subscribe_to_event(attr_name, tango.EventType.DATA_READY_EVENT)
+
+            if user:
+                self._subscribe_to_event(attr_name, tango.EventType.USER_EVENT)
 
     def clear_attribute_sampling(self):
         """Unsubscribe from all Tango events previously subscribed to
@@ -192,5 +202,13 @@ class TangoInspectingClient(object):
 
         """
         while self._event_ids:
-            ev_id = self._event_ids.pop()
-            self.tango_dp.unsubscribe_event(ev_id)
+            event_id = self._event_ids.pop()
+            try:
+                self.tango_dp.unsubscribe_event(event_id)
+            except tango.DevFailed, exc:
+                exc_reasons = set([arg.reason for arg in exc.args])
+                if 'API_EventNotFound' in exc_reasons:
+                    MODULE_LOGGER.info('No event with id {} was set up.'
+                                       .format(event_id))
+                else:
+                    raise
