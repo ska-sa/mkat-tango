@@ -9,12 +9,6 @@ simulators
   to test a telescope control system in a simulated environment without having
   to use any "real" hardware.
 
-simlib
-  A generic library that aims to makes it easy to create simulators with TANGO
-  interfaces. Simulators created with this library also have automatically
-  generated "simulation control" interfaces that allows the behaviour of the
-  simulator to be managed at runtime.
-
 translators
   Components that allow bidrectional communications between KATCP and TANGO
   based control systems. Also provides some helper utilities for integrating
@@ -28,7 +22,7 @@ Simulators
 Weather simulator
 -----------------
 
-The weather simulator is built using :mod:`mkat_tango.simlib`. It provides the
+The weather simulator is built using tango_simlib_ . It provides the
 tango `Weather` device class. The weather simulator's behaviour can be modified
 by attaching a standard `SimControl` class to it. The `SimControl` class must
 run in the same device server instance as the `Weather` class. The `SimControl`
@@ -46,6 +40,7 @@ tango_launcher ::
   --put-device-property  mkat_simcontrol/weather/2:model_key:mkat_sim/weather/2
 
 
+.. _tango_simlib: https://github.com/ska-sa/tango-simlib
 
 
 MeerKAT TANGO AP simulator
@@ -61,48 +56,6 @@ provided by a fairly simple class that calls into the model.
 The :mod:`mkat_tango.simulators.mkat_ap_tango` module imports `MkatApModel`, and
 provides it with a TANGO interface instead.
 
-Simlib
-======
-
-:mod:`mkat_tango.simlib` is a generic library for writing TANGO device
-simulators. A simple example of how to use this class is provides by the weather
-simulator discussed above.
-
-The central component of a simulator is a simulator model class,
-which should be subclassed from :class:`mkat_tango.simlib.model.Model`. The
-model contains simulated `quantities`. A quantity is a simulated process
-variable that knows how to update itself. Usable example quantities are in
-:mod:`mkat_tango.simlib.quantities`. Subclasses of should implement the
-:meth:`mkat_tango.simlib.model.Model.setup_sim_quantities` method, but must call the
-super-class implementation to complete the setup.
-
-A model assumes that its :meth:`mkat_tango.simlib.model.Model.update` method
-will be called regularly. This method loops over all the quantities in the model
-and updates them for the next timestep. A minimum update time (default 0.99s) is
-defined, and updates are skipped if :meth:`update` is called at smaller
-intervals.
-
-A TANGO device should instantiate its model, and arrange for :meth:`update` to
-be called regularly. A simple way to do this is to call :meth:`update` in the
-TANGO device class's :meth:`always_executed_hook`.
-
-Simulation Test Control Interface
----------------------------------
-
-When running a simulated system it is useful to "force" unusual situations to be
-simulated, such as setting an extreme value on a simulated attribute or
-simulating an error condition. :mod:`mkat_tango.simlib.sim_test_interface`
-provides a standard TANGO class `SimControl`. It provides another view of a
-simulation model that allows quantities to be directly manipulated. To use the
-`SimControl`, it should be passed to the tango :meth:`server_run` method along
-with the simulator class.
-
-The `SimControl` device property `model_key` should be set to the name of the
-model used by the main simulator device (:class:`mkat_tango.simlib.model.Model`
-keeps a registry of all simlib models in a :class:`weakref.WeakValueDictionary`
-in :attr:`mkat_tango.simlib.model.model_registry`). It is recommended that
-simulator classes use their own TANGO name as the model name (see how
-:class:`WeatherModel` is instantiated in the weather simulator)
 
 Translators
 ===========
