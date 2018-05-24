@@ -17,10 +17,10 @@ import mock
 
 import tornado.testing
 import tornado.gen
-import devicetest
 import tango
 
 from tango.server import DeviceMeta
+from tango.test_context import DeviceTestContext
 
 from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
@@ -39,7 +39,6 @@ from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katc
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
         ClassCleanupUnittestMixin)
 
-from devicetest import DeviceTestCase, TangoTestContext
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +138,7 @@ class TangoDeviceServer(TangoDeviceServerBase):
     __metaclass__ = DeviceMeta
 
 
-class _test_KatcpTango2DeviceProxy(DeviceTestCase):
+class _test_KatcpTango2DeviceProxy(unittest.TestCase):
     longMessage = True
     device = TangoDeviceServer
     KatcpTestDeviceClass = KatcpTestDevice
@@ -152,11 +151,14 @@ class _test_KatcpTango2DeviceProxy(DeviceTestCase):
         katcp_server_host, katcp_server_port = address
         cls.properties = dict(katcp_address=katcp_server_host + ':' +
                               str(katcp_server_port))
+        cls.tango_context = DeviceTestContext(cls.device, properties=cls.properties)
+        cls.tango_context.start()
         super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
 
     def setUp(self):
         super(_test_KatcpTango2DeviceProxy, self).setUp()
-        self.instance = TangoDeviceServer.instances[self.device.name()]
+        self.tango_dp = self.tango_context.device
+        self.instance = TangoDeviceServer.instances[self.tango_dp.name()]
         self.ioloop = self.instance.tango_katcp_proxy.ioloop
         self.katcp_ic = self.instance.tango_katcp_proxy.katcp_inspecting_client
         self.katcp_ic.katcp_client.wait_protocol(timeout=2)
@@ -185,6 +187,7 @@ class _test_KatcpTango2DeviceProxy(DeviceTestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.tango_context.stop()
         cls.katcp_server.stop()
         super(_test_KatcpTango2DeviceProxy, cls).tearDownClass()
 
@@ -207,7 +210,7 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
             mock_get_katcp_address.return_value = '{}:{}'.format(
                     katcp_server_host, katcp_server_port)
             cls.TangoDeviceServer = get_tango_device_server()
-            cls.tango_context = TangoTestContext(cls.TangoDeviceServer,
+            cls.tango_context = DeviceTestContext(cls.TangoDeviceServer,
                                                  db=cls.tango_db,
                                                  properties=cls.properties)
         start_thread_with_cleanup(cls, cls.tango_context)
@@ -244,7 +247,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """Testing if both the TANGO client proxy and the KATCP inspecting clients
         have established a connection with their device servers, respectively.
         """
-        is_proxy_connecting_to_server = is_tango_device_running(self.device)
+        is_proxy_connecting_to_server = is_tango_device_running(self.tango_dp)
         self.assertEqual(is_proxy_connecting_to_server, True,
                         "No connection established between client and server")
         self.assertEqual(self.katcp_ic.is_connected(), True,
@@ -259,12 +262,12 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         # reconfigured once the inspecting client gets state updates
         remove_tango_server_attribute_list(self.instance, sensors)
         # Get the default attributes of the device server
-        device_attrs = set(list(self.device.get_attribute_list()))
+        device_attrs = set(list(self.tango_dp.get_attribute_list()))
         self.assertEquals(device_attrs, default_attributes,
                           "The device server has unexpected default attributes")
         add_tango_server_attribute_list(self.instance, sensors)
 
-        device_attrs = set(list(self.device.get_attribute_list()))
+        device_attrs = set(list(self.tango_dp.get_attribute_list()))
         self.assertNotEquals(device_attrs, default_attributes,
                              "Attribute list was never updated")
         # Test if the number of attributes has increased after the update
@@ -272,7 +275,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                            "Attribute list was never updated")
         # Test if its possible to remove attributes from the device server.
         remove_tango_server_attribute_list(self.instance, sensors)
-        device_attrs = set(list(self.device.get_attribute_list()))
+        device_attrs = set(list(self.tango_dp.get_attribute_list()))
         self.assertEquals(device_attrs, default_attributes,
                           "The device server has unexpected default attributes")
 
@@ -280,18 +283,18 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """Sensors untranslatable due to errors are properly reported?"""
         # Initial sensor list will include some invalid sensors
         # Check that the correct number and alarm quality are reported:
-        reading = self.device.read_attribute('NumErrorTranslatingSensors')
+        reading = self.tango_dp.read_attribute('NumErrorTranslatingSensors')
         self.assertEqual(reading.value, len(invalid_sensor_names))
         self.assertEqual(reading.quality, tango.AttrQuality.ATTR_ALARM)
         # And the correct sensor names
-        self.assertEqual(sorted(self.device.ErrorTranslatingSensors),
+        self.assertEqual(sorted(self.tango_dp.ErrorTranslatingSensors),
                          sorted(invalid_sensor_names))
 
     def test_expected_sensor_attributes(self):
         """Testing if the expected attribute list matches with the actual attribute list
            after adding the new attributes.
         """
-        attr_list = list(self.device.get_attribute_list())
+        attr_list = list(self.tango_dp.get_attribute_list())
         for def_attr in default_attributes:
             attr_list.remove(def_attr)
 
@@ -313,7 +316,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         for sensor in self.katcp_server._sensors.values():
             if sensor.name in invalid_sensor_names:
                 continue
-            attr_desc = self.device.get_attribute_config(
+            attr_desc = self.tango_dp.get_attribute_config(
                                                        katcpname2tangoname(sensor.name))
             self.assertEqual(tangoname2katcpname(attr_desc.name), sensor.name,
                              "The sensor and the attribute name are not the same")
@@ -355,7 +358,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         for sensor in self.katcp_server._sensors.values():
             if sensor.name in invalid_sensor_names:
                 continue
-            attr_desc = self.device.get_attribute_config(
+            attr_desc = self.tango_dp.get_attribute_config(
                 katcpname2tangoname(sensor.name))
             self.assertEqual(tangoname2katcpname(attr_desc.name), sensor.name,
                              "The sensor and the attribute name are not the same")
@@ -379,7 +382,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                                  "The sensor and attribute max values are not"
                                  " identical")
             # TODO (KM) 14-06-2016: Need to check the params for the discrete sensor
-                 #type once solution for DevEnum is found.
+            # type once solution for DevEnum is found.
             elif sensor.stype == 'string':
                 self.assertEqual(attr_desc.min_value, "Not specified",
                                  "The string sensor type object has unexpected"
@@ -395,7 +398,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """Testing if removing a sensor from the KATCP device server also results in the "
         removal of the equivalent TANGO attribute on the TANGO device server.
         """
-        initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        initial_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
         sensor_name = 'failure-present'
         self.assertIn(sensor_name, self.katcp_server._sensors.keys(), "Sensor not in"
                       " list")
@@ -405,8 +408,8 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         self.katcp_server.mass_inform(Message.inform('interface-changed'))
         self.in_ioloop(self.katcp_ic.until_data_synced)()
         time.sleep(0.5)
-        self.device.Status()
-        current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        self.tango_dp.Status()
+        current_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
         self.assertNotIn(katcpname2tangoname(sensor_name), current_tango_dev_attr_list,
                       "The attribute was not removed")
 
@@ -414,7 +417,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """Testing if adding a sensor to the KATCP device server also results in the "
         addition of the equivalent TANGO attribute on the TANGO device server.
         """
-        initial_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        initial_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
         sens = Sensor(Sensor.FLOAT, "experimental-sens", "A test sensor", "",
                       [-1.5, 1.5])
         self.assertNotIn(sens.name, self.katcp_server._sensors.keys(), "Unexpected"
@@ -426,7 +429,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         self.katcp_server.mass_inform(Message.inform('interface-changed'))
         self.in_ioloop(self.katcp_ic.until_data_synced)()
         time.sleep(0.5)
-        current_tango_dev_attr_list = set(list(self.device.get_attribute_list()))
+        current_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
         self.assertIn(sens.name, self.katcp_server._sensors.keys(),
                       "Sensor was not added to the katcp device server.")
         self.assertIn(katcpname2tangoname(sens.name),
@@ -503,9 +506,9 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
 
         """
         stoptime = time.time() + timeout
-        value = getattr(self.device, attr_name)
+        value = getattr(self.tango_dp, attr_name)
         while value is None:
-            value = getattr(self.device, attr_name, None)
+            value = getattr(self.tango_dp, attr_name, None)
             time.sleep(poll_period)
             if time.time() > stoptime:
                 raise RuntimeError("TimeOutError : Tango device server not well"
@@ -522,7 +525,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                 continue
             attribute_name = katcpname2tangoname(sensor.name)
             self._wait_for_tango_attribute_to_update(attribute_name)
-            attribute_value = getattr(self.device, attribute_name)
+            attribute_value = getattr(self.tango_dp, attribute_name)
             sensor_value = sensor.value()
             if type(sensor_value) is tuple:
                 # Address sensor type contains a Tuple contaning (host, port) and
@@ -535,7 +538,7 @@ class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
 
     def test_sensor_translation_errors(self):
         """No spurious sensor translation errors are reported?"""
-        reading = self.device.read_attribute('NumErrorTranslatingSensors')
+        reading = self.tango_dp.read_attribute('NumErrorTranslatingSensors')
         self.assertEqual(reading.value, 0)
         self.assertEqual(reading.quality, tango.AttrQuality.ATTR_VALID)
         # And the no sensor names
