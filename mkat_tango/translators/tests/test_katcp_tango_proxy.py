@@ -124,7 +124,7 @@ class test_TangoDevice2KatcpProxy(
         poll_period = 50
         num_periods = 10
         # sleep time is 10 poll periods plus a little
-        sleep_time = poll_period/1000. * (num_periods + 0.5) + 30.2 # This 30.5 value to
+        sleep_time = poll_period/1000. * (num_periods + 0.5) + 30.2 # This 30.2 value to
                                                                     # be sufficient to
                                                                     # for the updatest to
                                                                     # reflect.
@@ -150,7 +150,7 @@ class test_TangoDevice2KatcpProxy(
         time.sleep(sleep_time)
 
         for sensor in sensors:
-            # TODO (KM 24-05-3018) This attributes have no set event properties. Need to
+            # TODO (KM 24-05-2018) This attributes have no set event properties. Need to
             # set these properties in the device's attribute definitions.
             if sensor in ('ScalarDevLong', 'ScalarDevUChar', 'ScalarDevDouble'):
                 continue

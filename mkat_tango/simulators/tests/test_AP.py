@@ -38,9 +38,9 @@ class AntennaPositionerTestCase(unittest.TestCase):
         AntennaPositionerDS.AntennaPositioner.UPDATE_PERDIOD = 0.1
         super(AntennaPositionerTestCase, self).setUp()
 
-        self.device_proxy = self.tango_context.device
+        self.tango_dp = self.tango_context.device
         self.device_server_instance = (AntennaPositionerDS.AntennaPositioner
-                                       .instances[self.device_proxy.name()])
+                                       .instances[self.tango_dp.name()])
         self.az_state = self.device_server_instance.azimuth_quantities
         self.el_state = self.device_server_instance.elevation_quantities
 
@@ -55,14 +55,14 @@ class AntennaPositionerTestCase(unittest.TestCase):
 
     def test_attribute_values(self):
         '''Simple test cases for initial device attributes values'''
-        self.assertEqual(self.device_proxy.requested_mode, 'stop')
-        self.assertEqual(self.device_proxy.requested_azimuth , 0.0)
-        self.assertEqual(self.device_proxy.requested_elevation , 90.0)
-        self.assertEqual(self.device_proxy.actual_mode, 'stop')
-        self.assertEqual(self.device_proxy.actual_azimuth , 0.0)
-        self.assertEqual(self.device_proxy.actual_elevation , 90.0)
-        self.assertEqual(self.device_proxy.requested_azimuth_rate , 0.0)
-        self.assertEqual(self.device_proxy.requested_elevation_rate , 0.0)
+        self.assertEqual(self.tango_dp.requested_mode, 'stop')
+        self.assertEqual(self.tango_dp.requested_azimuth , 0.0)
+        self.assertEqual(self.tango_dp.requested_elevation , 90.0)
+        self.assertEqual(self.tango_dp.actual_mode, 'stop')
+        self.assertEqual(self.tango_dp.actual_azimuth , 0.0)
+        self.assertEqual(self.tango_dp.actual_elevation , 90.0)
+        self.assertEqual(self.tango_dp.requested_azimuth_rate , 0.0)
+        self.assertEqual(self.tango_dp.requested_elevation_rate , 0.0)
 
     def test_active_threads(self):
         '''Testing of active threads running the device'''
@@ -75,8 +75,8 @@ class AntennaPositionerTestCase(unittest.TestCase):
         '''Method for setting desired values to writable coordinate attributes'''
         self.assertNotEqual(self.az_state['requested'][0], desired_az)
         self.assertNotEqual(self.el_state['requested'][0], desired_el)
-        self.device_proxy.requested_azimuth = desired_az
-        self.device_proxy.requested_elevation = desired_el
+        self.tango_dp.requested_azimuth = desired_az
+        self.tango_dp.requested_elevation = desired_el
         self.assertEqual(self.az_state['requested'][0], desired_az)
         self.assertEqual(self.el_state['requested'][0], desired_el)
 
@@ -84,8 +84,8 @@ class AntennaPositionerTestCase(unittest.TestCase):
         '''Method for setting desired values to writable velocity attributes '''
         self.assertNotEqual(self.az_state['drive_rate'], desired_az_rate)
         self.assertNotEqual(self.el_state['drive_rate'], desired_el_rate)
-        self.device_proxy.requested_azimuth_rate = desired_az_rate
-        self.device_proxy.requested_elevation_rate = desired_el_rate
+        self.tango_dp.requested_azimuth_rate = desired_az_rate
+        self.tango_dp.requested_elevation_rate = desired_el_rate
         self.assertEqual(self.az_state['drive_rate'], desired_az_rate)
         self.assertEqual(self.el_state['drive_rate'], desired_el_rate)
 
@@ -117,36 +117,36 @@ class AntennaPositionerTestCase(unittest.TestCase):
 
     def test_slew_simulation(self):
         '''Testing if slew commands provides correct request'''
-        actual_az = self.device_proxy.actual_azimuth
-        actual_el = self.device_proxy.actual_elevation
+        actual_az = self.tango_dp.actual_azimuth
+        actual_el = self.tango_dp.actual_elevation
         desired_az = actual_az - 1
         desired_el = actual_el - 1
         self._write_velocity_attributes(1.0, 1.0)
         self._write_coordinate_attributes(desired_az, desired_el)
-        self.device_proxy.slew()
-        self.assertEqual(self.device_proxy.requested_mode, 'slew')
+        self.tango_dp.slew()
+        self.assertEqual(self.tango_dp.requested_mode, 'slew')
         self.assertEqual(self._wait_finish(3), True)
         self._read_coordinate_attributes(desired_az, desired_el)
-        self.assertEqual(self.device_proxy.actual_mode, 'stop')
+        self.assertEqual(self.tango_dp.actual_mode, 'stop')
 
     def test_stop_simulation(self):
         '''Testing if the stop command halt the AP movement'''
-        actual_az = self.device_proxy.actual_azimuth
-        actual_el = self.device_proxy.actual_elevation
+        actual_az = self.tango_dp.actual_azimuth
+        actual_el = self.tango_dp.actual_elevation
         desired_az = actual_az - 10.0
         desired_el = actual_el - 10.0
         self._write_velocity_attributes(0.5, 0.5)
         self._write_coordinate_attributes(desired_az, desired_el)
-        self.device_proxy.slew()
-        self.assertEqual(self.device_proxy.requested_mode, 'slew')
-        self.device_proxy.Stop()
-        self.assertEqual(self.device_proxy.actual_mode, 'stop')
+        self.tango_dp.slew()
+        self.assertEqual(self.tango_dp.requested_mode, 'slew')
+        self.tango_dp.Stop()
+        self.assertEqual(self.tango_dp.actual_mode, 'stop')
 
     def test_stow_simulation(self):
         '''Testing if the stow command puts the AP to it's initial state'''
         self.test_slew_simulation()
-        self.device_proxy.stow()
-        self.assertEqual(self.device_proxy.requested_mode, 'stow')
+        self.tango_dp.stow()
+        self.assertEqual(self.tango_dp.requested_mode, 'stow')
         self.assertEqual(self._wait_finish(3), True)
         self._read_coordinate_attributes(0.0, 90.0)
-        self.assertEqual(self.device_proxy.actual_mode, 'stop')
+        self.assertEqual(self.tango_dp.actual_mode, 'stop')
