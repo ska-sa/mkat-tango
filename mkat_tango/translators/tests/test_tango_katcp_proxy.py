@@ -86,6 +86,17 @@ server_host = ""
 server_port = 0
 
 
+def reset_katcp_tango_server(katcp_server, tango_server):
+        """For removing any sensors/attributes that were added during testing.
+        """
+        extra_sensors = {}
+        for sensor_name, sensor in katcp_server._sensors.items():
+            if sensor_name not in sensors.keys():
+                katcp_server.remove_sensor(sensor_name)
+                extra_sensors[sensor_name] = sensor
+        remove_tango_server_attribute_list(tango_server, extra_sensors)
+
+
 class KatcpTestDevice(DeviceServer):
 
     VERSION_INFO = ("example-api", 1, 0)
@@ -173,17 +184,8 @@ class _test_KatcpTango2DeviceProxy(unittest.TestCase):
         def cleanup_refs():
             del self.instance
         self.addCleanup(cleanup_refs)
-        self.addCleanup(self._reset_katcp_server)
-        # Need to reset the device server to its default configuration
-        self.addCleanup(remove_tango_server_attribute_list,
-                        self.instance, self.katcp_server._sensors)
-
-    def _reset_katcp_server(self):
-        """For removing any sensors that were added during testing
-        """
-        for sens_name in self.katcp_server._sensors.keys():
-            if sens_name not in sensors.keys():
-                self.katcp_server.remove_sensor(sens_name)
+        self.addCleanup(reset_katcp_tango_server, self.katcp_server,
+                        self.instance)
 
     @classmethod
     def tearDownClass(cls):
@@ -233,14 +235,9 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin,
         def cleanup_refs():
             del self.instance
         self.addCleanup(cleanup_refs)
-        self.addCleanup(self._reset_katcp_server)
+        self.addCleanup(reset_katcp_tango_server, self.katcp_server,
+                        self.instance)
 
-    def _reset_katcp_server(self):
-        """For removing any sensors that were added during testing
-        """
-        for sens_name in self.katcp_server._sensors.keys():
-            if sens_name not in sensors.keys():
-                self.katcp_server.remove_sensor(sens_name)
 
 class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
     def test_connections(self):
@@ -393,7 +390,6 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                 self.assertEqual(sensor.params, [],
                                  "The sensor object has a non-empty params list")
 
-
     def test_sensor2attr_removal_updates(self):
         """Testing if removing a sensor from the KATCP device server also results in the "
         removal of the equivalent TANGO attribute on the TANGO device server.
@@ -544,7 +540,7 @@ class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
         # And the no sensor names
         # TODO NM 2016-08-31 For some reason None is returned instead of an
         # empty list, tango bug?
-        self.assertEqual(self.device.ErrorTranslatingSensors, None)
+        self.assertEqual(self.tango_dp.ErrorTranslatingSensors, None)
 
 
 class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
