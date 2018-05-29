@@ -214,19 +214,19 @@ class TangoInspectingClient(object):
                         retry = False
    
             if periodic:
-                self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attribute_name=attr_name)
+                self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
             
             if change:
-                self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attribute_name=attr_name)
+                self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attr_name)
             
             if archive:
-                self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attribute_name=attr_name)
+                self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
 
             if data_ready:
-                self._subscribe_to_event(tango.EventType.DATA_READY_EVENT, attribute_name=attr_name)
+                self._subscribe_to_event(tango.EventType.DATA_READY_EVENT, attr_name)
 
             if user:
-                self._subscribe_to_event(tango.EventType.USER_EVENT, attribute_name=attr_name)
+                self._subscribe_to_event(tango.EventType.USER_EVENT, attr_name)
 
     def clear_attribute_sampling(self):
         """Unsubscribe from all Tango events previously subscribed to
