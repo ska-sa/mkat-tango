@@ -36,6 +36,8 @@ class TangoInspectingClient(object):
         # True if the stored device attributes/commands are potentially outdated
         self._dirty = True
         self.orig_attr_names_map = {}
+        # Subscribing to interface change events
+        self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
 
     def inspect(self):
         """Inspect the tango device for available attributes / commands
