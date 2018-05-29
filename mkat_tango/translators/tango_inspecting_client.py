@@ -97,10 +97,12 @@ class TangoInspectingClient(object):
                 for cmd_info in self.tango_dp.command_list_query()}
 
     def _update_device_commands(self, commands):
+        self.device_commands.clear()
         for command in commands:
             self.device_commands[command.cmd_name] = command
 
     def _update_device_attributes(self, attributes):
+        self.device_attributes.clear()
         for attribute in attributes:
             self.device_attributes[attribute.name] = attribute
 
