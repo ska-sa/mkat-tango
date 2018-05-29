@@ -74,9 +74,9 @@ class TangoInspectingClient(object):
         ============
 
         attributes : dict
-            Attribute names as keys, value is the return value of
-            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute
-
+            Attribute names as keys, value is an instance of
+            :class: `tango._tango.AttributeInfoEx`, a return value of
+            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute.
         """
         return {attr_name: self.tango_dp.get_attribute_config(attr_name)
                 for attr_name in self.tango_dp.get_attribute_list()}
@@ -96,6 +96,14 @@ class TangoInspectingClient(object):
         return {cmd_info.cmd_name: cmd_info
                 for cmd_info in self.tango_dp.command_list_query()}
 
+    def _update_device_commands(self, commands):
+        for command in commands:
+            self.device_commands[command.cmd_name] = command
+
+    def _update_device_attributes(self, attributes):
+        for attribute in attributes:
+            self.device_attributes[attribute.name] = attribute
+
     def tango_event_handler(self, tango_event_data):
         """Handles tango event callbacks.
 
@@ -114,10 +122,12 @@ class TangoInspectingClient(object):
         event_type = tango_event_data.event
         received_timestamp = tango_event_data.reception_date.totime()
         if event_type == 'intr_change':
+            self._update_device_attributes(tango_event_data.att_list)
+            self._update_device_commands(tango_event_data.cmd_list)
             self.interface_change_callback(tango_event_data.device_name,
                                            received_timestamp,
-                                           tango_event_data.att_list,
-                                           tango_event_data.cmd_list)
+                                           self.device_attributes,
+                                           self.device_commands)
             return
 
         attr_value = tango_event_data.attr_value
@@ -147,10 +157,14 @@ class TangoInspectingClient(object):
         ----------
         device_name: str
         received_timestamp: float
-        attributes: :class: `tango._tango.AttributeInfoListEx` data structure
-            A list of the extended attribute configuration data objects.
-        commands: :class: `tango._tango.CommandInfoListEx` data structure
-            A list of the extended command configuration data objects.
+        attributes : dict
+            Attribute names as keys, value is an instance of
+            :class: `tango._tango.AttributeInfoEx`, a return value of
+            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute.
+        commands : dict
+            Command name as keys, value is instance of :class:`tango.CommandInfoEx`
+            (the return value of :meth:`tango.DeviceProxy.command_list_query`)
+            for each command.
         """
         pass
 
