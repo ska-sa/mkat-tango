@@ -105,7 +105,9 @@ class TangoInspectingClient(object):
         # i.e. error callbacks etc.
         if tango_event_data.err:
             # TODO (KM 28-05-2018) Needs to handle errors accordingly.
-            MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
+            MODULE_LOGGER.error("Unhandled DevError(s) occured!!! %s",
+                                str(tango_event_data.errors))
+            return
 
         event_type = tango_event_data.event
         received_timestamp = tango_event_data.reception_date.totime()
