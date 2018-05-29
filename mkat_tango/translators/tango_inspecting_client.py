@@ -134,7 +134,8 @@ class TangoInspectingClient(object):
                                    timestamp, value, quality, event_type)
 
 
-    def interface_change_callback(self, device_name, received_timestamp, attributes, commands):
+    def interface_change_callback(self, device_name, received_timestamp,
+                                  attributes, commands):
         """Callback called for the TANGO interface change event. NOP implementation.
 
         Intended for subclasses to override this method, or for the method to be
@@ -143,13 +144,11 @@ class TangoInspectingClient(object):
         Parameters
         ----------
         device_name: str
-
         received_timestamp: float
-
-        attributes: ~class: tango._tango.AttributeInfoListEx
-
-        commands: ~class: tango._tango.CommandInfoListEx
-
+        attributes: :class: `tango._tango.AttributeInfoListEx` data structure
+            A list of the extended attribute configuration data objects.
+        commands: :class: `tango._tango.CommandInfoListEx` data structure
+            A list of the extended command configuration data objects.
         """
         pass
 
