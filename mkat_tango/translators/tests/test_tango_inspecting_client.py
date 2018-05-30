@@ -295,6 +295,10 @@ class test_TangoInspectingClient(TangoSetUpClass):
             {attr: 1 for attr in test_attributes},
             "Exactly one periodic update not received for each test attribute.")
 
+    def test_interface_change_subscription(self):
+        self.assertNotEquals(self.DUT._interface_change_event_id, None,
+                             "Interface change event subscription was not setup.")
+
 
 class test_TangoInspectingClientStandard(TangoSetUpClass):
 
