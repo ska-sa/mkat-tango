@@ -37,7 +37,23 @@ class TangoInspectingClient(object):
         self._dirty = True
         self.orig_attr_names_map = {}
         # Subscribing to interface change events
+        self._interface_change_event_id = None
         self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
+
+    def __del__(self):
+        try:
+            self.tango_dp.unsubscribe_event(self._interface_change_event_id)
+        except tango.DevFailed, exc:
+            exc_reasons = set([arg.reason for arg in exc.args])
+            if 'API_EventNotFound' in exc_reasons:
+                MODULE_LOGGER.info('No event with id {} was set up.'
+                                   .format(self._interface_change_event_id))
+            else:
+                raise
+        else:
+            self._interface_change_event_id = None
+
+        del self
 
     def inspect(self):
         """Inspect the tango device for available attributes / commands
@@ -187,15 +203,15 @@ class TangoInspectingClient(object):
 
         dp = self.tango_dp
 
-        if attribute_name:
-            subs = lambda etype: dp.subscribe_event(
-                attribute_name, etype, self.tango_event_handler)
-        else:
-            subs = lambda etype: dp.subscribe_event(
-                etype, self.tango_event_handler)
-
         try:
-            self._event_ids.add(subs(event_type))
+            if attribute_name:
+                subs = lambda etype: dp.subscribe_event(
+                    attribute_name, etype, self.tango_event_handler)
+                self._event_ids.add(subs(event_type))
+            else:
+                subs = lambda etype: dp.subscribe_event(
+                    etype, self.tango_event_handler)
+                self._interface_change_event_id = subs(event_type)
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_AttributePollingNotStarted' in exc_reasons:
