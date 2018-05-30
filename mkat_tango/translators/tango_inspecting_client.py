@@ -53,8 +53,6 @@ class TangoInspectingClient(object):
         else:
             self._interface_change_event_id = None
 
-        del self
-
     def inspect(self):
         """Inspect the tango device for available attributes / commands
 
