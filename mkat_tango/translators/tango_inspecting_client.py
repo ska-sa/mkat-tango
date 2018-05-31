@@ -46,7 +46,7 @@ class TangoInspectingClient(object):
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_EventNotFound' in exc_reasons:
-                MODULE_LOGGER.info('No event with id {} was set up.'
+                MODULE_LOGGER.debug('No event with id {} was set up.'
                                    .format(self._interface_change_event_id))
             else:
                 raise
@@ -203,14 +203,14 @@ class TangoInspectingClient(object):
         dp = self.tango_dp
 
         try:
-            if attribute_name:
-                subs = lambda etype: dp.subscribe_event(
-                    attribute_name, etype, self.tango_event_handler)
-                self._event_ids.add(subs(event_type))
-            else:
+            if event_type == tango.EventType.INTERFACE_CHANGE_EVENT:
                 subs = lambda etype: dp.subscribe_event(
                     etype, self.tango_event_handler)
                 self._interface_change_event_id = subs(event_type)
+            else:
+                subs = lambda etype: dp.subscribe_event(
+                    attribute_name, etype, self.tango_event_handler)
+                self._event_ids.add(subs(event_type))
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_AttributePollingNotStarted' in exc_reasons:
