@@ -162,9 +162,9 @@ class test_TangoDevice2KatcpProxy(
 
         for sensor in sensors:
             # TODO (KM 24-05-2018) This attributes have no set event properties. Need to
-            # set these properties in the device's attribute definitions.
-            if sensor in ('ScalarDevLong', 'ScalarDevUChar', 'ScalarDevDouble'):
-                continue
+            # set these properties in the device's attribute definitions. However this
+            # test is not for that. I will need to test each event individually for this
+            # attributes: ScalarDevLong, ScalarDevUChar, ScalarDevDouble.
             self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
