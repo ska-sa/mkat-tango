@@ -3,6 +3,7 @@ import logging
 import unittest
 import textwrap
 import mock
+import socket
 
 import tornado.testing
 import tornado.gen
@@ -38,13 +39,26 @@ KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
     """).lstrip()
 
 
+def get_open_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("", 0))
+    s.listen(1)
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
 class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     DUT = None
 
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db)
+        # It turns out that we need to explicitely specify the port number to have the
+        # events working properly.
+        # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
+        cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
+                                              port=get_open_port())
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
 
@@ -59,7 +73,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         else:
             start_thread_with_cleanup(self, self.DUT, start_timeout=1)
         self.katcp_server = self.DUT.katcp_server
-        self.tango_device_proxy = self.tango_context.device
+        self.tango_device_proxy = self.DUT.inspecting_client.tango_dp
         self.tango_test_device = TangoTestDevice.instances[self.tango_device_proxy.name()]
         self.katcp_address = self.katcp_server.bind_address
         self.host, self.port = self.katcp_address
@@ -124,10 +138,7 @@ class test_TangoDevice2KatcpProxy(
         poll_period = 50
         num_periods = 10
         # sleep time is 10 poll periods plus a little
-        sleep_time = poll_period/1000. * (num_periods + 0.5) + 30.2 # This 30.2 value to
-                                                                    # be sufficient to
-                                                                    # for the updatest to
-                                                                    # reflect.
+        sleep_time = poll_period/1000. * (num_periods + 0.5)
         testutils.set_attributes_polling(self, self.tango_device_proxy,
                            self.tango_test_device, {attr: poll_period
                            for attr in self.tango_device_proxy.get_attribute_list()})
