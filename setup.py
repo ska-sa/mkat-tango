@@ -28,11 +28,8 @@ setup(name="mkat_tango",
       tests_require=[
           'enum',
           'numpy',
-          'nose_xunitmp',
-          'python-devicetest'],
+          'nose_xunitmp'],
       zip_safe=False,
-      dependency_links=[
-          'git+https://github.com/vxgmichel/pytango-devicetest.git#egg=python_devicetest'],
       entry_points={
           'console_scripts': [
               'mkat-tango-weather-DS = mkat_tango.simulators.weather:weather_main',

@@ -154,7 +154,7 @@ Tango segfaults when restarting a device main function
 PyTango segfaults if a device server is started more than once in a single
 process. This means that it is not possible to start/stop a tango device server
 as part of a test fixture. To work around this, the nose process plugin along
-with the `pytango-devicetest` module is used. Adding
+with the `tango.test_context` module is used. Adding
 `--processes=1 --process-restartworker --process-timeout=300` to a nose command
 line will cause each test tango device class (tango device fixtures are handled
 per-class) to be run in a new process.

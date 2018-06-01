@@ -22,8 +22,6 @@ node('docker') {
         timestamps {
             timeout(time: 30, unit: 'MINUTES') {
                 try {
-                    // Install the stable version 0.1.3 of pytango-devicetest
-                    sh 'pip install --egg git+https://github.com/vxgmichel/pytango-devicetest.git@75c348959161b2c835b4ce6422294933c70e4915'
                     sh 'pip install nose_xunitmp'
                     sh 'pip install . -U'
                     sh 'python setup.py test --with-xunitmp --xunitmp-file nosetests.xml'
