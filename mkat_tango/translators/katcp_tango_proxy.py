@@ -374,6 +374,8 @@ class TangoDevice2KatcpProxy(object):
         MODULE_LOGGER.info("Connection to the device server established")
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
+        self.inspecting_client.interface_change_callback = (
+            self.update_request_sensor_list)
         self.update_katcp_server_sensor_list()
         self.inspecting_client.setup_attribute_sampling()
         self.update_katcp_server_request_list()
@@ -391,9 +393,12 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.clear_attribute_sampling()
         # TODO NM 2016-05-17 Is it possible to stop a Tango DeviceProxy?
 
-
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
+
+    def update_request_sensor_list(self, device_name, received_timestamp,
+                                   attributes, commands):
+        pass
 
     def update_katcp_server_sensor_list(self):
         """ Populate the dictionary of sensors in the KATCP device server
