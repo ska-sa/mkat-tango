@@ -36,6 +36,22 @@ class TangoInspectingClient(object):
         # True if the stored device attributes/commands are potentially outdated
         self._dirty = True
         self.orig_attr_names_map = {}
+        # Subscribing to interface change events
+        self._interface_change_event_id = None
+        self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
+
+    def __del__(self):
+        try:
+            self.tango_dp.unsubscribe_event(self._interface_change_event_id)
+        except tango.DevFailed, exc:
+            exc_reasons = set([arg.reason for arg in exc.args])
+            if 'API_EventNotFound' in exc_reasons:
+                MODULE_LOGGER.debug('No event with id {} was set up.'
+                                   .format(self._interface_change_event_id))
+            else:
+                raise
+        else:
+            self._interface_change_event_id = None
 
     def inspect(self):
         """Inspect the tango device for available attributes / commands
@@ -72,9 +88,9 @@ class TangoInspectingClient(object):
         ============
 
         attributes : dict
-            Attribute names as keys, value is the return value of
-            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute
-
+            Attribute names as keys, value is an instance of
+            :class: `tango._tango.AttributeInfoEx`, a return value of
+            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute.
         """
         return {attr_name: self.tango_dp.get_attribute_config(attr_name)
                 for attr_name in self.tango_dp.get_attribute_list()}
@@ -94,6 +110,16 @@ class TangoInspectingClient(object):
         return {cmd_info.cmd_name: cmd_info
                 for cmd_info in self.tango_dp.command_list_query()}
 
+    def _update_device_commands(self, commands):
+        self.device_commands.clear()
+        for command in commands:
+            self.device_commands[command.cmd_name] = command
+
+    def _update_device_attributes(self, attributes):
+        self.device_attributes.clear()
+        for attribute in attributes:
+            self.device_attributes[attribute.name] = attribute
+
     def tango_event_handler(self, tango_event_data):
         """Handles tango event callbacks.
 
@@ -103,7 +129,24 @@ class TangoInspectingClient(object):
         """
         # TODO NM 2016-04-06 Call a different callback for non-sample events,
         # i.e. error callbacks etc.
+        if tango_event_data.err:
+            # TODO (KM 28-05-2018) Needs to handle errors accordingly.
+            MODULE_LOGGER.error("Unhandled DevError(s) occured!!! %s",
+                                str(tango_event_data.errors))
+            return
+
         event_type = tango_event_data.event
+        received_timestamp = tango_event_data.reception_date.totime()
+        if event_type == 'intr_change':
+            #import pdb; pdb.set_trace()
+            self._update_device_attributes(tango_event_data.att_list)
+            self._update_device_commands(tango_event_data.cmd_list)
+            self.interface_change_callback(tango_event_data.device_name,
+                                           received_timestamp,
+                                           self.device_attributes,
+                                           self.device_commands)
+            return
+
         attr_value = tango_event_data.attr_value
         name = getattr(attr_value, 'name', None)
         value = getattr(attr_value, 'value', None)
@@ -111,19 +154,36 @@ class TangoInspectingClient(object):
         timestamp = (attr_value.time.totime()
                      if hasattr(attr_value, 'time') else None)
 
-        received_timestamp = tango_event_data.reception_date.totime()
-
         # A work around to remove the suffix "#dbase=no" string when using a
         # file as a database. Also handle the issue with the attribute name being
         # converted to lowercase in subsequent callbacks.
-        if not tango_event_data.err:
-            name_trimmed = name.split('#')[0]
-            attr_name = self.orig_attr_names_map[name_trimmed.lower()]
-            self.sample_event_callback(attr_name, received_timestamp,
-                                       timestamp, value, quality, event_type)
-        else:
-            # TODO KM needs to handle errors accordingly
-            MODULE_LOGGER.info("Unhandled DevError(s) occured!!!")
+        name_trimmed = name.split('#')[0]
+        attr_name = self.orig_attr_names_map[name_trimmed.lower()]
+        self.sample_event_callback(attr_name, received_timestamp,
+                                   timestamp, value, quality, event_type)
+
+
+    def interface_change_callback(self, device_name, received_timestamp,
+                                  attributes, commands):
+        """Callback called for the TANGO interface change event. NOP implementation.
+
+        Intended for subclasses to override this method, or for the method to be
+        replaced in instances
+
+        Parameters
+        ----------
+        device_name: str
+        received_timestamp: float
+        attributes : dict
+            Attribute names as keys, value is an instance of
+            :class: `tango._tango.AttributeInfoEx`, a return value of
+            :meth:`tango.DeviceProxy.get_attribute_config` of each attribute.
+        commands : dict
+            Command name as keys, value is instance of :class:`tango.CommandInfoEx`
+            (the return value of :meth:`tango.DeviceProxy.command_list_query`)
+            for each command.
+        """
+        pass
 
     def sample_event_callback(
             self, name, received_timestamp, timestamp, value, quality,
@@ -138,24 +198,28 @@ class TangoInspectingClient(object):
         """
         pass
 
-    def _subscribe_to_event(self, attr_name, event_type):
+    def _subscribe_to_event(self, event_type, attribute_name=None):
 
         dp = self.tango_dp
 
-        subs = lambda etype: dp.subscribe_event(
-                    attr_name, etype, self.tango_event_handler)
-
         try:
-            self._event_ids.add(subs(event_type))
+            if event_type == tango.EventType.INTERFACE_CHANGE_EVENT:
+                subs = lambda etype: dp.subscribe_event(
+                    etype, self.tango_event_handler)
+                self._interface_change_event_id = subs(event_type)
+            else:
+                subs = lambda etype: dp.subscribe_event(
+                    attribute_name, etype, self.tango_event_handler)
+                self._event_ids.add(subs(event_type))
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_AttributePollingNotStarted' in exc_reasons:
                 MODULE_LOGGER.warn('TODO NM: Need to implement something for '
                                     'attributes that are not polled, processing '
-                                    'attribute {}'.format(attr_name))
+                                    'attribute {}'.format(attribute_name))
             elif 'API_EventPropertiesNotSet' in exc_reasons:
                 MODULE_LOGGER.info('Attribute {} has no event properties set'
-                                    .format(attr_name))
+                                    .format(attribute_name))
             else:
                 raise
 
@@ -181,19 +245,19 @@ class TangoInspectingClient(object):
                         retry = False
    
             if periodic:
-                self._subscribe_to_event(attr_name, tango.EventType.PERIODIC_EVENT)
+                self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
             
             if change:
-                self._subscribe_to_event(attr_name, tango.EventType.CHANGE_EVENT)
+                self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attr_name)
             
             if archive:
-                self._subscribe_to_event(attr_name, tango.EventType.ARCHIVE_EVENT)
+                self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
 
             if data_ready:
-                self._subscribe_to_event(attr_name, tango.EventType.DATA_READY_EVENT)
+                self._subscribe_to_event(tango.EventType.DATA_READY_EVENT, attr_name)
 
             if user:
-                self._subscribe_to_event(attr_name, tango.EventType.USER_EVENT)
+                self._subscribe_to_event(tango.EventType.USER_EVENT, attr_name)
 
     def clear_attribute_sampling(self):
         """Unsubscribe from all Tango events previously subscribed to

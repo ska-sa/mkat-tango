@@ -221,14 +221,16 @@ class test_TangoInspectingClient(TangoSetUpClass):
         self.assertIn('State', attributes_data)
         self.assertIn('Status', attributes_data)
         # Now remove them from the data since we don't have test data for them
-        del attributes_data['State']
-        del attributes_data['Status']
+        attributes_data_copy = attributes_data.copy()
+
+        del attributes_data_copy['State']
+        del attributes_data_copy['Status']
 
         # Test that all our test device attributes are present
-        self.assertEqual(tuple(sorted(attributes_data.keys())),
+        self.assertEqual(tuple(sorted(attributes_data_copy.keys())),
                          self.test_device.static_attributes)
         # And check some of their data
-        for attr_name, attr_data in attributes_data.items():
+        for attr_name, attr_data in attributes_data_copy.items():
             td_props = getattr(
                 self.test_device, attr_name).get_properties()
             self.assertEqual(attr_data.description, td_props.description)
@@ -293,6 +295,12 @@ class test_TangoInspectingClient(TangoSetUpClass):
             periodic_updates_per_attr,
             {attr: 1 for attr in test_attributes},
             "Exactly one periodic update not received for each test attribute.")
+
+    def test_interface_change_subscription(self):
+        self.assertNotEquals(self.DUT._interface_change_event_id, None,
+                             "Interface change event subscription was not setup.")
+        self._test_attributes(self.DUT.device_attributes)
+        self._test_commands(self.DUT.device_commands)
 
 
 class test_TangoInspectingClientStandard(TangoSetUpClass):
