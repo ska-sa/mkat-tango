@@ -8,12 +8,12 @@
 ###############################################################################
 import time
 import logging
-
 import mock
+import unittest
 
 from random import gauss
 
-from devicetest import DeviceTestCase
+from tango.test_context import DeviceTestContext
 
 from mkat_tango.testutils import disable_attributes_polling
 
@@ -65,7 +65,7 @@ def read_attributes_as_dicts(dev, attrs):
     return result
 
 
-class test_Weather(DeviceTestCase):
+class test_Weather(unittest.TestCase):
     device = weather.Weather
     longMessage = True
 
@@ -78,15 +78,25 @@ class test_Weather(DeviceTestCase):
         'wind-speed', 'wind-direction', 'temperature', 'insolation',
         'rainfall', 'relative-humidity', 'pressure'])
 
+    @classmethod
+    def setUpClass(cls):
+        cls.tango_context = DeviceTestContext(cls.device)
+        cls.tango_context.start()
 
     def setUp(self):
         super(test_Weather, self).setUp()
-        self.instance = weather.Weather.instances[self.device.name()]
+        self.tango_dp = self.tango_context.device
+        self.instance = weather.Weather.instances[self.tango_dp.name()]
         def cleanup_refs(): del self.instance
         self.addCleanup(cleanup_refs)
 
+    @classmethod
+    def tearDownClass(cls):
+        """Kill the device server."""
+        cls.tango_context.stop()
+
     def test_attribute_list(self):
-        attributes = set(self.device.get_attribute_list())
+        attributes = set(self.tango_dp.get_attribute_list())
         self.assertEqual(attributes, self.expected_attributes)
 
     def test_varying_attributes_min_interval(self):
@@ -99,12 +109,12 @@ class test_Weather(DeviceTestCase):
         # Set update time to very long
         model.min_update_period = 999999
         # Cause an initial update
-        self.device.State()
+        self.tango_dp.State()
         # Get initial values
-        initial_vals = read_attributes_as_dicts(self.device, varying_attributes)
+        initial_vals = read_attributes_as_dicts(self.tango_dp, varying_attributes)
         # Ensure that always_executed_hook() is called
-        self.device.State()
-        later_vals = read_attributes_as_dicts(self.device, varying_attributes)
+        self.tango_dp.State()
+        later_vals = read_attributes_as_dicts(self.tango_dp, varying_attributes)
         # Test that values have not varied
         self.assertEqual(initial_vals, later_vals)
 
@@ -116,7 +126,7 @@ class test_Weather(DeviceTestCase):
         varying_attributes = sorted(self.varying_attributes)
         # Disable polling on the test attributes so that values are not cached by Tango
         disable_attributes_polling(
-            self, self.device, self.instance, varying_attributes)
+            self, self.tango_dp, self.instance, varying_attributes)
 
         # Mock the simulation quantities' next_val() call to ensure that the same value is
         # never returned twice, otherwise it is impossible to tell if a value really
@@ -136,16 +146,16 @@ class test_Weather(DeviceTestCase):
         # Sleep long enough to ensure an update post mocking
         time.sleep(update_period*1.05)
         # Ensure that always_executed_hook() is called
-        self.device.State()
+        self.tango_dp.State()
         # Get initial values
         LOGGER.debug('Getting init values')
-        initial_vals = read_attributes_as_dicts(self.device, varying_attributes)
+        initial_vals = read_attributes_as_dicts(self.tango_dp, varying_attributes)
         LOGGER.debug('Sleeping')
         time.sleep(1.05*update_period)
         # Ensure that always_executed_hook() is called
-        self.device.State()
+        self.tango_dp.State()
         LOGGER.debug('Getting updated values')
-        updated_vals = read_attributes_as_dicts(self.device, varying_attributes)
+        updated_vals = read_attributes_as_dicts(self.tango_dp, varying_attributes)
 
         # 1) check that the value of *each* attribute has changed
         # 2) check that the difference in timestamp is more than update_period

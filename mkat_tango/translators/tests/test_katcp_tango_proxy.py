@@ -11,12 +11,13 @@ import logging
 import unittest
 import textwrap
 import mock
+import socket
 
 import tornado.testing
 import tornado.gen
-import devicetest
 
-from devicetest import TangoTestContext
+from tango.test_context import DeviceTestContext
+
 from katcp import Message
 from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
@@ -46,16 +47,28 @@ KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
     """).lstrip()
 
 
+def get_open_port():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("", 0))
+    s.listen(1)
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
 class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     DUT = None
 
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        cls.tango_context = TangoTestContext(TangoTestDevice, db=cls.tango_db)
+        # It turns out that we need to explicitely specify the port number to have the
+        # events working properly.
+        # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
+        cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
+                                              port=get_open_port())
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
-        devicetest.Patcher.unpatch_device_proxy()
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
@@ -68,7 +81,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         else:
             start_thread_with_cleanup(self, self.DUT, start_timeout=1)
         self.katcp_server = self.DUT.katcp_server
-        self.tango_device_proxy = self.tango_context.device
+        self.tango_device_proxy = self.DUT.inspecting_client.tango_dp
         self.tango_test_device = TangoTestDevice.instances[self.tango_device_proxy.name()]
         self.katcp_address = self.katcp_server.bind_address
         self.host, self.port = self.katcp_address
@@ -156,6 +169,10 @@ class test_TangoDevice2KatcpProxy(
         time.sleep(sleep_time)
 
         for sensor in sensors:
+            # TODO (KM 24-05-2018) This attributes have no set event properties. Need to
+            # set these properties in the device's attribute definitions. However this
+            # test is not for that. I will need to test each event individually for this
+            # attributes: ScalarDevLong, ScalarDevUChar, ScalarDevDouble.
             self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
             self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
