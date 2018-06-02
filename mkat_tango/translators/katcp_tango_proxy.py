@@ -66,6 +66,11 @@ TANGO_INT_TYPES = set([DevUChar, DevShort, DevUShort, DevLong,
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
                              for name, num in tango.CmdArgType.names.items()}
+EXCLUDED_REQUESTS = frozenset([
+    'sensor-sampling', 'help', 'sensor-sampling-clear',
+    'client-list', 'log-level', 'sensor-value', 'version-list',
+    'watchdog', 'sensor-list', 'restart', 'halt'])
+
 
 class TangoStateDiscrete(kattypes.Discrete):
     """A kattype that is compatible with the tango.DevState enumeration"""
@@ -435,15 +440,25 @@ class TangoDevice2KatcpProxy(object):
         """ Populate the request handlers in  the KATCP device server
             instance with the corresponding TANGO device server commands
         """
-        for cmd_name, cmd_info in commands.items():
+        requests = self.katcp_server._request_handlers.keys()
+        commands_ = commands.keys()
+        requests_to_remove = list(set(requests) - set(commands))
+        requests_to_add = list(set(commands) - set(requests))
+
+        for request_name in requests_to_remove:
+            if request_name not in EXCLUDED_REQUESTS:
+                setattr(self.katcp_server, request_name, None)
+                del(self.katcp_server._request_handlers[request_name])
+
+        for request_name in requests_to_add:
             try:
                 req_handler = tango_cmd_descr2katcp_request(
-                    cmd_info, self.inspecting_client.tango_dp)
+                    commands[request_name], self.inspecting_client.tango_dp)
             except NotImplementedError as exc:
                 req_handler = self._dummy_request_handler_factory(
-                    cmd_name, str(exc))
+                    request_name, str(exc))
 
-            self.katcp_server.add_request(cmd_name, req_handler)
+            self.katcp_server.add_request(request_name, req_handler)
 
     def _dummy_request_handler_factory(self, request_name, entrails):
         # Make a dummy request handler for tango commands that could not be
