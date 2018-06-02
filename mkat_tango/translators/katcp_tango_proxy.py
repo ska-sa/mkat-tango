@@ -24,14 +24,15 @@ from collections import namedtuple
 from functools import partial
 
 from tornado.gen import Return
-from katcp import Sensor, kattypes
+from katcp import Sensor, kattypes, Message
 from katcp import server as katcp_server
 from tango import DevState, AttrDataFormat, CmdArgType
 from tango import (DevFloat, DevDouble,AttrQuality,
                      DevUChar, DevShort, DevUShort, DevLong, DevULong,
                      DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
-from tango_inspecting_client import TangoInspectingClient
+from mkat_tango.translators.utilities import tangoname2katcpname
+from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -376,9 +377,9 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.inspecting_client.interface_change_callback = (
             self.update_request_sensor_list)
-        self.update_katcp_server_sensor_list()
+        self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
         self.inspecting_client.setup_attribute_sampling()
-        self.update_katcp_server_request_list()
+        self.update_katcp_server_request_list(self.inspecting_client.device_commands)
         return self.katcp_server.start(timeout=timeout)
 
     def stop(self, timeout=1.0):
@@ -398,26 +399,43 @@ class TangoDevice2KatcpProxy(object):
 
     def update_request_sensor_list(self, device_name, received_timestamp,
                                    attributes, commands):
-        pass
+        self.update_katcp_server_sensor_list(attributes)
+        self.update_katcp_server_request_list(commands)
+        self.katcp_server.mass_inform(Message.inform('interface-changed'))
 
-    def update_katcp_server_sensor_list(self):
+    def update_katcp_server_sensor_list(self, attributes):
         """ Populate the dictionary of sensors in the KATCP device server
             instance with the corresponding TANGO device server attributes
         """
-        tango_attr_descr = self.inspecting_client.device_attributes
-        for attr_descr_name in tango_attr_descr.keys():
+        sensors = self.katcp_server.get_sensors()
+        attributes_ = attributes.keys()
+        tango2katcp_sensors = []
+        sensor_attribute_map = {}
+        for attribute_name in attributes_:
+            sensor_name = tangoname2katcpname(attribute_name)
+            tango2katcp_sensors.append(sensor_name)
+            sensor_attribute_map[sensor_name] = attribute_name
+
+        sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
+        sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
+
+        for sensor_name in sensors_to_remove:
+            self.katcp_server.remove_sensor(sensor_name)
+
+        for sensor_name in sensors_to_add:
             try:
-                sensor = tango_attr_descr2katcp_sensor(tango_attr_descr[attr_descr_name])
+                sensor = tango_attr_descr2katcp_sensor(
+                    attributes[sensor_attribute_map[sensor_name]])
                 self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
-                MODULE_LOGGER.info(str(nierr), exc_info=True)
+                MODULE_LOGGER.debug(str(nierr), exc_info=True)
 
-    def update_katcp_server_request_list(self):
+    def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
             instance with the corresponding TANGO device server commands
         """
-        for cmd_name, cmd_info in self.inspecting_client.device_commands.items():
+        for cmd_name, cmd_info in commands.items():
             try:
                 req_handler = tango_cmd_descr2katcp_request(
                     cmd_info, self.inspecting_client.tango_dp)
