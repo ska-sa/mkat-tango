@@ -410,13 +410,12 @@ class TangoDevice2KatcpProxy(object):
             instance with the corresponding TANGO device server attributes
         """
         sensors = self.katcp_server.get_sensors()
-        attributes_ = attributes.keys()
         tango2katcp_sensors = []
         sensor_attribute_map = {}
-        for attribute_name in attributes_:
+        for attribute_name, attribute_config in attributes.items():
             sensor_name = tangoname2katcpname(attribute_name)
             tango2katcp_sensors.append(sensor_name)
-            sensor_attribute_map[sensor_name] = attribute_name
+            sensor_attribute_map[sensor_name] = attribute_config
 
         sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
         sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
@@ -426,8 +425,7 @@ class TangoDevice2KatcpProxy(object):
 
         for sensor_name in sensors_to_add:
             try:
-                sensor = tango_attr_descr2katcp_sensor(
-                    attributes[sensor_attribute_map[sensor_name]])
+                sensor = tango_attr_descr2katcp_sensor(sensor_attribute_map[sensor_name])
                 self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
