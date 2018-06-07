@@ -336,6 +336,9 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
         """Need a no-op setup_sensors() to satisfy superclass"""
 
+    def get_sensor_list(self):
+        return self._sensors.keys()
+
     def get_requests(self):
         return self._request_handlers.keys()
 
@@ -347,7 +350,6 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def remove_request(self, request_name):
         """Remove a request handler from the internal list."""
         if request_name not in BASE_REQUESTS:
-            delattr(self, request_name)
             del(self._request_handlers[request_name])
 
 
@@ -418,7 +420,7 @@ class TangoDevice2KatcpProxy(object):
         """ Populate the dictionary of sensors in the KATCP device server
             instance with the corresponding TANGO device server attributes
         """
-        sensors = self.katcp_server.get_sensors()
+        sensors = self.katcp_server.get_sensor_list()
         tango2katcp_sensors = []
         sensor_attribute_map = {}
         for attribute_name, attribute_config in attributes.items():
@@ -428,7 +430,6 @@ class TangoDevice2KatcpProxy(object):
 
         sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
         sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
-
         for sensor_name in sensors_to_remove:
             self.katcp_server.remove_sensor(sensor_name)
 
