@@ -26,6 +26,7 @@ from functools import partial
 from tornado.gen import Return
 from katcp import Sensor, kattypes, Message
 from katcp import server as katcp_server
+from katcp.server import BASE_REQUESTS
 from tango import DevState, AttrDataFormat, CmdArgType
 from tango import (DevFloat, DevDouble,AttrQuality,
                      DevUChar, DevShort, DevUShort, DevLong, DevULong,
@@ -66,10 +67,6 @@ TANGO_INT_TYPES = set([DevUChar, DevShort, DevUShort, DevLong,
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
                              for name, num in tango.CmdArgType.names.items()}
-EXCLUDED_REQUESTS = frozenset([
-    'sensor-sampling', 'help', 'sensor-sampling-clear',
-    'client-list', 'log-level', 'sensor-value', 'version-list',
-    'watchdog', 'sensor-list', 'restart', 'halt'])
 
 
 class TangoStateDiscrete(kattypes.Discrete):
@@ -446,7 +443,7 @@ class TangoDevice2KatcpProxy(object):
         requests_to_add = list(set(commands) - set(requests))
 
         for request_name in requests_to_remove:
-            if request_name not in EXCLUDED_REQUESTS:
+            if request_name not in BASE_REQUESTS:
                 setattr(self.katcp_server, request_name, None)
                 del(self.katcp_server._request_handlers[request_name])
 
