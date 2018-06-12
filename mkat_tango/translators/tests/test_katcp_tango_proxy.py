@@ -16,7 +16,7 @@ import socket
 import tornado.testing
 import tornado.gen
 
-from tango import DevVoid
+from tango import DevVoid, Attr, AttrWriteType, DevLong
 from tango.server import command
 from tango.test_context import DeviceTestContext
 
@@ -219,21 +219,43 @@ class test_TangoDevice2KatcpProxy(
                 dtype_out=str,  doc_out="", green_mode=None)
         setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
         self.tango_test_device.add_command(cmd, device_level=True)
-
         time.sleep(0.5) # Find alternative, rather than sleeping
 
+        # Check that the request/command exists.
         self.assertIn('cmd_printString', self.tango_device_proxy.get_command_list())
         self.assertIn('cmd_printString', self.katcp_server.get_requests())
 
-        # Now remove the commnad.
+        # Now remove the command.
         self.tango_test_device.remove_command('cmd_printString')
         delattr(self.tango_test_device, 'cmd_printString')
-
         time.sleep(0.5)
 
+        # Check that the request/command has been removed.
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
         self.assertNotIn('cmd_printString', self.katcp_server.get_requests())
 
+    def test_attribute_sensor_add_remove(self):
+
+        def read_attributes(self, attr):
+            return 1
+
+        # Check that the attribute/sensor did not exist before.
+        self.assertNotIn('test_attr', self.katcp_server.get_sensor_list())
+        self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
+
+        attr = Attr('test_attr', DevLong)
+        self.tango_test_device.add_attribute(attr, read_attributes)
+        time.sleep(0.5) # Find alternative, rather than sleeping.
+        self.assertIn('test_attr', self.tango_device_proxy.get_attribute_list())
+        self.assertIn('test_attr', self.katcp_server.get_sensor_list())
+
+        # Now remove the attribute.
+        self.tango_test_device.remove_attribute('test_attr')
+        time.sleep(0.5)
+
+        # Check that the attribute/sensor has been removed.
+        self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
+        self.assertNotIn('test_attr', self.katcp_server.get_sensor_list())
 
 class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                        tornado.testing.AsyncTestCase):
