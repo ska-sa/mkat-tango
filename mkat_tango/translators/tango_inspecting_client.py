@@ -138,7 +138,6 @@ class TangoInspectingClient(object):
         event_type = tango_event_data.event
         received_timestamp = tango_event_data.reception_date.totime()
         if event_type == 'intr_change':
-            #import pdb; pdb.set_trace()
             self._update_device_attributes(tango_event_data.att_list)
             self._update_device_commands(tango_event_data.cmd_list)
             self.interface_change_callback(tango_event_data.device_name,
