@@ -24,14 +24,16 @@ from collections import namedtuple
 from functools import partial
 
 from tornado.gen import Return
-from katcp import Sensor, kattypes
+from katcp import Sensor, kattypes, Message
 from katcp import server as katcp_server
+from katcp.server import BASE_REQUESTS
 from tango import DevState, AttrDataFormat, CmdArgType
 from tango import (DevFloat, DevDouble,AttrQuality,
                      DevUChar, DevShort, DevUShort, DevLong, DevULong,
                      DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
-from tango_inspecting_client import TangoInspectingClient
+from mkat_tango.translators.utilities import tangoname2katcpname
+from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -65,6 +67,7 @@ TANGO_INT_TYPES = set([DevUChar, DevShort, DevUShort, DevLong,
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
                              for name, num in tango.CmdArgType.names.items()}
+
 
 class TangoStateDiscrete(kattypes.Discrete):
     """A kattype that is compatible with the tango.DevState enumeration"""
@@ -333,10 +336,23 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
         """Need a no-op setup_sensors() to satisfy superclass"""
 
+    def get_sensor_list(self):
+        return self._sensors.keys()
+
+    def get_requests(self):
+        return self._request_handlers.keys()
+
     def add_request(self, request_name, handler):
         """Add a request handler to the internal list."""
         assert(handler.__doc__ is not None)
         self._request_handlers[request_name] = handler
+        setattr(self, 'request_{}'.format(request_name), handler)
+
+    def remove_request(self, request_name):
+        """Remove a request handler from the internal list."""
+        if request_name not in BASE_REQUESTS:
+            del(self._request_handlers[request_name])
+            delattr(self, 'request_{}'.format(request_name))
 
 
 class TangoDevice2KatcpProxy(object):
@@ -374,9 +390,11 @@ class TangoDevice2KatcpProxy(object):
         MODULE_LOGGER.info("Connection to the device server established")
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
-        self.update_katcp_server_sensor_list()
+        self.inspecting_client.interface_change_callback = (
+            self.update_request_sensor_list)
+        self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
         self.inspecting_client.setup_attribute_sampling()
-        self.update_katcp_server_request_list()
+        self.update_katcp_server_request_list(self.inspecting_client.device_commands)
         return self.katcp_server.start(timeout=timeout)
 
     def stop(self, timeout=1.0):
@@ -391,36 +409,61 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.clear_attribute_sampling()
         # TODO NM 2016-05-17 Is it possible to stop a Tango DeviceProxy?
 
-
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
 
-    def update_katcp_server_sensor_list(self):
+    def update_request_sensor_list(self, device_name, received_timestamp,
+                                   attributes, commands):
+        self.update_katcp_server_sensor_list(attributes)
+        self.update_katcp_server_request_list(commands)
+        self.katcp_server.mass_inform(Message.inform('interface-changed'))
+
+    def update_katcp_server_sensor_list(self, attributes):
         """ Populate the dictionary of sensors in the KATCP device server
             instance with the corresponding TANGO device server attributes
         """
-        tango_attr_descr = self.inspecting_client.device_attributes
-        for attr_descr_name in tango_attr_descr.keys():
+        sensors = self.katcp_server.get_sensor_list()
+        tango2katcp_sensors = []
+        sensor_attribute_map = {}
+        for attribute_name, attribute_config in attributes.items():
+            sensor_name = tangoname2katcpname(attribute_name)
+            tango2katcp_sensors.append(sensor_name)
+            sensor_attribute_map[sensor_name] = attribute_config
+
+        sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
+        sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
+        for sensor_name in sensors_to_remove:
+            self.katcp_server.remove_sensor(sensor_name)
+
+        for sensor_name in sensors_to_add:
             try:
-                sensor = tango_attr_descr2katcp_sensor(tango_attr_descr[attr_descr_name])
+                sensor = tango_attr_descr2katcp_sensor(sensor_attribute_map[sensor_name])
                 self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
-                MODULE_LOGGER.info(str(nierr), exc_info=True)
+                MODULE_LOGGER.debug(str(nierr), exc_info=True)
 
-    def update_katcp_server_request_list(self):
+    def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
             instance with the corresponding TANGO device server commands
         """
-        for cmd_name, cmd_info in self.inspecting_client.device_commands.items():
+        requests = self.katcp_server.get_requests()
+        commands_ = commands.keys()
+        requests_to_remove = list(set(requests) - set(commands))
+        requests_to_add = list(set(commands) - set(requests))
+
+        for request_name in requests_to_remove:
+            self.katcp_server.remove_request(request_name)
+
+        for request_name in requests_to_add:
             try:
                 req_handler = tango_cmd_descr2katcp_request(
-                    cmd_info, self.inspecting_client.tango_dp)
+                    commands[request_name], self.inspecting_client.tango_dp)
             except NotImplementedError as exc:
                 req_handler = self._dummy_request_handler_factory(
-                    cmd_name, str(exc))
+                    request_name, str(exc))
 
-            self.katcp_server.add_request(cmd_name, req_handler)
+            self.katcp_server.add_request(request_name, req_handler)
 
     def _dummy_request_handler_factory(self, request_name, entrails):
         # Make a dummy request handler for tango commands that could not be
