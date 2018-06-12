@@ -346,11 +346,13 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
         """Add a request handler to the internal list."""
         assert(handler.__doc__ is not None)
         self._request_handlers[request_name] = handler
+        setattr(self, 'request_{}'.format(request_name), handler)
 
     def remove_request(self, request_name):
         """Remove a request handler from the internal list."""
         if request_name not in BASE_REQUESTS:
             del(self._request_handlers[request_name])
+            delattr(self, 'request_{}'.format(request_name))
 
 
 class TangoDevice2KatcpProxy(object):
