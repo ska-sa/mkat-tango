@@ -23,7 +23,7 @@ from tango.test_context import DeviceTestContext
 from katcp import Message
 from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
-from katcore.testutils import cleanup_tempfile
+from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
     TangoTestDevice, ClassCleanupUnittestMixin)

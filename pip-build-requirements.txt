@@ -1,7 +1,5 @@
-enum
 numpy
 nose_xunitmp
 git+ssh://git@github.com/ska-sa/katcp-python#egg=katcp
-git+ssh://git@github.com/ska-sa/katcore#egg=katcore
 git+ssh://git@github.com/ska-sa/katproxy#egg=katproxy
 git+ssh://git@github.com/ska-sa/tango-simlib#egg=tango_simlib

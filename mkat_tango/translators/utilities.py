@@ -60,3 +60,29 @@ def tangoname2katcpname(attribute_name):
     except KeyError:
         sensor_name = attribute_name.replace('_', '-')
         return sensor_name
+
+def address(host_port):
+    """Convert a HOST:PORT argument to a (host, port) tuple.
+    Paramaters
+    ----------
+    host_port : str
+        String consisting of HOST:PORT. HOST is optional. PORT is
+        must be an integer.
+    Returns
+    -------
+    host : str
+        Hostname or dotted quad IP address.
+    port : int
+        Port number.
+    """
+    # Import here to prevent chicken-and-egg dependency issues in setup.py
+    import argparse
+
+    if ":" not in host_port:
+        raise argparse.ArgumentTypeError("Address must contain a colon")
+    host, port = host_port.split(":")
+    try:
+        port = int(port)
+    except ValueError:
+        raise argparse.ArgumentTypeError("Port must be an integer")
+    return (host, port)

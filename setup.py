@@ -20,8 +20,6 @@ setup(name="mkat_tango",
       install_requires=[
           "PyTango>=9.2.0",
           "numpy",
-          "enum",
-          "katcore",
           "katproxy",
           "katcp",
           "tango-simlib"],
