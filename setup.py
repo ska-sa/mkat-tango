@@ -20,6 +20,7 @@ setup(name="mkat_tango",
       install_requires=[
           "PyTango>=9.2.0",
           "numpy",
+          "tornado>=4.3, <5",
           "katcp",
           "tango-simlib"],
       tests_require=[
