@@ -24,7 +24,6 @@ setup(name="mkat_tango",
           "katcp",
           "tango-simlib"],
       tests_require=[
-          'enum',
           'numpy',
           'nose_xunitmp'],
       zip_safe=False,
