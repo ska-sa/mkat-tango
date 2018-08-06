@@ -553,7 +553,7 @@ class TangoDevice2KatcpProxy(object):
 
 def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
-    from katcore.utils import address
+    from mkat_tango.translators.utilities import address
 
     parser = ArgumentParser(
         description="Launch Tango device -> KATCP translator")

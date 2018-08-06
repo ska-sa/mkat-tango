@@ -25,7 +25,7 @@ from katcp import DeviceServer, Sensor, ProtocolFlags, Message
 from katcp.resource_client import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
 from katcp.kattypes import Float, Timestamp, request, return_reply
-from katcore.testutils import cleanup_tempfile
+from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       remove_tango_server_attribute_list,

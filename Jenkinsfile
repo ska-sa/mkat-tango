@@ -23,7 +23,7 @@ node('docker') {
             timeout(time: 30, unit: 'MINUTES') {
                 try {
                     sh 'pip install nose_xunitmp'
-                    sh 'pip install . -U'
+                    sh 'pip install . -U --pre'
                     sh 'python setup.py test --with-xunitmp --xunitmp-file nosetests.xml'
                 } finally {
                     step([$class: 'JUnitResultArchiver', testResults: 'nosetests.xml'])

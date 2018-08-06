@@ -17,7 +17,6 @@ import weakref
 import logging
 import collections
 import tango
-import numpy
 
 from functools import partial
 

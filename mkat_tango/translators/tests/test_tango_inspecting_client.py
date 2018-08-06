@@ -23,10 +23,9 @@ from tango import DevState
 
 from tango.test_context import DeviceTestContext
 from katcp.testutils import start_thread_with_cleanup
-from katcore.testutils import cleanup_tempfile
+from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
-
 from mkat_tango.translators import tango_inspecting_client
 
 LOGGER = logging.getLogger(__name__)
