@@ -228,7 +228,7 @@ class TangoInspectingClient(object):
             else:
                 raise
 
-    def setup_attribute_sampling(self, attributes=self.device_attributes, periodic=True,
+    def setup_attribute_sampling(self, attributes=None, periodic=True,
                                  change=True, archive=True, data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
@@ -236,6 +236,7 @@ class TangoInspectingClient(object):
         retry_time = 0.5        # in seconds
         retries = 2             # Maximum number of retries
 
+        attributes = attributes if attributes is not None else self.device_attributes
         for attr_name in attributes:
             if not dp.is_attribute_polled(attr_name):
                 _retries = 0
