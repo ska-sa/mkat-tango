@@ -16,7 +16,7 @@ import socket
 import tornado.testing
 import tornado.gen
 
-from tango import DevVoid, Attr, AttrWriteType, DevLong
+from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat
 from tango.server import command
 from tango.test_context import DeviceTestContext
 
@@ -57,6 +57,10 @@ def get_open_port():
     s.close()
     return port
 
+SPECTRUM_ATTR = {'SpectrumDevDouble': ['SpectrumDevDouble.0', 'SpectrumDevDouble.1',
+                                       'SpectrumDevDouble.2', 'SpectrumDevDouble.3',
+                                       'SpectrumDevDouble.4']
+                                       }
 
 class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     DUT = None
@@ -107,6 +111,18 @@ class test_TangoDevice2KatcpProxy(
         reply, informs = self.client.blocking_request(Message.request('sensor-list'))
         sensor_list = set([inform.arguments[0] for inform in informs])
         attribute_list = set(self.tango_device_proxy.get_attribute_list())
+
+        attributes = {attr_name: self.tango_device_proxy.get_attribute_config(attr_name)
+                      for attr_name in self.tango_device_proxy.get_attribute_list()}
+
+        # The SpectrumDevDouble attribute name needs to be broken down to the KATCP
+        # equivalent.
+        for attr_name, attr_config in attributes.items():
+            if attr_config.data_format == AttrDataFormat.SPECTRUM:
+                attribute_list.remove(attr_name)
+                for index in range(attr_config.max_dim_x):
+                    attribute_list.add(attr_name + '.' + str(index))
+
         NOT_IMPLEMENTED_SENSORS = set(['ScalarDevEncoded'])
         self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
@@ -130,6 +146,10 @@ class test_TangoDevice2KatcpProxy(
                 else:
                     status = self.tango_device_proxy.status()
                     self.assertEqual(sensor_value, status)
+            elif sensor.name in SPECTRUM_ATTR['SpectrumDevDouble']:
+                attribute_value = attributes['SpectrumDevDouble'][0]
+                self.assertEqual(sensor_value,
+                                 attribute_value[int(sensor.name.split('.')[1])])
             else:
                 attribute_value = attributes[sensor.name][0]
                 if sensor.name in ['ScalarDevEnum']:
@@ -163,9 +183,16 @@ class test_TangoDevice2KatcpProxy(
             if attr_name not in EXCLUDED_ATTRS:
                 # Instantiating observers and attaching them onto the katcp
                 # sensors to allow logging of periodic event updates into a list
-                observers[attr_name] = observer = SensorObserver()
-                self.katcp_server.get_sensor(attr_name).attach(observer)
-                sensors.append(attr_name)
+                #observers[attr_name] = observer = SensorObserver()
+                if attr_name == 'SpectrumDevDouble':
+                    for attr_name_ in SPECTRUM_ATTR['SpectrumDevDouble']:
+                        observers[attr_name_] = observer = SensorObserver()
+                        self.katcp_server.get_sensor(attr_name_).attach(observer)
+                        sensors.append(attr_name_)
+                else:
+                    observers[attr_name] = observer = SensorObserver()
+                    self.katcp_server.get_sensor(attr_name).attach(observer)
+                    sensors.append(attr_name)
             else:
                 LOGGER.debug('Found unexpected attributes')
         time.sleep(sleep_time)
