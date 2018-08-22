@@ -501,19 +501,31 @@ class TangoDevice2KatcpProxy(object):
            its corresponding TANGO attribute's value.
 
         """
-        try:
-            sensor = self.katcp_server.get_sensor(name)
-        except ValueError as verr:
-            # AR 2016-05-19 TODO Need a robust way of dealing
-            # with not implemented sensors
-            MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
+        attr_dformat = self.inspecting_client.tango_dp.read_attribute(name).data_format
+        if attr_dformat == AttrDataFormat.SPECTRUM:
+            for index in range(value.size):
+                try:
+                    sensor = self.katcp_server.get_sensor(name + '.' + str(index))
+                except ValueError as verr:
+                    # AR 2016-05-19 TODO Need a robust way of dealing
+                    # with not implemented sensors
+                    MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
+                else:
+                    status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
+                    sensor.set_value(value[index], status=status, timestamp=timestamp)
+
         else:
-            # KM 2016-05-18 TODO Might need to figure out how to map the
-            # AttrQuality values to the sensor status constants
-            if sensor.type == 'discrete':
-                value = sensor.params[value]
-            status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-            sensor.set_value(value, status=status, timestamp=timestamp)
+            try:
+                sensor = self.katcp_server.get_sensor(name)
+            except ValueError as verr:
+                # AR 2016-05-19 TODO Need a robust way of dealing
+                # with not implemented sensors
+                MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
+            else:
+                if sensor.type == 'discrete':
+                    value = sensor.params[value]
+                status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
+                sensor.set_value(value, status=status, timestamp=timestamp)
 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address):
