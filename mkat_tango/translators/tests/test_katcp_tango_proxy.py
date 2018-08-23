@@ -148,8 +148,8 @@ class test_TangoDevice2KatcpProxy(
                     self.assertEqual(sensor_value, status)
             elif sensor.name in SPECTRUM_ATTR['SpectrumDevDouble']:
                 attribute_value = attributes['SpectrumDevDouble'][0]
-                self.assertEqual(sensor_value,
-                                 attribute_value[int(sensor.name.split('.')[1])])
+                index = int(sensor.name.split('.')[1])
+                self.assertEqual(sensor_value, attribute_value[index])
             else:
                 attribute_value = attributes[sensor.name][0]
                 if sensor.name in ['ScalarDevEnum']:
@@ -183,7 +183,6 @@ class test_TangoDevice2KatcpProxy(
             if attr_name not in EXCLUDED_ATTRS:
                 # Instantiating observers and attaching them onto the katcp
                 # sensors to allow logging of periodic event updates into a list
-                #observers[attr_name] = observer = SensorObserver()
                 if attr_name == 'SpectrumDevDouble':
                     for attr_name_ in SPECTRUM_ATTR['SpectrumDevDouble']:
                         observers[attr_name_] = observer = SensorObserver()
