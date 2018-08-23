@@ -501,7 +501,7 @@ class TangoDevice2KatcpProxy(object):
            its corresponding TANGO attribute's value.
 
         """
-        attr_dformat = self.inspecting_client.tango_dp.read_attribute(name).data_format
+        attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
             for index in range(value.size):
                 try:
