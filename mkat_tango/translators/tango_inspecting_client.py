@@ -208,7 +208,7 @@ class TangoInspectingClient(object):
                 self._interface_change_event_id = subs(event_type)
             else:
                 subs = lambda etype: dp.subscribe_event(
-                    attribute_name, etype, self.tango_event_handler)
+                    attribute_name, etype, self.tango_event_handler, stateless=True)
                 self._event_ids.add(subs(event_type))
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
