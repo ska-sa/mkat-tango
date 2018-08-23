@@ -40,7 +40,7 @@ def _test_attr(attr_dummy_fn):
     =======
 
     class TangoTestDevice(tango.server.Device):
-        __metaclass__ = tango.server..DeviceMeta
+        __metaclass__ = tango.server.DeviceMeta
 
         def init_device(self):
             super(TangoTestDevice, self).init_device()
@@ -95,7 +95,8 @@ class TangoTestDevice(TS.Device):
             ScalarDevString=('The quick brown fox.', None, AttrQuality.ATTR_VALID),
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
-            ScalarDevEnum=(0, None, AttrQuality.ATTR_VALID)
+            ScalarDevEnum=(0, None, AttrQuality.ATTR_VALID),
+            SpectrumDevDouble=([0.0, 1.0, 2.0, 3.0, 4.0], None, AttrQuality.ATTR_VALID)
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
@@ -135,6 +136,11 @@ class TangoTestDevice(TS.Device):
                   polling_period=1000, event_period=25)
     @_test_attr
     def ScalarDevEnum(self): pass
+
+    @TS.attribute(dtype=('DevDouble',), doc='An example spectrum Double attribute',
+                  polling_period=1000, event_period=25, max_dim_x=5)
+    @_test_attr
+    def SpectrumDevDouble(self): pass
 
     static_commands = ('ReverseString', 'MultiplyInts', 'Void',
                        'MultiplyDoubleBy3')
