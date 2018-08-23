@@ -393,7 +393,6 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.interface_change_callback = (
             self.update_request_sensor_list)
         self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
-        self.inspecting_client.setup_attribute_sampling()
         self.update_katcp_server_request_list(self.inspecting_client.device_commands)
         return self.katcp_server.start(timeout=timeout)
 
@@ -443,12 +442,17 @@ class TangoDevice2KatcpProxy(object):
                 # Temporarily for unhandled attribute types
                 MODULE_LOGGER.debug(str(nierr), exc_info=True)
 
+        new_attributes = [sensor_attribute_map[sensor].name for sensor in sensors_to_add]
+        lower_case_attributes = map(lambda attr_name:attr_name.lower(), new_attributes)
+        orig_attr_names_map = dict(zip(lower_case_attributes, new_attributes))
+        self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
+        self.inspecting_client.setup_attribute_sampling(new_attributes)
+
     def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
             instance with the corresponding TANGO device server commands
         """
         requests = self.katcp_server.get_requests()
-        commands_ = commands.keys()
         requests_to_remove = list(set(requests) - set(commands))
         requests_to_add = list(set(commands) - set(requests))
 

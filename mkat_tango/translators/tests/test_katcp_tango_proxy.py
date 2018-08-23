@@ -64,7 +64,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        # It turns out that we need to explicitely specify the port number to have the
+        # It turns out that we need to explicitly specify the port number to have the
         # events working properly.
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
