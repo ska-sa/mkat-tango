@@ -273,7 +273,6 @@ class test_TangoDevice2KatcpProxy(
 
             # Check that attribute samplling was recalled for the new attribute
             sec.assert_called_with(['test_attr', 'ScalarDevEncoded'])
-            # mock_setup_attr.assert_called_with(['test_attr', 'ScalarDevEncoded'])
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute('test_attr')
