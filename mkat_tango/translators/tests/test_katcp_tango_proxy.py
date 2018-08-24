@@ -68,7 +68,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
-        # It turns out that we need to explicitely specify the port number to have the
+        # It turns out that we need to explicitly specify the port number to have the
         # events working properly.
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
@@ -282,6 +282,28 @@ class test_TangoDevice2KatcpProxy(
         # Check that the attribute/sensor has been removed.
         self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
         self.assertNotIn('test_attr', self.katcp_server.get_sensor_list())
+
+    def test_setup_attribute_sampling(self):
+
+        def read_attributes(self, attr):
+            return 1
+
+        with mock.patch.object(self.DUT.inspecting_client,
+                               'setup_attribute_sampling') as sec:
+            attr = Attr('test_attr', DevLong)
+            self.tango_test_device.add_attribute(attr, read_attributes)
+            time.sleep(0.5) # Find alternative, rather than sleeping.
+
+            # Check that test_attr was added to attribute map dictionary
+            self.assertIn('test_attr', self.DUT.inspecting_client.orig_attr_names_map)
+
+            # Check that attribute samplling was recalled for the new attribute
+            sec.assert_called_with(['test_attr', 'ScalarDevEncoded'])
+
+            # Remove the attribute.
+            self.tango_test_device.remove_attribute('test_attr')
+            time.sleep(0.5)
+
 
 class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
                                        tornado.testing.AsyncTestCase):

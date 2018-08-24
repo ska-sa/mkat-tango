@@ -208,7 +208,7 @@ class TangoInspectingClient(object):
                 self._interface_change_event_id = subs(event_type)
             else:
                 subs = lambda etype: dp.subscribe_event(
-                    attribute_name, etype, self.tango_event_handler)
+                    attribute_name, etype, self.tango_event_handler, stateless=True)
                 self._event_ids.add(subs(event_type))
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
@@ -222,15 +222,16 @@ class TangoInspectingClient(object):
             else:
                 raise
 
-    def setup_attribute_sampling(self, periodic=True, change=True, archive=True,
-                                 data_ready=False, user=True):
+    def setup_attribute_sampling(self, attributes=None, periodic=True,
+                                 change=True, archive=True, data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
         poll_period = 1000      # in milliseconds
         retry_time = 0.5        # in seconds
         retries = 2             # Maximum number of retries
 
-        for attr_name in self.device_attributes:
+        attributes = attributes if attributes is not None else self.device_attributes
+        for attr_name in attributes:
             if not dp.is_attribute_polled(attr_name):
                 _retries = 0
                 retry = True
