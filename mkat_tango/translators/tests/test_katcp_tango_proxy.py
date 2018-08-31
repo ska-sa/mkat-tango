@@ -297,8 +297,8 @@ class test_TangoDevice2KatcpProxy(
             # Check that test_attr was added to attribute map dictionary
             self.assertIn('test_attr', self.DUT.inspecting_client.orig_attr_names_map)
 
-            # Check that attribute samplling was recalled for the new attribute
-            sec.assert_called_with(['test_attr', 'ScalarDevEncoded'])
+            # Check that attribute sampling was recalled for the new attribute
+            sec.assert_called_with(['SpectrumDevDouble', 'test_attr', 'ScalarDevEncoded'])
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute('test_attr')
