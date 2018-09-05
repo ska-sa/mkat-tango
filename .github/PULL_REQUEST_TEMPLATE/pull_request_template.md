@@ -2,4 +2,4 @@
 
 A description of the changes proposed in the pull request.
 
-JIRA: [JIRA-ISSUE-NUMBER](https://skaafrica.atlassian.net/browse/<JIRA-ISSUE-NUMBER>)
+JIRA: [JIRA_ISSUE_NUMBER](https://skaafrica.atlassian.net/browse/JIRA_ISSUE_NUMBER)
