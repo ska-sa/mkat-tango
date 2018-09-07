@@ -437,19 +437,39 @@ class TangoDevice2KatcpProxy(object):
         sensors = self.katcp_server.get_sensor_list()
         tango2katcp_sensors = []
         sensor_attribute_map = {}
+
         for attribute_name, attribute_config in attributes.items():
             sensor_name = tangoname2katcpname(attribute_name)
+            # This is to handle the mapping of the spectrum type attribute name with its
+            # decomposition into multiple sensor names. It will ensure that we add/remove
+            # the correct sensors from the KATCP server.
+            if attribute_config.data_format == AttrDataFormat.SPECTRUM:
+                sensors_ = []
+                for sensor in sensors:
+                    if sensor.startswith(sensor_name + '.'):
+                        sensors_.append(sensor)
+
+                if len(sensors_) - attribute_config.max_dim_x == 0:
+                    tango2katcp_sensors.extend(sensors_)
+                else:
+                    tango2katcp_sensors.append(sensor_name)
+
+                sensor_attribute_map[sensor_name] = attribute_config
+                continue
+
             tango2katcp_sensors.append(sensor_name)
             sensor_attribute_map[sensor_name] = attribute_config
 
         sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
         sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
+
         for sensor_name in sensors_to_remove:
             self.katcp_server.remove_sensor(sensor_name)
 
         for sensor_name in sensors_to_add:
             try:
-                sensors = tango_attr_descr2katcp_sensors(sensor_attribute_map[sensor_name])
+                sensors = tango_attr_descr2katcp_sensors(
+                    sensor_attribute_map[sensor_name])
                 for sensor in sensors:
                     self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
