@@ -445,13 +445,11 @@ class TangoDevice2KatcpProxy(object):
             # the correct sensors from the KATCP server.
             if attribute_config.data_format == AttrDataFormat.SPECTRUM:
                 sensors_ = []
-                count = 0
                 for sensor in sensors:
                     if sensor.startswith(sensor_name + '.'):
-                        count += 1
                         sensors_.append(sensor)
 
-                if count - attribute_config.max_dim_x == 0:
+                if len(sensors_) - attribute_config.max_dim_x == 0:
                     tango2katcp_sensors.extend(sensors_)
                 else:
                     tango2katcp_sensors.append(sensor_name)
