@@ -537,10 +537,13 @@ class TangoDevice2KatcpProxy(object):
 
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
+            number_of_items = 0
             if isinstance(value, np.ndarray):
-                value = value.tolist()
+                number_of_items = value.size
+            else:
+                number_of_items = len(value)
 
-            for index in range(len(value)):
+            for index in xrange(number_of_items):
                 try:
                     sensor = self.katcp_server.get_sensor(name + '.' + str(index))
                 except ValueError as verr:
