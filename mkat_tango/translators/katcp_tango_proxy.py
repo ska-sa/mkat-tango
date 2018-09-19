@@ -440,7 +440,7 @@ class TangoDevice2KatcpProxy(object):
 
         for attribute_name, attribute_config in attributes.items():
             if attribute_name == "AttributesNotAdded":
-                MODULE_LOGGER.info(
+                MODULE_LOGGER.debug(
                     "Skipping creation of sensor objects for attribute %s.",
                     attribute_name)
                 continue
@@ -531,7 +531,7 @@ class TangoDevice2KatcpProxy(object):
 
         """
         if name == "AttributesNotAdded":
-            MODULE_LOGGER.info("Sensor %s.* was never added on the KATCP server.",
+            MODULE_LOGGER.debug("Sensor %s.* was never added on the KATCP server.",
                                name)
             return
 
