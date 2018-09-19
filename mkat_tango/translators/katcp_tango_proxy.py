@@ -439,6 +439,11 @@ class TangoDevice2KatcpProxy(object):
         sensor_attribute_map = {}
 
         for attribute_name, attribute_config in attributes.items():
+            if attribute_name == "AttributesNotAdded":
+                MODULE_LOGGER.debug(
+                    "Skipping creation of sensor objects for attribute %s.",
+                    attribute_name)
+                continue
             sensor_name = tangoname2katcpname(attribute_name)
             # This is to handle the mapping of the spectrum type attribute name with its
             # decomposition into multiple sensor names. It will ensure that we add/remove
@@ -525,9 +530,20 @@ class TangoDevice2KatcpProxy(object):
            its corresponding TANGO attribute's value.
 
         """
+        if name == "AttributesNotAdded":
+            MODULE_LOGGER.debug("Sensor %s.* was never added on the KATCP server.",
+                                name)
+            return
+
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
-            for index in range(value.size):
+            number_of_items = 0
+            if isinstance(value, np.ndarray):
+                number_of_items = value.size
+            else:
+                number_of_items = len(value)
+
+            for index in xrange(number_of_items):
                 try:
                     sensor = self.katcp_server.get_sensor(name + '.' + str(index))
                 except ValueError as verr:
@@ -537,7 +553,6 @@ class TangoDevice2KatcpProxy(object):
                 else:
                     status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
                     sensor.set_value(value[index], status=status, timestamp=timestamp)
-
         else:
             try:
                 sensor = self.katcp_server.get_sensor(name)
