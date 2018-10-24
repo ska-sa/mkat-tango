@@ -18,7 +18,7 @@ setup(name="mkat_tango",
       setup_requires=["katversion"],
       use_katversion=True,
       install_requires=[
-          "PyTango>=9.2.0",
+          "PyTango>=9.2.2",
           "numpy",
           "tornado>=4.3, <5",
           "katcp",
