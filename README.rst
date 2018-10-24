@@ -92,9 +92,6 @@ Limitations
 
 Easily removable limitations:
 
- - Does not handle a TANGO device that dynamically changes its attributes or
-   commands.
-
  - Does not handle TANGO commands that take or return arrayed values.
 
  More difficult limitations:
