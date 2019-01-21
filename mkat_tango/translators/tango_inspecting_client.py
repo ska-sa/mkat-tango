@@ -237,12 +237,25 @@ class TangoInspectingClient(object):
                 retry = True
                 while retry and _retries < retries:
                     try:
+                        MODULE_LOGGER.info(
+                            "Setting up polling on attribute '%s'." % attr_name)
                         dp.poll_attribute(attr_name, poll_period)
-                    except tango.CommunicationFailed:
-                        _retries += 1
-                        time.sleep(retry_time)
+                    except tango.DevFailed, exc:
+                        exc_reasons = set([arg.reason for arg in exc.args])
+                        if 'API_AlreadyPolled' in exc_reasons:
+                            retry = False
+                            MODULE_LOGGER.info("Attribute '%s' already polled" % attr_name)
+                        else:
+                            MODULE_LOGGER.warning(
+                                "Setting polling on attribute '' failed on retry '%s'"
+                                ". Retrying again..." % (attr_name, _retries + 1),
+                                exc_info=True)
+                            _retries += 1
+                            time.sleep(retry_time)
                     else:
                         retry = False
+                        MODULE_LOGGER.info("Polling on attribute '%s' was set up"
+                                           " successfully" % attr_name)
    
             if periodic:
                 self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
