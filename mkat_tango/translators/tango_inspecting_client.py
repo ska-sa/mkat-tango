@@ -237,6 +237,8 @@ class TangoInspectingClient(object):
                 retry = True
                 while retry and _retries < retries:
                     try:
+                        MODULE_LOGGER.info(
+                            "Setting up polling on attribute '%s'." % attr_name)
                         dp.poll_attribute(attr_name, poll_period)
                     except tango.DevFailed, exc:
                         exc_reasons = set([arg.reason for arg in exc.args])
