@@ -253,7 +253,7 @@ class TangoInspectingClient(object):
                     else:
                         retry = False
                         MODULE_LOGGER.info("Polling on attribute '%s' was set up"
-                                           " successfuly" % attr_name)
+                                           " successfully" % attr_name)
    
             if periodic:
                 self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
