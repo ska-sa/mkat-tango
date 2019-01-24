@@ -247,7 +247,7 @@ class TangoInspectingClient(object):
                             MODULE_LOGGER.info("Attribute '%s' already polled" % attr_name)
                         else:
                             MODULE_LOGGER.warning(
-                                "Setting polling on attribute '' failed on retry '%s'"
+                                "Setting polling on attribute '%s' failed on retry '%s'"
                                 ". Retrying again..." % (attr_name, _retries + 1),
                                 exc_info=True)
                             _retries += 1
