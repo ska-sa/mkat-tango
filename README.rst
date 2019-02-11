@@ -94,9 +94,10 @@ Easily removable limitations:
  - Does not support IMAGE attributes. KATCP does not define how sensors with 2-D arrayed
    values should be handled.
   
- Note: For SPECTURM attributes, the 1-D array is decomposed into individual 
-       KATCP sensors and the indices are appended to the end of the names of the generated 
-       sensors e.g. test.0, test.1 etc.
+ Note: 
+     For SPECTURM attributes, the 1-D array is decomposed into individual 
+     KATCP sensors and the indices are appended to the end of the names of the generated 
+     sensors e.g. test.0, test.1 etc.
 
 
 katcpdevice2tango
