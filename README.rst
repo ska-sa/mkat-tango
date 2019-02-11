@@ -85,7 +85,7 @@ of between 0 and 255.
 Limitations
 ^^^^^^^^^^^
 
-Easily removable limitations:
+ Easily removable limitations:
 
  - Does not handle TANGO commands that take or return arrayed values.
 
