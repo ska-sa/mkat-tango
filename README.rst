@@ -95,7 +95,7 @@ Limitations
    values should be handled.
   
  Note: 
-     For SPECTURM attributes, the 1-D array is decomposed into individual 
+     For SPECTRUM attributes, the 1-D array is decomposed into individual 
      KATCP sensors and the indices are appended to the end of the names of the generated 
      sensors e.g. test.0, test.1 etc.
 
