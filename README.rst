@@ -12,7 +12,7 @@ simulators
 translators
   Components that allow bidrectional communications between KATCP and TANGO
   based control systems. Also provides some helper utilities for integrating
-  TANGO components into the MeerKAT system.
+  TANGO components into the MKAT system.
 
 
 
@@ -43,11 +43,11 @@ tango_launcher ::
 .. _tango_simlib: https://github.com/ska-sa/tango-simlib
 
 
-MeerKAT TANGO AP simulator
+MKAT TANGO AP simulator
 --------------------------
 
-The actual MeerKAT antenna positioner (AP) devices have KATCP interfaces. To aid
-testing and development of the MeerKAT CAM (i.e TM) system, a fairly detailed 
+The actual MKAT antenna positioner (AP) devices have KATCP interfaces. To aid
+testing and development of the MKAT CAM (i.e TM) system, a fairly detailed 
 simulator that mimics the MKAT AP behaviour and exposes a TANGO 
 interface was developed.
 
@@ -129,10 +129,10 @@ tango_launcher
 
 A helper script (`mkat-tango-tango_launcher`) is provided for registering,
 setting device properties, and starting a TANGO device server in a single
-step. This is useful when starting a TANGO device in the MeerKAT system, since
-the MeerKAT system has no direct understanding of the TANGO database and manages
+step. This is useful when starting a TANGO device in the MKAT system, since
+the MKAT system has no direct understanding of the TANGO database and manages
 system interconnections through command-line parameters when starting various
-telescope processes. MeerKAT also has its own TCP port allocation method, which
+telescope processes. MKAT also has its own TCP port allocation method, which
 could conflict with the TANGO system's automatic port allocation. For this
 reason `mkat-tango-tango_launcher` requires a `--port` flag to be passed,
 controlling the TCP port where the TANGO device server will listen.  To use the
