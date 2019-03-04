@@ -2,7 +2,7 @@
 MeerKAT Tango integration and experimentation
 =============================================
 
-Work relating to the use of tango in MeerKAT and for SKA. This package contains:
+Work relating to the use of tango in MeerKAT (MKAT) and for SKA. This package contains:
 
 simulators
   Simulators of "real" telescope devices with TANGO interfaces. They can be used
@@ -12,7 +12,7 @@ simulators
 translators
   Components that allow bidrectional communications between KATCP and TANGO
   based control systems. Also provides some helper utilities for integrating
-  TANGO components into the MeerKAT system.
+  TANGO components into the MKAT system.
 
 
 
@@ -43,18 +43,13 @@ tango_launcher ::
 .. _tango_simlib: https://github.com/ska-sa/tango-simlib
 
 
-MeerKAT TANGO AP simulator
+MKAT TANGO AP simulator
 --------------------------
 
-The actual MeerKAT antenna positioner (AP) devices have KATCP interfaces. To aid
-testing and development of the MeerKAT CAM (i.e TM) system, fairly a fairly
-detailed simulator that exposes the same KATCP interface as the actual harware
-was developed. Most of the simulation logic live in a standalone model class
-(:class:`katproxy.sim.mkat_ap.MkatApModel`), with the KATCP interface being
-provided by a fairly simple class that calls into the model.
-
-The :mod:`mkat_tango.simulators.mkat_ap_tango` module imports `MkatApModel`, and
-provides it with a TANGO interface instead.
+The actual MKAT antenna positioner (AP) devices have KATCP interfaces. To aid
+testing and development of the MKAT CAM (i.e TM) system, a fairly detailed 
+simulator that mimics the MKAT AP behaviour and exposes a TANGO 
+interface was developed.
 
 
 Translators
@@ -76,13 +71,13 @@ port 2051 ::
 Types
 ^^^^^
 
-KATCP and Tango both have defined data types, but the KATCP protocol (being text
+KATCP and TANGO both have defined data types, but the KATCP protocol (being text
 based) has less strict definitions. E.g. KATCP only defines a singular integer
 type with no specific bounds, while TANGO distinguishes between signed and
 unsigned, and between 8, 16, 32 or 64-bit integers. The KATCP library does,
 however, provide features for enforcing bounds and other checks on typed
 quantities, and these are used to enforce the appropriate bounds. E.g. if the
-Tango device exposes a command that takes an 8-bit unsigned integer parameter, the
+TANGO device exposes a command that takes an 8-bit unsigned integer parameter, the
 KATCP translator will enforce the corresponding KATCP parameter to have a value
 of between 0 and 255.
 
@@ -90,15 +85,19 @@ of between 0 and 255.
 Limitations
 ^^^^^^^^^^^
 
-Easily removable limitations:
+ Easily removable limitations:
 
  - Does not handle TANGO commands that take or return arrayed values.
 
  More difficult limitations:
 
- - Only supports scalar attributes. KATCP does not define how sensors with 1-D
-   or 2-D arrayed values should be handled.
-   
+ - Does not support IMAGE attributes. KATCP does not define how sensors with 2-D arrayed
+   values should be handled.
+  
+ Note: 
+     For SPECTRUM attributes, the 1-D array is decomposed into individual 
+     KATCP sensors and the indices are appended to the end of the names of the generated 
+     sensors e.g. test.0, test.1 etc.
 
 
 katcpdevice2tango
@@ -110,7 +109,7 @@ that all updates are received. The KATCP server is located by reading the TANGO
 device property `katcp_address`.
 
 Example of launching a translator that connects as client to the KATCP device
-running on host `localhost`, TCP port 5000 and exposing it as a Tango device
+running on host `localhost`, TCP port 5000 and exposing it as a TANGO device
 named `katcp/basic/1` ::
 
   mkat-tango-tango_launcher --name katcp/basic/1 --class TangoDeviceServer\
@@ -130,10 +129,10 @@ tango_launcher
 
 A helper script (`mkat-tango-tango_launcher`) is provided for registering,
 setting device properties, and starting a TANGO device server in a single
-step. This is useful when starting a TANGO device in the MeerKAT system, since
-the MeerKAT system has no direct understanding of the TANGO database and manages
+step. This is useful when starting a TANGO device in the MKAT system, since
+the MKAT system has no direct understanding of the TANGO database and manages
 system interconnections through command-line parameters when starting various
-telescope processes. MeerKAT also has its own TCP port allocation method, which
+telescope processes. MKAT also has its own TCP port allocation method, which
 could conflict with the TANGO system's automatic port allocation. For this
 reason `mkat-tango-tango_launcher` requires a `--port` flag to be passed,
 controlling the TCP port where the TANGO device server will listen.  To use the
@@ -145,7 +144,7 @@ the sections above.
 Notes on running tests
 ======================
 
-Tango segfaults when restarting a device main function
+TANGO segfaults when restarting a device main function
 ------------------------------------------------------
 
 PyTango segfaults if a device server is started more than once in a single
