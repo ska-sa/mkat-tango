@@ -35,7 +35,7 @@ from tango import (DevFloat, DevDouble,AttrQuality,
 from mkat_tango.translators.utilities import tangoname2katcpname
 from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
 
-MODULE_LOGGER = logging.getLogger(__name__)
+log = logging.getLogger("mkat_tango.translators.katcp_tango_proxy")
 
 KATCP_REQUEST_DOC_TEMPLATE = (
 """?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
@@ -337,7 +337,7 @@ def is_tango_device_running(tango_device_proxy):
         deverr_reasons = set([arg.reason for arg in deverr.args])
         deverr_desc = set([arg.desc for arg in deverr.args])
         for reason, description in zip(deverr_reasons, deverr_desc):
-            MODULE_LOGGER.error("{} : {}".format(reason, description))
+            log.error("{} : {}".format(reason, description))
         is_device_running = False
     else:
         is_device_running = True
@@ -369,9 +369,10 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
 
 
 class TangoDevice2KatcpProxy(object):
-    def __init__(self, katcp_server, tango_inspecting_client):
+    def __init__(self, katcp_server, tango_inspecting_client, logger=log):
         self.katcp_server = katcp_server
         self.inspecting_client = tango_inspecting_client
+        self._logger = logger
 
     def set_ioloop(self, ioloop=None):
         """Set the tornado IOLoop to use.
@@ -400,7 +401,7 @@ class TangoDevice2KatcpProxy(object):
         tango_device_proxy = self.inspecting_client.tango_dp
         if not is_tango_device_running(tango_device_proxy):
             self.wait_for_device(tango_device_proxy)
-        MODULE_LOGGER.info("Connection to the device server established")
+        self._logger.info("Connection to the device server established")
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.inspecting_client.interface_change_callback = (
@@ -440,7 +441,7 @@ class TangoDevice2KatcpProxy(object):
 
         for attribute_name, attribute_config in attributes.items():
             if attribute_name == "AttributesNotAdded":
-                MODULE_LOGGER.debug(
+                self._logger.debug(
                     "Skipping creation of sensor objects for attribute %s.",
                     attribute_name)
                 continue
@@ -479,7 +480,7 @@ class TangoDevice2KatcpProxy(object):
                     self.katcp_server.add_sensor(sensor)
             except NotImplementedError as nierr:
                 # Temporarily for unhandled attribute types
-                MODULE_LOGGER.debug(str(nierr), exc_info=True)
+                self._logger.debug(str(nierr), exc_info=True)
 
         new_attributes = [sensor_attribute_map[sensor].name for sensor in sensors_to_add]
         lower_case_attributes = map(lambda attr_name:attr_name.lower(), new_attributes)
@@ -531,7 +532,7 @@ class TangoDevice2KatcpProxy(object):
 
         """
         if name == "AttributesNotAdded":
-            MODULE_LOGGER.debug("Sensor %s.* was never added on the KATCP server.",
+            self._logger.debug("Sensor %s.* was never added on the KATCP server.",
                                 name)
             return
 
@@ -549,7 +550,7 @@ class TangoDevice2KatcpProxy(object):
                 except ValueError as verr:
                     # AR 2016-05-19 TODO Need a robust way of dealing
                     # with not implemented sensors
-                    MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
+                    self._logger.info('Sensor not implemented yet!' + str(verr))
                 else:
                     status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
                     sensor.set_value(value[index], status=status, timestamp=timestamp)
@@ -559,7 +560,7 @@ class TangoDevice2KatcpProxy(object):
             except ValueError as verr:
                 # AR 2016-05-19 TODO Need a robust way of dealing
                 # with not implemented sensors
-                MODULE_LOGGER.info('Sensor not implemented yet!' + str(verr))
+                self._logger.info('Sensor not implemented yet!' + str(verr))
             else:
                 if sensor.type == 'discrete':
                     value = sensor.params[value]
@@ -567,7 +568,7 @@ class TangoDevice2KatcpProxy(object):
                 sensor.set_value(value, status=status, timestamp=timestamp)
 
     @classmethod
-    def from_addresses(cls, katcp_server_address, tango_device_address):
+    def from_addresses(cls, katcp_server_address, tango_device_address, logger=log):
         """Instantiate TangoDevice2KatcpProxy from network addresses
 
         Parameters
@@ -579,11 +580,11 @@ class TangoDevice2KatcpProxy(object):
 
         """
         tango_device_proxy = cls.get_tango_device_proxy(tango_device_address)
-        tango_inspecting_client = TangoInspectingClient(tango_device_proxy)
+        tango_inspecting_client = TangoInspectingClient(tango_device_proxy, logger=logger)
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
-        return cls(katcp_server, tango_inspecting_client)
+        return cls(katcp_server, tango_inspecting_client, logger=logger)
 
     @staticmethod
     def get_tango_device_proxy(device_name, retry_time=2):
@@ -595,7 +596,7 @@ class TangoDevice2KatcpProxy(object):
                 dferr_reasons = set([arg.reason for arg in dferr.args])
                 dferr_desc = set([arg.desc for arg in dferr.args])
                 for reason, description in zip(dferr_reasons, dferr_desc):
-                    MODULE_LOGGER.error("{} : {}".format(reason, description))
+                    log.error("{} : {}".format(reason, description))
                 time.sleep(retry_time)
         return tango_dp
 
@@ -611,7 +612,7 @@ class TangoDevice2KatcpProxy(object):
                 conerr_reasons = set([arg.reason for arg in conerr.args])
                 conerr_desc = set([arg.desc for arg in conerr.args])
                 for reason, description in zip(conerr_reasons, conerr_desc):
-                    MODULE_LOGGER.error("{} : {}".format(reason, description))
+                    self._logger.error("{} : {}".format(reason, description))
                 time.sleep(retry_time)
             else:
                 is_device_connected = True
