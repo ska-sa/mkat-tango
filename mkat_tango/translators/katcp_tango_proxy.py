@@ -35,7 +35,7 @@ from tango import (DevFloat, DevDouble,AttrQuality,
 from mkat_tango.translators.utilities import tangoname2katcpname
 from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
 
-log = logging.getLogger("mkat_tango.translators.katcp_tango_proxy")
+log = logging.getLogger(__name__)
 
 KATCP_REQUEST_DOC_TEMPLATE = (
 """?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
