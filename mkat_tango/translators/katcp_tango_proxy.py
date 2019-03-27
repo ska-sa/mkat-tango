@@ -533,7 +533,7 @@ class TangoDevice2KatcpProxy(object):
         """
         if name == "AttributesNotAdded":
             self._logger.debug("Sensor %s.* was never added on the KATCP server.",
-                                name)
+                               name)
             return
 
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
