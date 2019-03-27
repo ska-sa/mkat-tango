@@ -214,9 +214,9 @@ class TangoInspectingClient(object):
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_AttributePollingNotStarted' in exc_reasons:
-                self._logger.warn('TODO NM: Need to implement something for '
-                                    'attributes that are not polled, processing '
-                                    'attribute {}'.format(attribute_name))
+                self._logger.warning('TODO NM: Need to implement something for '
+                                     'attributes that are not polled, processing '
+                                     'attribute {}'.format(attribute_name))
             elif 'API_EventPropertiesNotSet' in exc_reasons:
                 self._logger.info('Attribute {} has no event properties set'
                                     .format(attribute_name))
