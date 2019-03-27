@@ -317,7 +317,7 @@ def tango_type2kattype_object(tango_type):
         return katcp_type_info.KatcpType(kattype_kwargs)
     return katcp_type_info.KatcpType(**kattype_kwargs)
 
-def is_tango_device_running(tango_device_proxy):
+def is_tango_device_running(tango_device_proxy, logger=log):
     """Checks if the TANGO device server is running.
 
     Input Parameters
@@ -337,7 +337,7 @@ def is_tango_device_running(tango_device_proxy):
         deverr_reasons = set([arg.reason for arg in deverr.args])
         deverr_desc = set([arg.desc for arg in deverr.args])
         for reason, description in zip(deverr_reasons, deverr_desc):
-            log.error("{} : {}".format(reason, description))
+            logger.error("{} : {}".format(reason, description))
         is_device_running = False
     else:
         is_device_running = True
@@ -399,7 +399,7 @@ class TangoDevice2KatcpProxy(object):
 
         """
         tango_device_proxy = self.inspecting_client.tango_dp
-        if not is_tango_device_running(tango_device_proxy):
+        if not is_tango_device_running(tango_device_proxy, logger=self._logger):
             self.wait_for_device(tango_device_proxy)
         self._logger.info("Connection to the device server established")
         self.inspecting_client.inspect()
