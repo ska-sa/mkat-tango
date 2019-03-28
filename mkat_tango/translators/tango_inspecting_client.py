@@ -14,7 +14,7 @@ import logging
 import tango
 
 
-MODULE_LOGGER = logging.getLogger(__name__)
+log = logging.getLogger("mkat_tango.translators.tango_inspecting_client")
 
 class TangoInspectingClient(object):
     """Wrapper around a Tango DeviceProxy that tracks commands/attributes
@@ -28,11 +28,12 @@ class TangoInspectingClient(object):
     tango_device_proxy : :class:`tango.DeviceProxy` instance.
 
     """
-    def __init__(self, tango_device_proxy):
+    def __init__(self, tango_device_proxy, logger=log):
         self.tango_dp = tango_device_proxy
         self.device_attributes = {}
         self.device_commands = {}
         self._event_ids = set()
+        self._logger = logger
         # True if the stored device attributes/commands are potentially outdated
         self._dirty = True
         self.orig_attr_names_map = {}
@@ -46,7 +47,7 @@ class TangoInspectingClient(object):
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_EventNotFound' in exc_reasons:
-                MODULE_LOGGER.debug('No event with id {} was set up.'
+                self._logger.debug('No event with id {} was set up.'
                                    .format(self._interface_change_event_id))
             else:
                 raise
@@ -131,7 +132,7 @@ class TangoInspectingClient(object):
         # i.e. error callbacks etc.
         if tango_event_data.err:
             # TODO (KM 28-05-2018) Needs to handle errors accordingly.
-            MODULE_LOGGER.error("Unhandled DevError(s) occured!!! %s",
+            self._logger.error("Unhandled DevError(s) occured!!! %s",
                                 str(tango_event_data.errors))
             return
 
@@ -213,11 +214,11 @@ class TangoInspectingClient(object):
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
             if 'API_AttributePollingNotStarted' in exc_reasons:
-                MODULE_LOGGER.warn('TODO NM: Need to implement something for '
-                                    'attributes that are not polled, processing '
-                                    'attribute {}'.format(attribute_name))
+                self._logger.warning('TODO NM: Need to implement something for '
+                                     'attributes that are not polled, processing '
+                                     'attribute {}'.format(attribute_name))
             elif 'API_EventPropertiesNotSet' in exc_reasons:
-                MODULE_LOGGER.info('Attribute {} has no event properties set'
+                self._logger.info('Attribute {} has no event properties set'
                                     .format(attribute_name))
             else:
                 raise
@@ -237,16 +238,16 @@ class TangoInspectingClient(object):
                 retry = True
                 while retry and _retries < retries:
                     try:
-                        MODULE_LOGGER.info(
+                        self._logger.info(
                             "Setting up polling on attribute '%s'." % attr_name)
                         dp.poll_attribute(attr_name, poll_period)
                     except tango.DevFailed, exc:
                         exc_reasons = set([arg.reason for arg in exc.args])
                         if 'API_AlreadyPolled' in exc_reasons:
                             retry = False
-                            MODULE_LOGGER.info("Attribute '%s' already polled" % attr_name)
+                            self._logger.info("Attribute '%s' already polled" % attr_name)
                         else:
-                            MODULE_LOGGER.warning(
+                            self._logger.warning(
                                 "Setting polling on attribute '%s' failed on retry '%s'"
                                 ". Retrying again..." % (attr_name, _retries + 1),
                                 exc_info=True)
@@ -254,7 +255,7 @@ class TangoInspectingClient(object):
                             time.sleep(retry_time)
                     else:
                         retry = False
-                        MODULE_LOGGER.info("Polling on attribute '%s' was set up"
+                        self._logger.info("Polling on attribute '%s' was set up"
                                            " successfully" % attr_name)
    
             if periodic:
@@ -285,7 +286,7 @@ class TangoInspectingClient(object):
             except tango.DevFailed, exc:
                 exc_reasons = set([arg.reason for arg in exc.args])
                 if 'API_EventNotFound' in exc_reasons:
-                    MODULE_LOGGER.info('No event with id {} was set up.'
+                    self._logger.info('No event with id {} was set up.'
                                        .format(event_id))
                 else:
                     raise
