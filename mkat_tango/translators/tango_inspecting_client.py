@@ -258,20 +258,31 @@ class TangoInspectingClient(object):
                         self._logger.info("Polling on attribute '%s' was set up"
                                            " successfully" % attr_name)
    
+            events = self.device_attributes[attr_name].events
             if periodic:
                 self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
             
             if change:
-                self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attr_name)
+                if self._is_event_properties_set(events.ch_event):
+                    self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attr_name)
             
             if archive:
-                self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
+                if self._is_event_properties_set(events.arch_event):
+                   self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
 
             if data_ready:
                 self._subscribe_to_event(tango.EventType.DATA_READY_EVENT, attr_name)
 
             if user:
                 self._subscribe_to_event(tango.EventType.USER_EVENT, attr_name)
+
+    def _is_event_properties_set(self, event_info):
+        for attr in dir(event_info):
+            if attr.startswith('__'):
+                continue
+            if getattr(event_info, attr) == 'Not specified':
+                return False
+        return True
 
     def clear_attribute_sampling(self):
         """Unsubscribe from all Tango events previously subscribed to
