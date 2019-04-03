@@ -38,6 +38,7 @@ class TangoInspectingClient(object):
         self._dirty = True
         self.orig_attr_names_map = {}
         # Subscribing to interface change events
+        self.sensor_status_updated = False
         self._interface_change_event_id = None
         self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
 
@@ -131,6 +132,11 @@ class TangoInspectingClient(object):
         # TODO NM 2016-04-06 Call a different callback for non-sample events,
         # i.e. error callbacks etc.
         if tango_event_data.err:
+            err = tango_event_data.errors[0]
+            if err.reason == 'API_EventTimeout' and not self.sensor_status_updated:
+                self.on_disconnect()
+                self.sensor_status_updated = True
+
             # TODO (KM 28-05-2018) Needs to handle errors accordingly.
             self._logger.error("Unhandled DevError(s) occured!!! %s",
                                 str(tango_event_data.errors))
@@ -162,6 +168,14 @@ class TangoInspectingClient(object):
         self.sample_event_callback(attr_name, received_timestamp,
                                    timestamp, value, quality, event_type)
 
+
+    def on_disconnect(self):
+        """Callback called when device disconnects from inspecting client
+
+        Intended for the method to be replaced in instances
+
+        """
+        pass
 
     def interface_change_callback(self, device_name, received_timestamp,
                                   attributes, commands):

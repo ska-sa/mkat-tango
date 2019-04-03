@@ -406,6 +406,7 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.sample_event_callback = self.update_sensor_values
         self.inspecting_client.interface_change_callback = (
             self.update_request_sensor_list)
+        self.inspecting_client.on_disconnect = self.update_sensor_status
         self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
         self.update_katcp_server_request_list(self.inspecting_client.device_commands)
         return self.katcp_server.start(timeout=timeout)
@@ -424,6 +425,12 @@ class TangoDevice2KatcpProxy(object):
 
     def join(self, timeout=None):
         self.katcp_server.join(timeout=timeout)
+
+    def update_sensor_status(self):
+        sensor_list = self.katcp_server.get_sensor_list()
+        for sensor_name in sensor_list:
+            sensor = self.katcp_server.get_sensor(sensor_name)
+            sensor.set_value(sensor.value(), status=Sensor.FAILURE)
 
     def update_request_sensor_list(self, device_name, received_timestamp,
                                    attributes, commands):
