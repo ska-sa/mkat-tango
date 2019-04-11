@@ -171,10 +171,11 @@ def tango_attr_descr2katcp_sensors(attr_descr):
         elif attr_descr.data_type == CmdArgType.DevState:
             sensor_params = katcp_type_info.params
 
+        katcp_name = tangoname2katcpname(attr_descr.name)
         if attr_descr.data_format == AttrDataFormat.SPECTRUM:
-            sensor_name = attr_descr.name + "." + str(index)
+            sensor_name = "{}.{}".format(katcp_name, index)
         else:
-            sensor_name = attr_descr.name
+            sensor_name = katcp_name
 
         sensors.append(Sensor(sensor_type, sensor_name, attr_descr.description,
                               attr_descr.unit, sensor_params))
@@ -445,6 +446,7 @@ class TangoDevice2KatcpProxy(object):
                     "Skipping creation of sensor objects for attribute %s.",
                     attribute_name)
                 continue
+
             sensor_name = tangoname2katcpname(attribute_name)
             # This is to handle the mapping of the spectrum type attribute name with its
             # decomposition into multiple sensor names. It will ensure that we add/remove
@@ -536,6 +538,7 @@ class TangoDevice2KatcpProxy(object):
                                name)
             return
 
+        katcp_name = tangoname2katcpname(name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
             number_of_items = 0
@@ -546,7 +549,8 @@ class TangoDevice2KatcpProxy(object):
 
             for index in xrange(number_of_items):
                 try:
-                    sensor = self.katcp_server.get_sensor(name + '.' + str(index))
+                    sensor = self.katcp_server.get_sensor(
+                        "{}.{}".format(katcp_name, index))
                 except ValueError as verr:
                     # AR 2016-05-19 TODO Need a robust way of dealing
                     # with not implemented sensors
@@ -556,7 +560,7 @@ class TangoDevice2KatcpProxy(object):
                     sensor.set_value(value[index], status=status, timestamp=timestamp)
         else:
             try:
-                sensor = self.katcp_server.get_sensor(name)
+                sensor = self.katcp_server.get_sensor(katcp_name)
             except ValueError as verr:
                 # AR 2016-05-19 TODO Need a robust way of dealing
                 # with not implemented sensors
