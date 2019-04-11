@@ -133,13 +133,16 @@ class TangoInspectingClient(object):
         # i.e. error callbacks etc.
         if tango_event_data.err:
             err = tango_event_data.errors[0]
-            if err.reason == 'API_EventTimeout' and not self.sensor_status_updated:
-                self.on_disconnect()
-                self.sensor_status_updated = True
-
-            # TODO (KM 28-05-2018) Needs to handle errors accordingly.
-            self._logger.error("Unhandled DevError(s) occured!!! %s",
-                                str(tango_event_data.errors))
+            if err.reason == 'API_EventTimeout':
+                if not self.sensor_status_updated:
+                    self._logger.error("Disconnected from device!!! %s",
+                                       str(tango_event_data.errors))
+                    self.on_disconnect()
+                    self.sensor_status_updated = True
+            else:
+                # TODO (KM 28-05-2018) Needs to handle errors accordingly.
+                self._logger.error("Unhandled DevError(s) occured!!! %s",
+                                   str(tango_event_data.errors))
             return
 
         event_type = tango_event_data.event
