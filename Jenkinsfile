@@ -25,6 +25,7 @@ pipeline {
                 timeout(time: 30, unit: 'MINUTES')
             }
             steps {
+                sh 'pip install nose_xunitmp --user'
                 sh 'pip install . -U --pre --user'
                 sh 'python setup.py test --with-xunitmp --xunitmp-file nosetests.xml'
             }
