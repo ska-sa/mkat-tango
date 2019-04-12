@@ -5,7 +5,8 @@ pipeline {
     }
 
     stages {
-        stage('Checkout SCM') {
+
+        stage ('Checkout SCM') {
             steps {
                 checkout([
                     $class: 'GitSCM',
@@ -18,18 +19,16 @@ pipeline {
             }
         }
 
-        stage('Install & Unit Tests') {
+        stage ('Install & Unit Tests') {
             options {
                 timestamps()
                 timeout(time: 30, unit: 'MINUTES')
             }
-
             steps {
                 sh 'pip install nose_xunitmp --user'
                 sh 'pip install . -U --pre --user'
                 sh 'python setup.py test --with-xunitmp --xunitmp-file nosetests.xml'
             }
-
             post {
                 always {
                     junit 'nosetests.xml'
