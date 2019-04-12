@@ -158,7 +158,6 @@ class TangoInspectingClient(object):
                 self.sample_event_callback(attr_name, received_timestamp,
                                            timestamp, value, quality, event_type)
             else:
-                # TODO (KM 28-05-2018) Needs to handle errors accordingly.
                 self._logger.error("Unhandled DevError(s) occured!!! %s",
                                    str(tango_event_data.errors))
             return
