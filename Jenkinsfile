@@ -1,7 +1,6 @@
 pipeline {
 
-    agent
-    {
+    agent {
         label 'camtango_nodb'
     }
 
