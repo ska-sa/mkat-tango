@@ -13,6 +13,7 @@ import logging
 
 import tango
 
+from tango import AttrQuality
 
 log = logging.getLogger("mkat_tango.translators.tango_inspecting_client")
 
@@ -38,7 +39,6 @@ class TangoInspectingClient(object):
         self._dirty = True
         self.orig_attr_names_map = {}
         # Subscribing to interface change events
-        self.sensor_status_updated = False
         self._interface_change_event_id = None
         self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
 
@@ -134,11 +134,29 @@ class TangoInspectingClient(object):
         if tango_event_data.err:
             err = tango_event_data.errors[0]
             if err.reason == 'API_EventTimeout':
-                if not self.sensor_status_updated:
-                    self._logger.error("Disconnected from device!!! %s",
-                                       str(tango_event_data.errors))
-                    self.on_disconnect()
-                    self.sensor_status_updated = True
+                try:
+                    fqdn_attr_name = tango_event_data.attr_name
+                except AttributeError:
+                    # This is a result of an interface change event error.
+                    # It is not associated with any attribute.
+                    return
+
+                # tango://monctl.devk4.camlab.kat.ac.za:4000/mid_dish_0000/elt/
+                # master<attribute_name>#dbase=no
+                # We process the FQDN of the attribute to extract just the
+                # attribute name. Also handle the issue with the attribute name being
+                # converted to lowercase in subsequent callbacks.
+                attr_name_ = fqdn_attr_name.split('/')[-1].split('#')[0]
+                attr_name = self.orig_attr_names_map[attr_name_.lower()]
+                received_timestamp = tango_event_data.reception_date.totime()
+                quality = AttrQuality.ATTR_INVALID  # Events with errors do not send
+                                                    # the attribute value, so regard
+                                                    # its reading as invalid.
+                timestamp = time.time()
+                event_type = tango_event_data.event
+                value = tango_event_data.attr_value
+                self.sample_event_callback(attr_name, received_timestamp,
+                                           timestamp, value, quality, event_type)
             else:
                 # TODO (KM 28-05-2018) Needs to handle errors accordingly.
                 self._logger.error("Unhandled DevError(s) occured!!! %s",
@@ -170,15 +188,6 @@ class TangoInspectingClient(object):
         attr_name = self.orig_attr_names_map[name_trimmed.lower()]
         self.sample_event_callback(attr_name, received_timestamp,
                                    timestamp, value, quality, event_type)
-
-
-    def on_disconnect(self):
-        """Callback called when device disconnects from inspecting client
-
-        Intended for the method to be replaced in instances
-
-        """
-        pass
 
     def interface_change_callback(self, device_name, received_timestamp,
                                   attributes, commands):
