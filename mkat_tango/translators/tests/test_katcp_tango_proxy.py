@@ -29,7 +29,7 @@ from mkat_tango.translators.tests.test_tango_inspecting_client import (
     TangoTestDevice, ClassCleanupUnittestMixin)
 
 from mkat_tango import testutils
-from mkat_tango.translators import katcp_tango_proxy
+from mkat_tango.translators import katcp_tango_proxy, utilities
 
 LOGGER = logging.getLogger(__name__)
 
@@ -124,12 +124,13 @@ class test_TangoDevice2KatcpProxy(
                     attribute_list.add(attr_name + '.' + str(index))
 
         NOT_IMPLEMENTED_SENSORS = set(['ScalarDevEncoded'])
-        self.assertEqual(attribute_list - NOT_IMPLEMENTED_SENSORS, sensor_list,
+        attribute_list_ = attribute_list - NOT_IMPLEMENTED_SENSORS
+        self.assertEqual(attribute_list_, sensor_list,
             "\n\n!KATCP server sensor list differs from the TangoTestServer "
             "attribute list!\n\nThese sensors are"
             " extra:\n%s\n\nFound these attributes with no corresponding sensors:\n%s"
-            % ("\n".join(sorted([str(t) for t in sensor_list - attribute_list])),
-               "\n".join(sorted([str(t) for t in attribute_list - sensor_list]))))
+            % ("\n".join(sorted([str(t) for t in sensor_list - attribute_list_])),
+               "\n".join(sorted([str(t) for t in attribute_list_ - sensor_list]))))
 
     def test_initial_attribute_sensor_values(self):
         sensors = self.katcp_server.get_sensors()
@@ -151,7 +152,8 @@ class test_TangoDevice2KatcpProxy(
                 index = int(sensor.name.split('.')[1])
                 self.assertEqual(sensor_value, attribute_value[index])
             else:
-                attribute_value = attributes[sensor.name][0]
+                attr_name = utilities.katcpname2tangoname(sensor.name)
+                attribute_value = attributes[attr_name][0]
                 if sensor.name in ['ScalarDevEnum']:
                     self.assertEqual(set(['ONLINE', 'OFFLINE', 'RESERVE']),
                                      set(sensor.params))
@@ -266,14 +268,14 @@ class test_TangoDevice2KatcpProxy(
             return 1
 
         # Check that the attribute/sensor did not exist before.
-        self.assertNotIn('test_attr', self.katcp_server.get_sensor_list())
+        self.assertNotIn('test-attr', self.katcp_server.get_sensor_list())
         self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
 
         attr = Attr('test_attr', DevLong)
         self.tango_test_device.add_attribute(attr, read_attributes)
         time.sleep(0.5) # Find alternative, rather than sleeping.
         self.assertIn('test_attr', self.tango_device_proxy.get_attribute_list())
-        self.assertIn('test_attr', self.katcp_server.get_sensor_list())
+        self.assertIn('test-attr', self.katcp_server.get_sensor_list())
 
         # Now remove the attribute.
         self.tango_test_device.remove_attribute('test_attr')
@@ -281,7 +283,7 @@ class test_TangoDevice2KatcpProxy(
 
         # Check that the attribute/sensor has been removed.
         self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
-        self.assertNotIn('test_attr', self.katcp_server.get_sensor_list())
+        self.assertNotIn('test-attr', self.katcp_server.get_sensor_list())
 
     def test_setup_attribute_sampling(self):
 
