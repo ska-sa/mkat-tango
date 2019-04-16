@@ -29,8 +29,11 @@ pipeline {
                 timeout(time: 30, unit: 'MINUTES')
             }
             steps {
+                // install multicore xunit reporter for nose
+                sh 'pip install nose_xunitmp --user'
+
                 sh 'pip install . -U --user'
-                sh "python setup.py nosetests --with-xunit --with-xcoverage --cover-package=${KATPACKAGE} --cover-inclusive"
+                sh "python setup.py nosetests --with-xunitmp --xunitmp-file=nosetests.xml --with-xcoverage --cover-package=${KATPACKAGE} --cover-inclusive"
             }
             post {
                 always {
