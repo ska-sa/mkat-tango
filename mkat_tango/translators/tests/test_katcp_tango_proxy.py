@@ -107,6 +107,39 @@ class test_TangoDevice2KatcpProxy(
         reply, informs = self.client.blocking_request(Message.request('watchdog'))
         self.assertTrue(reply.reply_ok(), True)
 
+    def verify_sensor_request(self, sensor_name=None, request=None, timeout=60, check='a'):
+        """Checks if a sensor/request is added or removed from the katcp server.
+
+        Parameters
+        ----------
+        sensor_name : str
+            sensor name
+        requesr : str
+            request
+        timeout: int
+            how long the check should be done
+        check: str
+            use 'a' to check if sensor is added and 'r' if removed
+        """
+        timeout = time.time() + timeout
+        if sensor_name:
+            list_values = self.katcp_server.get_sensor_list()
+            search_key = sensor_name
+        else:
+            list_values = self.katcp_server.get_requests()
+            search_key = request
+
+        if check == 'a':
+            while search_key not in list_values:
+                if time.time() >= timeout:
+                    break
+                time.sleep(0.5)
+        else:
+            while search_key in list_values:
+                if time.time() >= timeout:
+                    break
+                time.sleep(0.5)
+
     def test_sensor_attribute_match(self):
         reply, informs = self.client.blocking_request(Message.request('sensor-list'))
         sensor_list = set([inform.arguments[0] for inform in informs])
@@ -188,10 +221,12 @@ class test_TangoDevice2KatcpProxy(
                 if attr_name == 'SpectrumDevDouble':
                     for attr_name_ in SPECTRUM_ATTR['SpectrumDevDouble']:
                         observers[attr_name_] = observer = SensorObserver()
+                        attr_name_ = utilities.tangoname2katcpname(attr_name_)
                         self.katcp_server.get_sensor(attr_name_).attach(observer)
                         sensors.append(attr_name_)
                 else:
                     observers[attr_name] = observer = SensorObserver()
+                    attr_name = utilities.tangoname2katcpname(attr_name)
                     self.katcp_server.get_sensor(attr_name).attach(observer)
                     sensors.append(attr_name)
             else:
@@ -247,20 +282,20 @@ class test_TangoDevice2KatcpProxy(
                 dtype_out=str,  doc_out="", green_mode=None)
         setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
         self.tango_test_device.add_command(cmd, device_level=True)
-        time.sleep(0.5) # Find alternative, rather than sleeping
+        self.verify_sensor_request(request='cmd-printString')
 
         # Check that the request/command exists.
         self.assertIn('cmd_printString', self.tango_device_proxy.get_command_list())
-        self.assertIn('cmd_printString', self.katcp_server.get_requests())
+        self.assertIn('cmd-printString', self.katcp_server.get_requests())
 
         # Now remove the command.
         self.tango_test_device.remove_command('cmd_printString')
         delattr(self.tango_test_device, 'cmd_printString')
-        time.sleep(0.5)
+        self.verify_sensor_request(request='cmd-printString', check='r')
 
         # Check that the request/command has been removed.
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
-        self.assertNotIn('cmd_printString', self.katcp_server.get_requests())
+        self.assertNotIn('cmd-printString', self.katcp_server.get_requests())
 
     def test_attribute_sensor_add_remove(self):
 
@@ -273,13 +308,13 @@ class test_TangoDevice2KatcpProxy(
 
         attr = Attr('test_attr', DevLong)
         self.tango_test_device.add_attribute(attr, read_attributes)
-        time.sleep(0.5) # Find alternative, rather than sleeping.
+        self.verify_sensor_request('test-attr')
         self.assertIn('test_attr', self.tango_device_proxy.get_attribute_list())
         self.assertIn('test-attr', self.katcp_server.get_sensor_list())
 
         # Now remove the attribute.
         self.tango_test_device.remove_attribute('test_attr')
-        time.sleep(0.5)
+        self.verify_sensor_request('test-attr', check='r')
 
         # Check that the attribute/sensor has been removed.
         self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
@@ -294,7 +329,7 @@ class test_TangoDevice2KatcpProxy(
                                'setup_attribute_sampling') as sec:
             attr = Attr('test_attr', DevLong)
             self.tango_test_device.add_attribute(attr, read_attributes)
-            time.sleep(0.5) # Find alternative, rather than sleeping.
+            self.verify_sensor_request('test-attr')
 
             # Check that test_attr was added to attribute map dictionary
             self.assertIn('test_attr', self.DUT.inspecting_client.orig_attr_names_map)
@@ -304,7 +339,7 @@ class test_TangoDevice2KatcpProxy(
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute('test_attr')
-            time.sleep(0.5)
+            self.verify_sensor_request('test-attr', check='r')
 
 
 class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
