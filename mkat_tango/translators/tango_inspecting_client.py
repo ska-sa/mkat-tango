@@ -142,7 +142,7 @@ class TangoInspectingClient(object):
                     return
 
                 # tango://monctl.devk4.camlab.kat.ac.za:4000/mid_dish_0000/elt/
-                # master<attribute_name>#dbase=no
+                # master/<attribute_name>#dbase=no
                 # We process the FQDN of the attribute to extract just the
                 # attribute name. Also handle the issue with the attribute name being
                 # converted to lowercase in subsequent callbacks.

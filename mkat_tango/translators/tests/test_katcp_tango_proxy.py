@@ -249,7 +249,7 @@ class test_TangoDevice2KatcpProxy(
                 dtype_out=str,  doc_out="", green_mode=None)
         setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
         self.tango_test_device.add_command(cmd, device_level=True)
-        time.sleep(20)
+        time.sleep(0.5)
 
         # Check that the request/command exists.
         self.assertIn('cmd_printString', self.tango_device_proxy.get_command_list())
@@ -258,7 +258,7 @@ class test_TangoDevice2KatcpProxy(
         # Now remove the command.
         self.tango_test_device.remove_command('cmd_printString')
         delattr(self.tango_test_device, 'cmd_printString')
-        time.sleep(20)
+        time.sleep(0.5)
 
         # Check that the request/command has been removed.
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
@@ -275,13 +275,13 @@ class test_TangoDevice2KatcpProxy(
 
         attr = Attr('test_attr', DevLong)
         self.tango_test_device.add_attribute(attr, read_attributes)
-        time.sleep(20)
+        time.sleep(0.5)
         self.assertIn('test_attr', self.tango_device_proxy.get_attribute_list())
         self.assertIn('test-attr', self.katcp_server.get_sensor_list())
 
         # Now remove the attribute.
         self.tango_test_device.remove_attribute('test_attr')
-        time.sleep(20)
+        time.sleep(0.5)
 
         # Check that the attribute/sensor has been removed.
         self.assertNotIn('test_attr', self.tango_device_proxy.get_attribute_list())
@@ -296,7 +296,7 @@ class test_TangoDevice2KatcpProxy(
                                'setup_attribute_sampling') as sec:
             attr = Attr('test_attr', DevLong)
             self.tango_test_device.add_attribute(attr, read_attributes)
-            time.sleep(20)
+            time.sleep(0.5)
 
             # Check that test_attr was added to attribute map dictionary
             self.assertIn('test_attr', self.DUT.inspecting_client.orig_attr_names_map)
@@ -306,7 +306,7 @@ class test_TangoDevice2KatcpProxy(
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute('test_attr')
-            time.sleep(20)
+            time.sleep(0.5)
 
 
 class test_TangoDevice2KatcpProxyAsync(TangoDevice2KatcpProxy_BaseMixin,
