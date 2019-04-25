@@ -78,6 +78,9 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
+        # Pytango now returns the ip address instead of the hostname in the test_context.
+        # Use the ip address to retrieve the hostname and reconstruct the device address
+        # before instantiating the device proxy.
         ip = self.tango_device_address.split('/')[2].split(':')[0]
         hostname = socket.gethostbyaddr(ip)[0]
         self.tango_device_address = self.tango_device_address.replace(ip, hostname)
@@ -252,7 +255,7 @@ class test_TangoDevice2KatcpProxy(
                 dtype_out=str,  doc_out="", green_mode=None)
         setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
         self.tango_test_device.add_command(cmd, device_level=True)
-        time.sleep(0.5)
+        time.sleep(0.5) # Find alternative, rather than sleeping
 
         # Check that the request/command exists.
         self.assertIn('cmd_printString', self.tango_device_proxy.get_command_list())
@@ -278,7 +281,7 @@ class test_TangoDevice2KatcpProxy(
 
         attr = Attr('test_attr', DevLong)
         self.tango_test_device.add_attribute(attr, read_attributes)
-        time.sleep(0.5)
+        time.sleep(0.5) # Find alternative, rather than sleeping
         self.assertIn('test_attr', self.tango_device_proxy.get_attribute_list())
         self.assertIn('test-attr', self.katcp_server.get_sensor_list())
 
@@ -299,7 +302,7 @@ class test_TangoDevice2KatcpProxy(
                                'setup_attribute_sampling') as sec:
             attr = Attr('test_attr', DevLong)
             self.tango_test_device.add_attribute(attr, read_attributes)
-            time.sleep(0.5)
+            time.sleep(0.5) # Find alternative, rather than sleeping
 
             # Check that test_attr was added to attribute map dictionary
             self.assertIn('test_attr', self.DUT.inspecting_client.orig_attr_names_map)
