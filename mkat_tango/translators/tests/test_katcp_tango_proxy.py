@@ -78,6 +78,9 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
+        ip = self.tango_device_address.split('/')[2].split(':')[0]
+        hostname = socket.gethostbyaddr(ip)[0]
+        self.tango_device_address = self.tango_device_address.replace(ip, hostname)
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
             ("", 0), self.tango_device_address)
         if hasattr(self, 'io_loop'):
