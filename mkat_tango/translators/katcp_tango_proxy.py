@@ -541,12 +541,8 @@ class TangoDevice2KatcpProxy(object):
         katcp_name = tangoname2katcpname(name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
-            number_of_items = 0
-            if isinstance(value, np.ndarray):
-                number_of_items = value.size
-            else:
-                number_of_items = len(value)
-
+            number_of_items = int(
+                self.inspecting_client.device_attributes[name].max_dim_x)
             for index in xrange(number_of_items):
                 try:
                     sensor = self.katcp_server.get_sensor(
@@ -557,7 +553,12 @@ class TangoDevice2KatcpProxy(object):
                     self._logger.info('Sensor not implemented yet!' + str(verr))
                 else:
                     status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-                    sensor.set_value(value[index], status=status, timestamp=timestamp)
+                    if quality == AttrQuality.ATTR_INVALID:
+                        sensor.set_value(
+                            sensor.value(), status=status, timestamp=timestamp)
+                    else:
+                        sensor.set_value(
+                            value[index], status=status, timestamp=timestamp)
         else:
             try:
                 sensor = self.katcp_server.get_sensor(katcp_name)
@@ -566,10 +567,13 @@ class TangoDevice2KatcpProxy(object):
                 # with not implemented sensors
                 self._logger.info('Sensor not implemented yet!' + str(verr))
             else:
-                if sensor.type == 'discrete':
-                    value = sensor.params[value]
                 status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-                sensor.set_value(value, status=status, timestamp=timestamp)
+                if quality == AttrQuality.ATTR_INVALID:
+                    sensor.set_value(sensor.value(), status=status, timestamp=timestamp)
+                else:
+                    if sensor.type == 'discrete':
+                        value = sensor.params[value]
+                    sensor.set_value(value, status=status, timestamp=timestamp)
 
     @classmethod
     def from_addresses(cls, katcp_server_address, tango_device_address, logger=log):
@@ -584,7 +588,8 @@ class TangoDevice2KatcpProxy(object):
 
         """
         tango_device_proxy = cls.get_tango_device_proxy(tango_device_address)
-        tango_inspecting_client = TangoInspectingClient(tango_device_proxy, logger=logger)
+        tango_inspecting_client = TangoInspectingClient(tango_device_proxy,
+                                                        logger=logger)
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)

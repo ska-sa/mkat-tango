@@ -23,6 +23,17 @@ pipeline {
             }
         }
 
+        stage ('Static analysis') {
+            steps {
+                sh "pylint ./${KATPACKAGE} --output-format=parseable --exit-zero > pylint.out"
+            }
+            post {
+                always {
+                    recordIssues(tool: pyLint(pattern: 'pylint.out'))
+                }
+            }
+        }
+
         stage ('Install & Unit Tests') {
             options {
                 timestamps()
@@ -37,7 +48,7 @@ pipeline {
             }
             post {
                 always {
-                    junit 'nosetests.xml' 
+                    junit 'nosetests.xml'
                     cobertura coberturaReportFile: 'coverage.xml'
                     archiveArtifacts '*.xml'
                 }
