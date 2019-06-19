@@ -541,9 +541,8 @@ class TangoDevice2KatcpProxy(object):
         katcp_name = tangoname2katcpname(name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
-            number_of_items = int(
-                self.inspecting_client.device_attributes[name].max_dim_x)
-            for index in xrange(number_of_items):
+
+            for index, value_ in enumerate(value):
                 try:
                     sensor = self.katcp_server.get_sensor(
                         "{}.{}".format(katcp_name, index))
@@ -558,7 +557,7 @@ class TangoDevice2KatcpProxy(object):
                             sensor.value(), status=status, timestamp=timestamp)
                     else:
                         sensor.set_value(
-                            value[index], status=status, timestamp=timestamp)
+                            value_, status=status, timestamp=timestamp)
         else:
             try:
                 sensor = self.katcp_server.get_sensor(katcp_name)
