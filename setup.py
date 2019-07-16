@@ -19,12 +19,12 @@ setup(name="mkat_tango",
       use_katversion=True,
       install_requires=[
           "PyTango>=9.2.2",
-          "numpy<1.17",
+          "numpy>=1.17" if sys.version_info >= (3, 5) else "numpy<1.17",
           "tornado>=4.3, <5",
           "katcp",
           "tango-simlib"],
       tests_require=[
-          'numpy<1.17',
+          'numpy>=1.17' if sys.version_info >= (3, 5) else 'numpy<1.17',
           'nose_xunitmp'],
       zip_safe=False,
       entry_points={
