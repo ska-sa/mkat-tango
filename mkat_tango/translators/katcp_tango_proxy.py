@@ -541,6 +541,15 @@ class TangoDevice2KatcpProxy(object):
         katcp_name = tangoname2katcpname(name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
+            if quality == AttrQuality.ATTR_INVALID:
+                sensor_names = self.katcp_server.get_sensor_list()
+                for sensor_name in sensor_names:
+                    if sensor_name.startswith(katcp_name):
+                        sensor = self.katcp_server.get_sensor(sensor_name)
+                        status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
+                        sensor.set_value(
+                            sensor.value(), status=status, timestamp=timestamp)
+                return
 
             for index, value_ in enumerate(value):
                 try:
@@ -552,12 +561,8 @@ class TangoDevice2KatcpProxy(object):
                     self._logger.info('Sensor not implemented yet!' + str(verr))
                 else:
                     status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-                    if quality == AttrQuality.ATTR_INVALID:
-                        sensor.set_value(
-                            sensor.value(), status=status, timestamp=timestamp)
-                    else:
-                        sensor.set_value(
-                            value_, status=status, timestamp=timestamp)
+                    sensor.set_value(
+                        value_, status=status, timestamp=timestamp)
         else:
             try:
                 sensor = self.katcp_server.get_sensor(katcp_name)

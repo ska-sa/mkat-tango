@@ -132,34 +132,32 @@ class TangoInspectingClient(object):
         # TODO NM 2016-04-06 Call a different callback for non-sample events,
         # i.e. error callbacks etc.
         if tango_event_data.err:
-            err = tango_event_data.errors[0]
-            if err.reason == 'API_EventTimeout':
-                try:
-                    fqdn_attr_name = tango_event_data.attr_name
-                except AttributeError:
-                    # This is a result of an interface change event error.
-                    # It is not associated with any attribute.
-                    return
+            try:
+                fqdn_attr_name = tango_event_data.attr_name
+            except AttributeError:
+                # This is a result of an interface change event error.
+                # It is not associated with any attribute.
+                return
 
-                # tango://monctl.devk4.camlab.kat.ac.za:4000/mid_dish_0000/elt/
-                # master/<attribute_name>#dbase=no
-                # We process the FQDN of the attribute to extract just the
-                # attribute name. Also handle the issue with the attribute name being
-                # converted to lowercase in subsequent callbacks.
-                attr_name_ = fqdn_attr_name.split('/')[-1].split('#')[0]
-                attr_name = self.orig_attr_names_map[attr_name_.lower()]
-                received_timestamp = tango_event_data.reception_date.totime()
-                quality = AttrQuality.ATTR_INVALID  # Events with errors do not send
-                                                    # the attribute value, so regard
-                                                    # its reading as invalid.
-                timestamp = time.time()
-                event_type = tango_event_data.event
-                value = tango_event_data.attr_value
-                self.sample_event_callback(attr_name, received_timestamp,
-                                           timestamp, value, quality, event_type)
-            else:
-                self._logger.error("Unhandled DevError(s) occured!!! %s",
-                                   str(tango_event_data.errors))
+            # tango://monctl.devk4.camlab.kat.ac.za:4000/mid_dish_0000/elt/
+            # master/<attribute_name>#dbase=no
+            # We process the FQDN of the attribute to extract just the
+            # attribute name. Also handle the issue with the attribute name being
+            # converted to lowercase in subsequent callbacks.
+            attr_name_ = fqdn_attr_name.split('/')[-1].split('#')[0]
+            attr_name = self.orig_attr_names_map[attr_name_.lower()]
+            received_timestamp = tango_event_data.reception_date.totime()
+            quality = AttrQuality.ATTR_INVALID  # Events with errors do not send
+                                                # the attribute value, so regard
+                                                # its reading as invalid.
+            timestamp = time.time()
+            event_type = tango_event_data.event
+            value = tango_event_data.attr_value
+            self._logger.error("Event system DevError(s) occured!!! %s",
+                               str(tango_event_data.errors))
+            self.sample_event_callback(attr_name, received_timestamp,
+                                       timestamp, value, quality, event_type)
+            
             return
 
         event_type = tango_event_data.event
@@ -172,13 +170,12 @@ class TangoInspectingClient(object):
                                            self.device_attributes,
                                            self.device_commands)
             return
-
+ 
         attr_value = tango_event_data.attr_value
-        name = getattr(attr_value, 'name', None)
-        value = getattr(attr_value, 'value', None)
-        quality = getattr(attr_value, 'quality', None)
-        timestamp = (attr_value.time.totime()
-                     if hasattr(attr_value, 'time') else None)
+        name = attr_value.name
+        value = attr_value.value
+        quality = attr_value.quality
+        timestamp = attr_value.time.totime()
 
         # A work around to remove the suffix "#dbase=no" string when using a
         # file as a database. Also handle the issue with the attribute name being
