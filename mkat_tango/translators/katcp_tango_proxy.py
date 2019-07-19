@@ -539,6 +539,10 @@ class TangoDevice2KatcpProxy(object):
             return
 
         katcp_name = tangoname2katcpname(name)
+        # when we create KATCP sensors for spectrum attributes we add a dot before the
+        # index. There could be a case where a device server has attributes that start
+        # with the same text , e.g. azimuth and azimuthErrors. Use regex to be
+        # stricter i.e. katcp_name, dot, and then some digits
         regex = "{}\.\d+".format(katcp_name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
