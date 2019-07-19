@@ -539,12 +539,14 @@ class TangoDevice2KatcpProxy(object):
             return
 
         katcp_name = tangoname2katcpname(name)
+        regex = "{}\.\d+".format(katcp_name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
         if attr_dformat == AttrDataFormat.SPECTRUM:
             if quality == AttrQuality.ATTR_INVALID:
                 sensor_names = self.katcp_server.get_sensor_list()
                 for sensor_name in sensor_names:
-                    if sensor_name.startswith(katcp_name):
+                    match = re.match(regex, sensor_name)
+                    if match:
                         sensor = self.katcp_server.get_sensor(sensor_name)
                         status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
                         sensor.set_value(
