@@ -170,7 +170,7 @@ class TangoInspectingClient(object):
                                            self.device_attributes,
                                            self.device_commands)
             return
- 
+
         attr_value = tango_event_data.attr_value
         name = attr_value.name
         value = attr_value.value
