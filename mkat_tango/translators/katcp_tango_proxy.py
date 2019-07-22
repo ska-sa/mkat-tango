@@ -15,6 +15,7 @@
 import logging
 import textwrap
 import time
+import re
 
 import numpy as np
 import tornado
