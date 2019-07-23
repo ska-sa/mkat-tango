@@ -12,17 +12,24 @@ import unittest
 import textwrap
 import mock
 import socket
+import tempfile
+import shutil
+import os
+import pkg_resources
+import subprocess
 
 import tornado.testing
 import tornado.gen
 
-from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat
+from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat, DevFailed, DeviceProxy
 from tango.server import command
 from tango.test_context import DeviceTestContext
 
-from katcp import Message
+from katcp import Message, Sensor
 from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
+from tango_simlib import model, tango_sim_generator
+from tango_simlib.utilities import helper_module
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
@@ -73,7 +80,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
                                               port=get_open_port())
-        start_thread_with_cleanup(cls, cls.tango_context)
+        cls.tango_context.start()
         cls.tango_device_address = cls.tango_context.get_device_access()
 
     def setUp(self):
@@ -414,3 +421,108 @@ class SensorObserver(object):
     def update(self, sensor, reading):
         self.updates.append((sensor, reading))
         LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
+
+
+
+class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
+    """This tests that the sensor statuses change to failure when the we loose
+       connection to the TANGO device.    
+    """
+    
+    longMessage = True
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tango_port = helper_module.get_port()
+        cls.tango_host = socket.getfqdn()
+        cls.data_descr_files = []
+        cls.data_descr_files.append(pkg_resources.resource_filename(
+            'tango_simlib.tests.config_files', 'Weather.xmi'))
+        cls.temp_dir = cleanup_tempdir()
+        cls.sim_device_class = tango_sim_generator.get_device_class(cls.data_descr_files)
+        cls.device_name = 'test/nodb/tangodeviceserver'
+        server_name = 'weather_ds'
+        server_instance = 'test'
+        database_filename = os.path.join('{}', '{}_tango.db').format(
+            cls.temp_dir, server_name)
+        sim_device_prop = dict(sim_data_description_file=cls.data_descr_files[0])
+        sim_test_device_prop = dict(model_key=cls.device_name)
+        tango_sim_generator.generate_device_server(
+                server_name, cls.data_descr_files, cls.temp_dir)
+        helper_module.append_device_to_db_file(
+                server_name, server_instance, cls.device_name,
+                database_filename, cls.sim_device_class, sim_device_prop)
+        helper_module.append_device_to_db_file(
+                server_name, server_instance, '%scontrol' % cls.device_name,
+                database_filename, '%sSimControl' % cls.sim_device_class,
+                sim_test_device_prop)
+        cls.sub_proc = subprocess.Popen(
+            ["python", "{}/{}".format(cls.temp_dir, server_name),
+             server_instance, "-file={}".format(database_filename),
+             "-ORBendPoint", "giop:tcp::{}".format(cls.tango_port)])
+
+        # Note that tango demands that connection to the server must
+        # be delayed by atleast 1000 ms of device server start up.
+        time.sleep(1)
+        cls.sim_device = DeviceProxy(
+                '%s:%s/test/nodb/tangodeviceserver#dbase=no' % (
+                    cls.tango_host, cls.tango_port))
+
+    def setUp(self):
+        super(test_TangoDeviceShutdown, self).setUp()
+        self.tango_device_address = "tango://%s:%s/%s#dbase=no" % (self.tango_host,
+                                                                   self.tango_port,
+                                                                   self.device_name)
+        self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
+            ("", 0), self.tango_device_address)
+        if hasattr(self, 'io_loop'):
+            self.DUT.set_ioloop(self.io_loop)
+            self.io_loop.add_callback(self.DUT.start)
+            self.addCleanup(self.DUT.stop, timeout=None)
+        else:
+            start_thread_with_cleanup(self, self.DUT, start_timeout=1)
+        self.katcp_server = self.DUT.katcp_server
+        self.tango_device_proxy = self.DUT.inspecting_client.tango_dp
+        self.katcp_address = self.katcp_server.bind_address
+        self.katcp_host, self.katcp_port = self.katcp_address
+
+        self.client = BlockingTestClient(self, self.katcp_host, self.katcp_port)
+        start_thread_with_cleanup(self, self.client, start_timeout=1)
+        self.client.wait_protocol(timeout=1)
+
+    def test_device_shutdown(self):
+        """Test sensor status updates when TANGO device goes offline."""
+        self.assertGreater(self.sim_device.ping(), 0, "TANGO device is offline")
+
+        sensors = self.katcp_server.get_sensors()
+        for sensor in sensors:
+            self.assertEqual(sensor.status(), Sensor.NOMINAL,
+                             "Sensor %s status nominal." % sensor.name)
+
+        self.sub_proc.kill()
+        with self.assertRaises(DevFailed):
+            self.sim_device.ping()
+
+        time.sleep(12)   # Need to sleep to allow sensors to update.
+        for sensor in sensors:
+            self.assertEqual(sensor.status(), Sensor.FAILURE,
+                             "Sensor %s status in failure." % sensor.name)
+
+
+def cleanup_tempdir(*mkdtemp_args, **mkdtemp_kwargs):
+    """Return filname of a new tempfile.
+
+    Will not raise an error if the directory is not present when trying to delete.
+
+    Extra args and kwargs are passed on to the tempfile.mkdtemp call
+
+    """
+    dirname = tempfile.mkdtemp(*mkdtemp_args, **mkdtemp_kwargs)
+    def cleanup():
+        try:
+            shutil.rmtree(dirname)
+        except OSError, e:
+            if e.errno == errno.ENOENT: pass
+            else: raise
+
+    return dirname
