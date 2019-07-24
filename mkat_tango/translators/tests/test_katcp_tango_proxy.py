@@ -521,8 +521,10 @@ def cleanup_tempdir(*mkdtemp_args, **mkdtemp_kwargs):
     def cleanup():
         try:
             shutil.rmtree(dirname)
-        except OSError, e:
-            if e.errno == errno.ENOENT: pass
-            else: raise
+        except OSError as e:
+            if e.errno == errno.ENOENT:
+                pass
+            else:
+                raise
 
     return dirname
