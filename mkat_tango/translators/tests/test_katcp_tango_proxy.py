@@ -423,7 +423,6 @@ class SensorObserver(object):
         LOGGER.debug('Received {!r} for attr {!r}'.format(sensor, reading))
 
 
-
 class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
     """This tests that the sensor statuses change to failure when the we loose
        connection to the TANGO device.    
@@ -528,3 +527,4 @@ def cleanup_tempdir(*mkdtemp_args, **mkdtemp_kwargs):
                 raise
 
     return dirname
+
