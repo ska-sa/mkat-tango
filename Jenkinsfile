@@ -2,14 +2,14 @@ pipeline {
 
     agent {
         label 'camtango_nodb'
-    } 
+    }
 
     environment {
         KATPACKAGE = "${(env.JOB_NAME - env.JOB_BASE_NAME) - '-multibranch/'}"
     }
-    
+
     stages {
-        
+
         stage ('Checkout SCM') {
             steps {
                 checkout([
@@ -26,7 +26,9 @@ pipeline {
         stage ('Static analysis') {
             steps {
                 sh "pylint ./${KATPACKAGE} --output-format=parseable --exit-zero > pylint.out"
+                sh "lint_diff.sh -r ${KATPACKAGE}"
             }
+
             post {
                 always {
                     recordIssues(tool: pyLint(pattern: 'pylint.out'))
@@ -39,11 +41,13 @@ pipeline {
                 timestamps()
                 timeout(time: 30, unit: 'MINUTES')
             }
+
             steps {
                 sh 'pip install . -U --user'
                 sh 'pip install nose_xunitmp --user'
                 sh "python setup.py nosetests --with-xunitmp --with-xcoverage --cover-package=${KATPACKAGE}"
             }
+
             post {
                 always {
                     junit 'nosetests.xml'
@@ -53,7 +57,7 @@ pipeline {
             }
         }
 
-        stage('Build & publish packages') {
+        stage ('Build & publish packages') {
             when {
                 branch 'master'
             }
