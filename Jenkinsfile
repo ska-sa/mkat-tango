@@ -26,7 +26,8 @@ pipeline {
         stage ('Static analysis') {
             steps {
                 sh "pylint ./${KATPACKAGE} --output-format=parseable --exit-zero > pylint.out"
-                sh "lint_diff.sh -r ${KATPACKAGE}"
+                // Hard coded the repo name.
+                sh "lint_diff.sh -r mkat-tango"
             }
 
             post {
@@ -46,11 +47,12 @@ pipeline {
                 sh 'pip install . -U --user'
                 sh 'pip install nose_xunitmp --user'
                 sh "python setup.py nosetests --with-xunitmp --with-xcoverage --cover-package=${KATPACKAGE}"
+                sh "ls *.xml"
             }
 
             post {
                 always {
-                    junit 'nosetests.xml'
+                    junit 'nosetests*.xml'
                     cobertura coberturaReportFile: 'coverage.xml'
                     archiveArtifacts '*.xml'
                 }
