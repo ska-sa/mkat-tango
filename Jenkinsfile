@@ -43,6 +43,7 @@ pipeline {
             }
 
             steps {
+                sh 'pip install coverage<5.0'
                 sh 'pip install . -U --user'
                 sh 'pip install nose_xunitmp --user'
                 sh "python setup.py nosetests --with-xunitmp --with-xcoverage --cover-package=${KATPACKAGE}"
