@@ -43,8 +43,8 @@ pipeline {
             }
 
             steps {
-                sh 'python2 pip install . -U --user'
-                sh 'python2 -m coverage run --source="${KATPACKAGE}" -m nose --with-xunitmp --xunitmp-file=nosetests.xml' 
+                sh 'python2 -m pip install . -U --user'
+                sh 'python2 -m coverage run --source="${KATPACKAGE}" -m nose --with-xunitmp --xunitmp-file=nosetests.xml'
                 sh 'python2 -m coverage xml -o coverage.xml'
                 sh 'python2 -m coverage report -m --skip-covered'
             }
