@@ -46,7 +46,7 @@ pipeline {
                 sh 'pip install coverage==4.5.4 --user'
                 sh 'pip install . -U --user'
                 sh 'pip install nose_xunitmp --user'
-                sh 'python -m coverage run --source="${KATPACKAGE}" -m nose --with-xunitmp --xunitmp-file=nosetests_py27.xml' 
+                sh 'python -m coverage run --source="${KATPACKAGE}" -m nose --with-xunitmp --xunitmp-file=nosetests.xml' 
                 sh 'python2 -m coverage xml -o coverage.xml'
                 sh 'python2 -m coverage report -m --skip-covered'
             }
