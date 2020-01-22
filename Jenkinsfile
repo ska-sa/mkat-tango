@@ -1,7 +1,7 @@
 pipeline {
 
     agent {
-        label 'camtango_nodb'
+        label 'camtango_nodb_bionic'
     }
 
     environment {
@@ -43,9 +43,10 @@ pipeline {
             }
 
             steps {
-                sh 'pip install . -U --user'
-                sh 'pip install nose_xunitmp --user'
-                sh "python setup.py nosetests --with-xunitmp --with-xcoverage --cover-package=${KATPACKAGE}"
+                sh 'python2 -m pip install . -U --user'
+                sh 'python2 -m coverage run --source="${KATPACKAGE}" -m nose --with-xunitmp --xunitmp-file=nosetests.xml'
+                sh 'python2 -m coverage xml -o coverage.xml'
+                sh 'python2 -m coverage report -m --skip-covered'
             }
 
             post {
