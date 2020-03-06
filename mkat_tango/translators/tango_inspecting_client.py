@@ -276,8 +276,8 @@ class TangoInspectingClient(object):
                 self._subscribe_to_event(tango.EventType.USER_EVENT, attr_name)
 
     def _setup_attribute_polling(self, attribute_name, poll_period=1000):
-        retry_time = 0.5        # in seconds
-        retries = 2             # Maximum number of retries
+        retry_time = 0.5  # in seconds
+        retries = 2  # Maximum number of retries
         if not self.tango_dp.is_attribute_polled(attribute_name):
             _retries = 0
             retry = True
