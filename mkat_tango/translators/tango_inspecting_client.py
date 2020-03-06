@@ -246,45 +246,18 @@ class TangoInspectingClient(object):
                                  change=True, archive=True, data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
         dp = self.tango_dp
-        poll_period = 1000      # in milliseconds
-        retry_time = 0.5        # in seconds
-        retries = 2             # Maximum number of retries
-
         attributes = attributes if attributes is not None else self.device_attributes
         for attr_name in attributes:
-            if not dp.is_attribute_polled(attr_name):
-                _retries = 0
-                retry = True
-                while retry and _retries < retries:
-                    try:
-                        self._logger.info(
-                            "Setting up polling on attribute '%s'." % attr_name)
-                        dp.poll_attribute(attr_name, poll_period)
-                    except tango.DevFailed, exc:
-                        exc_reasons = set([arg.reason for arg in exc.args])
-                        if 'API_AlreadyPolled' in exc_reasons:
-                            retry = False
-                            self._logger.info("Attribute '%s' already polled" % attr_name)
-                        else:
-                            self._logger.warning(
-                                "Setting polling on attribute '%s' failed on retry '%s'"
-                                ". Retrying again..." % (attr_name, _retries + 1),
-                                exc_info=True)
-                            _retries += 1
-                            time.sleep(retry_time)
-                    else:
-                        retry = False
-                        self._logger.info("Polling on attribute '%s' was set up"
-                                           " successfully" % attr_name)
-   
+            self._setup_attribute_polling(attr_name)
+
             events = self.device_attributes[attr_name].events
             if periodic:
                 self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
-            
+
             if change:
                 if self._is_event_properties_set(events.ch_event):
                     self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attr_name)
-            
+
             if archive:
                 if self._is_event_properties_set(events.arch_event):
                    self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
@@ -294,6 +267,35 @@ class TangoInspectingClient(object):
 
             if user:
                 self._subscribe_to_event(tango.EventType.USER_EVENT, attr_name)
+
+    def _setup_attribute_polling(self, attribute_name, poll_period=1000):
+        retry_time = 0.5        # in seconds
+        retries = 2             # Maximum number of retries
+        if not self.tango_dp.is_attribute_polled(attribute_name):
+            _retries = 0
+            retry = True
+            while retry and _retries < retries:
+                try:
+                    self._logger.info(
+                        "Setting up polling on attribute '%s'." % attribute_name)
+                    self.tango_dp.poll_attribute(attribute_name, poll_period)
+                except tango.DevFailed, exc:
+                    exc_reasons = set([arg.reason for arg in exc.args])
+                    if 'API_AlreadyPolled' in exc_reasons:
+                        retry = False
+                        self._logger.info("Attribute '%s' already polled" % attribute_name)
+                    else:
+                        self._logger.warning(
+                            "Setting polling on attribute '%s' failed on retry '%s'"
+                            ". Retrying again..." % (attribute_name, _retries + 1),
+                            exc_info=True)
+                        _retries += 1
+                        time.sleep(retry_time)
+                else:
+                    retry = False
+                    self._logger.info("Polling on attribute '%s' was set up"
+                                        " successfully" % attribute_name)
+
 
     def _is_event_properties_set(self, event_info):
         for attr in dir(event_info):
