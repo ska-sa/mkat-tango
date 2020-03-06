@@ -35,8 +35,6 @@ class TangoInspectingClient(object):
         self.device_commands = {}
         self._event_ids = set()
         self._logger = logger
-        # True if the stored device attributes/commands are potentially outdated
-        self._dirty = True
         self.orig_attr_names_map = {}
         # Subscribing to interface change events
         self._interface_change_event_id = None
@@ -63,7 +61,6 @@ class TangoInspectingClient(object):
         """
         self.device_attributes = self.inspect_attributes()
         self.device_commands = self.inspect_commands()
-        self._dirty = False     # TODO need to consider race conditions
         self.orig_attr_names_map = self.attr_case_insenstive_patch()
 
     def attr_case_insenstive_patch(self):
