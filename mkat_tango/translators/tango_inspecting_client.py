@@ -290,7 +290,8 @@ class TangoInspectingClient(object):
                     exc_reasons = set([arg.reason for arg in exc.args])
                     if 'API_AlreadyPolled' in exc_reasons:
                         retry = False
-                        self._logger.info("Attribute '%s' already polled" % attribute_name)
+                        self._logger.info(
+                            "Attribute '%s' already polled" % attribute_name)
                     else:
                         self._logger.warning(
                             "Setting polling on attribute '%s' failed on retry '%s'"
@@ -301,7 +302,7 @@ class TangoInspectingClient(object):
                 else:
                     retry = False
                     self._logger.info("Polling on attribute '%s' was set up"
-                                        " successfully" % attribute_name)
+                                      " successfully" % attribute_name)
 
 
     def _is_event_properties_set(self, event_info):
