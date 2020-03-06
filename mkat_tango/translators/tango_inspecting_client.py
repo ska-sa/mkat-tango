@@ -119,6 +119,28 @@ class TangoInspectingClient(object):
         for attribute in attributes:
             self.device_attributes[attribute.name] = attribute
 
+    def interface_change_event_handler(self, event_data):
+        """Handles tango device interface change event callbacks.
+
+        Extracts neccesary data and calls :meth:`sample_event_callback` with
+        said data.
+        """
+        if event_data.err:
+            # Need to catch this, otherwise it is going to clear out the attribute
+            # and command lists, respectively.
+            self._logger.error(
+                "Event system DevError(s) occured!!! %s", str(event_data.errors)
+            )
+            return
+
+        received_timestamp = event_data.reception_date.totime()
+        self._update_device_attributes(event_data.att_list)
+        self._update_device_commands(event_data.cmd_list)
+        self.interface_change_callback(event_data.device_name,
+                                       received_timestamp,
+                                       self.device_attributes,
+                                       self.device_commands)
+
     def tango_event_handler(self, tango_event_data):
         """Handles tango event callbacks.
 
@@ -159,15 +181,6 @@ class TangoInspectingClient(object):
 
         event_type = tango_event_data.event
         received_timestamp = tango_event_data.reception_date.totime()
-        if event_type == 'intr_change':
-            self._update_device_attributes(tango_event_data.att_list)
-            self._update_device_commands(tango_event_data.cmd_list)
-            self.interface_change_callback(tango_event_data.device_name,
-                                           received_timestamp,
-                                           self.device_attributes,
-                                           self.device_commands)
-            return
-
         attr_value = tango_event_data.attr_value
         name = attr_value.name
         value = attr_value.value
@@ -224,7 +237,7 @@ class TangoInspectingClient(object):
         try:
             if event_type == tango.EventType.INTERFACE_CHANGE_EVENT:
                 subs = lambda etype: dp.subscribe_event(
-                    etype, self.tango_event_handler)
+                    etype, self.interface_change_event_handler)
                 self._interface_change_event_id = subs(event_type)
             else:
                 subs = lambda etype: dp.subscribe_event(
