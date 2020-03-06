@@ -307,8 +307,8 @@ def tango_type2kattype_object(tango_type):
 
     if "Array" in str(tango_type):
         kattype_kwargs['multiple'] = True
-        tango_type = getattr(tango, str(tango_type).replace('Array', '')
-                             .replace('Var', ''), None)
+        tango_type_ = str(tango_type).replace('Array', '').replace('Var', '')
+        tango_type = getattr(tango, tango_type_, None)
 
     try:
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
