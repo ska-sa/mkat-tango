@@ -354,6 +354,24 @@ def is_tango_device_running(tango_device_proxy, logger=log):
     return is_device_running
 
 
+def wait_for_device(self, tango_device_proxy, retry_time=2, logger=log):
+    """Get the translator to wait until it has established a connection with the
+        device server and/or for the device server to be up and running.
+    """
+    is_device_connected = False
+    while not is_device_connected:
+        try:
+            tango_device_proxy.reconnect(True)
+        except tango.DevFailed as conerr:
+            conerr_reasons = {arg.reason for arg in conerr.args}
+            conerr_desc = {arg.desc for arg in conerr.args}
+            for reason, description in zip(conerr_reasons, conerr_desc):
+                logger.error("{} : {}".format(reason, description))
+            time.sleep(retry_time)
+        else:
+            is_device_connected = True
+
+
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
         """Need a no-op setup_sensors() to satisfy superclass"""
@@ -409,7 +427,7 @@ class TangoDevice2KatcpProxy(object):
         """
         tango_device_proxy = self.inspecting_client.tango_dp
         if not is_tango_device_running(tango_device_proxy, logger=self._logger):
-            self.wait_for_device(tango_device_proxy)
+            wait_for_device(tango_device_proxy, logger=self._logger)
         self._logger.info("Connection to the device server established")
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
@@ -626,23 +644,6 @@ class TangoDevice2KatcpProxy(object):
                     log.error("{} : {}".format(reason, description))
                 time.sleep(retry_time)
         return tango_dp
-
-    def wait_for_device(self, tango_device_proxy, retry_time=2):
-        """Get the translator to wait until it has established a connection with the
-           device server and/or for the device server to be up and running.
-        """
-        is_device_connected = False
-        while not is_device_connected:
-            try:
-                tango_device_proxy.reconnect(True)
-            except tango.DevFailed as conerr:
-                conerr_reasons = set([arg.reason for arg in conerr.args])
-                conerr_desc = set([arg.desc for arg in conerr.args])
-                for reason, description in zip(conerr_reasons, conerr_desc):
-                    self._logger.error("{} : {}".format(reason, description))
-                time.sleep(retry_time)
-            else:
-                is_device_connected = True
 
 
 def tango2katcp_main(args=None, start_ioloop=True):
