@@ -304,15 +304,18 @@ def tango_type2kattype_object(tango_type):
     kattype_kwargs = {}
     if tango_type == tango.DevVoid:
         return None
+
+    if "Array" in str(tango_type):
+        kattype_kwargs['multiple'] = True
+        tango_type = getattr(tango, str(tango_type).replace('Array', '')
+                             .replace('Var', ''), None)
+
     try:
-        if 'Array' in str(tango_type):
-            kattype_kwargs['multiple'] = True
-            tango_type = getattr(tango, str(tango_type).replace('Array', '')
-                                 .replace('Var', ''), None)
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
     except KeyError as ke:
         raise NotImplementedError("Tango wrapping not implemented for tango type {}"
                                   .format(tango_type))
+
     if tango_type in TANGO_NUMERIC_TYPES:
         kattype_kwargs['min'], kattype_kwargs['max'] = katcp_type_info.params
     elif tango_type == CmdArgType.DevState:
