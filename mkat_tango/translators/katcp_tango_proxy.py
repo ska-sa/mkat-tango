@@ -379,7 +379,7 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def get_sensor_list(self):
         return self._sensors.keys()
 
-    def get_requests(self):
+    def get_request_list(self):
         return self._request_handlers.keys()
 
     def add_request(self, request_name, handler):
@@ -520,7 +520,7 @@ class TangoDevice2KatcpProxy(object):
         """ Populate the request handlers in  the KATCP device server
             instance with the corresponding TANGO device server commands
         """
-        requests = self.katcp_server.get_requests()
+        requests = self.katcp_server.get_request_list()
         requests_to_remove = list(set(requests) - set(commands))
         requests_to_add = list(set(commands) - set(requests))
 
