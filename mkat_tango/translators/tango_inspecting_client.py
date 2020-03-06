@@ -120,9 +120,9 @@ class TangoInspectingClient(object):
             self.device_attributes[attribute.name] = attribute
 
     def interface_change_event_handler(self, event_data):
-        """Handles tango device interface change event callbacks.
+        """Handles tango device interface change events.
 
-        Extracts neccesary data and calls :meth:`sample_event_callback` with
+        Extracts neccesary data and calls :meth:`interface_change_callback` with
         said data.
         """
         if event_data.err:
@@ -141,8 +141,8 @@ class TangoInspectingClient(object):
                                        self.device_attributes,
                                        self.device_commands)
 
-    def tango_event_handler(self, tango_event_data):
-        """Handles tango event callbacks.
+    def attribute_event_handler(self, event_data):
+        """Handles tango attribute events.
 
         Extracts neccesary data and calls :meth:`sample_event_callback` with
         said data.
@@ -150,14 +150,8 @@ class TangoInspectingClient(object):
         """
         # TODO NM 2016-04-06 Call a different callback for non-sample events,
         # i.e. error callbacks etc.
-        if tango_event_data.err:
-            try:
-                fqdn_attr_name = tango_event_data.attr_name
-            except AttributeError:
-                # This is a result of an interface change event error.
-                # It is not associated with any attribute.
-                return
-
+        if event_data.err:
+            fqdn_attr_name = event_data.attr_name
             # tango://monctl.devk4.camlab.kat.ac.za:4000/mid_dish_0000/elt/
             # master/<attribute_name>#dbase=no
             # We process the FQDN of the attribute to extract just the
@@ -165,23 +159,23 @@ class TangoInspectingClient(object):
             # converted to lowercase in subsequent callbacks.
             attr_name_ = fqdn_attr_name.split('/')[-1].split('#')[0]
             attr_name = self.orig_attr_names_map[attr_name_.lower()]
-            received_timestamp = tango_event_data.reception_date.totime()
+            received_timestamp = event_data.reception_date.totime()
             quality = AttrQuality.ATTR_INVALID  # Events with errors do not send
                                                 # the attribute value, so regard
                                                 # its reading as invalid.
             timestamp = time.time()
-            event_type = tango_event_data.event
-            value = tango_event_data.attr_value
+            event_type = event_data.event
+            value = event_data.attr_value
             self._logger.error("Event system DevError(s) occured!!! %s",
-                               str(tango_event_data.errors))
+                               str(event_data.errors))
             self.sample_event_callback(attr_name, received_timestamp,
                                        timestamp, value, quality, event_type)
             
             return
 
-        event_type = tango_event_data.event
-        received_timestamp = tango_event_data.reception_date.totime()
-        attr_value = tango_event_data.attr_value
+        event_type = event_data.event
+        received_timestamp = event_data.reception_date.totime()
+        attr_value = event_data.attr_value
         name = attr_value.name
         value = attr_value.value
         quality = attr_value.quality
@@ -241,7 +235,7 @@ class TangoInspectingClient(object):
                 self._interface_change_event_id = subs(event_type)
             else:
                 subs = lambda etype: dp.subscribe_event(
-                    attribute_name, etype, self.tango_event_handler, stateless=True)
+                    attribute_name, etype, self.attribute_event_handler, stateless=True)
                 self._event_ids.add(subs(event_type))
         except tango.DevFailed, exc:
             exc_reasons = set([arg.reason for arg in exc.args])
