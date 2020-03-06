@@ -82,6 +82,7 @@ class TangoStateDiscrete(kattypes.Discrete):
     def decode(self, value, major):
         return getattr(tango.DevState, value)
 
+
 TANGO2KATCP_TYPE_INFO = {
     DevFloat: KatcpTypeInfo(KatcpType=kattypes.Float, sensor_type=Sensor.FLOAT,
                             params=dtype_params(np.float32)),
@@ -119,6 +120,7 @@ TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS = {
         AttrQuality.ATTR_ALARM: Sensor.ERROR,
         AttrQuality.ATTR_INVALID: Sensor.FAILURE
 }
+
 
 def tango_attr_descr2katcp_sensors(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object(s)
@@ -182,6 +184,7 @@ def tango_attr_descr2katcp_sensors(attr_descr):
                               attr_descr.unit, sensor_params))
 
     return sensors
+
 
 def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     """Convert tango command description to equivalent KATCP reply handler
@@ -318,6 +321,7 @@ def tango_type2kattype_object(tango_type):
         kattype_kwargs = [name for name in katcp_type_info.params]
         return katcp_type_info.KatcpType(kattype_kwargs)
     return katcp_type_info.KatcpType(**kattype_kwargs)
+
 
 def is_tango_device_running(tango_device_proxy, logger=log):
     """Checks if the TANGO device server is running.
@@ -636,6 +640,7 @@ class TangoDevice2KatcpProxy(object):
                 time.sleep(retry_time)
             else:
                 is_device_connected = True
+
 
 def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
