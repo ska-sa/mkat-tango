@@ -44,7 +44,7 @@ class TangoInspectingClient(object):
         try:
             self.tango_dp.unsubscribe_event(self._interface_change_event_id)
         except tango.DevFailed, exc:
-            exc_reasons = set([arg.reason for arg in exc.args])
+            exc_reasons = {arg.reason for arg in exc.args}
             if 'API_EventNotFound' in exc_reasons:
                 self._logger.debug('No event with id {} was set up.'
                                    .format(self._interface_change_event_id))
@@ -238,7 +238,7 @@ class TangoInspectingClient(object):
                     attribute_name, etype, self.attribute_event_handler, stateless=True)
                 self._event_ids.add(subs(event_type))
         except tango.DevFailed, exc:
-            exc_reasons = set([arg.reason for arg in exc.args])
+            exc_reasons = {arg.reason for arg in exc.args}
             if 'API_AttributePollingNotStarted' in exc_reasons:
                 self._logger.warning('TODO NM: Need to implement something for '
                                      'attributes that are not polled, processing '
@@ -287,7 +287,7 @@ class TangoInspectingClient(object):
                         "Setting up polling on attribute '%s'." % attribute_name)
                     self.tango_dp.poll_attribute(attribute_name, poll_period)
                 except tango.DevFailed, exc:
-                    exc_reasons = set([arg.reason for arg in exc.args])
+                    exc_reasons = {arg.reason for arg in exc.args}
                     if 'API_AlreadyPolled' in exc_reasons:
                         retry = False
                         self._logger.info(
@@ -324,7 +324,7 @@ class TangoInspectingClient(object):
             try:
                 self.tango_dp.unsubscribe_event(event_id)
             except tango.DevFailed, exc:
-                exc_reasons = set([arg.reason for arg in exc.args])
+                exc_reasons = {arg.reason for arg in exc.args}
                 if 'API_EventNotFound' in exc_reasons:
                     self._logger.info('No event with id {} was set up.'
                                        .format(event_id))
