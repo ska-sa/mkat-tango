@@ -354,7 +354,7 @@ def is_tango_device_running(tango_device_proxy, logger=log):
     return is_device_running
 
 
-def wait_for_device(self, tango_device_proxy, retry_time=2, logger=log):
+def wait_for_device(tango_device_proxy, retry_time=2, logger=log):
     """Get the translator to wait until it has established a connection with the
         device server and/or for the device server to be up and running.
     """
