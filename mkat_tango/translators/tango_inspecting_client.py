@@ -36,9 +36,7 @@ class TangoInspectingClient(object):
         self._event_ids = set()
         self._logger = logger
         self.orig_attr_names_map = {}
-        # Subscribing to interface change events
         self._interface_change_event_id = None
-        self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
 
     def __del__(self):
         try:
@@ -59,6 +57,7 @@ class TangoInspectingClient(object):
         Updates the `device_attributes` and `device_commands` instance attributes
 
         """
+        self._subscribe_to_event(tango.EventType.INTERFACE_CHANGE_EVENT)
         self.device_attributes = self.inspect_attributes()
         self.device_commands = self.inspect_commands()
         self.orig_attr_names_map = self.attr_case_insenstive_patch()
