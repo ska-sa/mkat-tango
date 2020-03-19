@@ -82,6 +82,7 @@ class TangoStateDiscrete(kattypes.Discrete):
     def decode(self, value, major):
         return getattr(tango.DevState, value)
 
+
 TANGO2KATCP_TYPE_INFO = {
     DevFloat: KatcpTypeInfo(KatcpType=kattypes.Float, sensor_type=Sensor.FLOAT,
                             params=dtype_params(np.float32)),
@@ -119,6 +120,7 @@ TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS = {
         AttrQuality.ATTR_ALARM: Sensor.ERROR,
         AttrQuality.ATTR_INVALID: Sensor.FAILURE
 }
+
 
 def tango_attr_descr2katcp_sensors(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object(s)
@@ -182,6 +184,7 @@ def tango_attr_descr2katcp_sensors(attr_descr):
                               attr_descr.unit, sensor_params))
 
     return sensors
+
 
 def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     """Convert tango command description to equivalent KATCP reply handler
@@ -301,15 +304,18 @@ def tango_type2kattype_object(tango_type):
     kattype_kwargs = {}
     if tango_type == tango.DevVoid:
         return None
+
+    if "Array" in str(tango_type):
+        kattype_kwargs['multiple'] = True
+        tango_type_ = str(tango_type).replace('Array', '').replace('Var', '')
+        tango_type = getattr(tango, tango_type_, None)
+
     try:
-        if 'Array' in str(tango_type):
-            kattype_kwargs['multiple'] = True
-            tango_type = getattr(tango, str(tango_type).replace('Array', '')
-                                 .replace('Var', ''), None)
         katcp_type_info = TANGO2KATCP_TYPE_INFO[tango_type]
     except KeyError as ke:
         raise NotImplementedError("Tango wrapping not implemented for tango type {}"
                                   .format(tango_type))
+
     if tango_type in TANGO_NUMERIC_TYPES:
         kattype_kwargs['min'], kattype_kwargs['max'] = katcp_type_info.params
     elif tango_type == CmdArgType.DevState:
@@ -318,6 +324,7 @@ def tango_type2kattype_object(tango_type):
         kattype_kwargs = [name for name in katcp_type_info.params]
         return katcp_type_info.KatcpType(kattype_kwargs)
     return katcp_type_info.KatcpType(**kattype_kwargs)
+
 
 def is_tango_device_running(tango_device_proxy, logger=log):
     """Checks if the TANGO device server is running.
@@ -347,6 +354,24 @@ def is_tango_device_running(tango_device_proxy, logger=log):
     return is_device_running
 
 
+def wait_for_device(tango_device_proxy, retry_time=2, logger=log):
+    """Get the translator to wait until it has established a connection with the
+        device server and/or for the device server to be up and running.
+    """
+    is_device_connected = False
+    while not is_device_connected:
+        try:
+            tango_device_proxy.reconnect(True)
+        except tango.DevFailed as conerr:
+            conerr_reasons = {arg.reason for arg in conerr.args}
+            conerr_desc = {arg.desc for arg in conerr.args}
+            for reason, description in zip(conerr_reasons, conerr_desc):
+                logger.error("{} : {}".format(reason, description))
+            time.sleep(retry_time)
+        else:
+            is_device_connected = True
+
+
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def setup_sensors(self):
         """Need a no-op setup_sensors() to satisfy superclass"""
@@ -354,7 +379,7 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
     def get_sensor_list(self):
         return self._sensors.keys()
 
-    def get_requests(self):
+    def get_request_list(self):
         return self._request_handlers.keys()
 
     def add_request(self, request_name, handler):
@@ -402,7 +427,7 @@ class TangoDevice2KatcpProxy(object):
         """
         tango_device_proxy = self.inspecting_client.tango_dp
         if not is_tango_device_running(tango_device_proxy, logger=self._logger):
-            self.wait_for_device(tango_device_proxy)
+            wait_for_device(tango_device_proxy, logger=self._logger)
         self._logger.info("Connection to the device server established")
         self.inspecting_client.inspect()
         self.inspecting_client.sample_event_callback = self.update_sensor_values
@@ -495,7 +520,7 @@ class TangoDevice2KatcpProxy(object):
         """ Populate the request handlers in  the KATCP device server
             instance with the corresponding TANGO device server commands
         """
-        requests = self.katcp_server.get_requests()
+        requests = self.katcp_server.get_request_list()
         requests_to_remove = list(set(requests) - set(commands))
         requests_to_add = list(set(commands) - set(requests))
 
@@ -620,22 +645,6 @@ class TangoDevice2KatcpProxy(object):
                 time.sleep(retry_time)
         return tango_dp
 
-    def wait_for_device(self, tango_device_proxy, retry_time=2):
-        """Get the translator to wait until it has established a connection with the
-           device server and/or for the device server to be up and running.
-        """
-        is_device_connected = False
-        while not is_device_connected:
-            try:
-                tango_device_proxy.reconnect(True)
-            except tango.DevFailed as conerr:
-                conerr_reasons = set([arg.reason for arg in conerr.args])
-                conerr_desc = set([arg.desc for arg in conerr.args])
-                for reason, description in zip(conerr_reasons, conerr_desc):
-                    self._logger.error("{} : {}".format(reason, description))
-                time.sleep(retry_time)
-            else:
-                is_device_connected = True
 
 def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
