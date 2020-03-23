@@ -234,7 +234,10 @@ class TangoInspectingClient(object):
                 )
             else:
                 event_id = dp.subscribe_event(
-                    attribute_name, event_type, self.attribute_event_handler, stateless=True
+                    attribute_name,
+                    event_type,
+                    self.attribute_event_handler,
+                    stateless=True
                 )
                 self._event_ids.add(event_id)
         except tango.DevFailed, exc:
