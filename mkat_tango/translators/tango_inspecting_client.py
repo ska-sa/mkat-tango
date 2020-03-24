@@ -229,13 +229,17 @@ class TangoInspectingClient(object):
 
         try:
             if event_type == tango.EventType.INTERFACE_CHANGE_EVENT:
-                subs = lambda etype: dp.subscribe_event(
-                    etype, self.interface_change_event_handler)
-                self._interface_change_event_id = subs(event_type)
+                self._interface_change_event_id = dp.subscribe_event(
+                    event_type, self.interface_change_event_handler
+                )
             else:
-                subs = lambda etype: dp.subscribe_event(
-                    attribute_name, etype, self.attribute_event_handler, stateless=True)
-                self._event_ids.add(subs(event_type))
+                event_id = dp.subscribe_event(
+                    attribute_name,
+                    event_type,
+                    self.attribute_event_handler,
+                    stateless=True
+                )
+                self._event_ids.add(event_id)
         except tango.DevFailed, exc:
             exc_reasons = {arg.reason for arg in exc.args}
             if 'API_AttributePollingNotStarted' in exc_reasons:
