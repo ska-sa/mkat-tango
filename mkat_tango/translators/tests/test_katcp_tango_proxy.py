@@ -255,7 +255,7 @@ class test_TangoDevice2KatcpProxy(
             return "DONE!"
 
         # Check that the request/command did not exist before
-        self.assertNotIn('cmd_printString', self.katcp_server.get_requests())
+        self.assertNotIn('cmd_printString', self.katcp_server.get_request_list())
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
 
         cmd = command(f=cmd_printString, dtype_in=DevVoid, doc_in="",
@@ -266,7 +266,7 @@ class test_TangoDevice2KatcpProxy(
 
         # Check that the request/command exists.
         self.assertIn('cmd_printString', self.tango_device_proxy.get_command_list())
-        self.assertIn('cmd_printString', self.katcp_server.get_requests())
+        self.assertIn('cmd_printString', self.katcp_server.get_request_list())
 
         # Now remove the command.
         self.tango_test_device.remove_command('cmd_printString')
@@ -275,7 +275,7 @@ class test_TangoDevice2KatcpProxy(
 
         # Check that the request/command has been removed.
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
-        self.assertNotIn('cmd_printString', self.katcp_server.get_requests())
+        self.assertNotIn('cmd_printString', self.katcp_server.get_request_list())
 
     def test_attribute_sensor_add_remove(self):
 
