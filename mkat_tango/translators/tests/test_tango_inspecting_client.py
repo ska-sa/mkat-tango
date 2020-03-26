@@ -20,6 +20,9 @@ from collections import defaultdict
 from tango import server as TS
 from tango import AttrQuality
 from tango import DevState
+from tango import Attr
+from tango import DevLong
+from tango import UserDefaultAttrProp
 
 from tango.test_context import DeviceTestContext
 from katcp.testutils import start_thread_with_cleanup
@@ -96,7 +99,8 @@ class TangoTestDevice(TS.Device):
             ScalarDevEncoded=(('enc', bytearray([10, 20, 30, 15])),
                               None, AttrQuality.ATTR_VALID),
             ScalarDevEnum=(0, None, AttrQuality.ATTR_VALID),
-            SpectrumDevDouble=([0.0, 1.0, 2.0, 3.0, 4.0], None, AttrQuality.ATTR_VALID)
+            SpectrumDevDouble=([0.0, 1.0, 2.0, 3.0, 4.0], None, AttrQuality.ATTR_VALID),
+            ScalarDevDoubleEvents=(3.1415, None, AttrQuality.ATTR_VALID)
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
 
@@ -141,6 +145,12 @@ class TangoTestDevice(TS.Device):
                   polling_period=1000, event_period=25, max_dim_x=5)
     @_test_attr
     def SpectrumDevDouble(self): pass
+
+    @TS.attribute(dtype='DevDouble', doc='An example scalar Double attribute with event properties',
+                  polling_period=1000, event_period=25, abs_change="1", rel_change="0.5",
+                  period=2000)
+    @_test_attr
+    def ScalarDevDoubleEvents(self): pass
 
     static_commands = ('ReverseString', 'MultiplyInts', 'Void',
                        'MultiplyDoubleBy3')
@@ -301,11 +311,105 @@ class test_TangoInspectingClient(TangoSetUpClass):
             {attr: 1 for attr in test_attributes},
             "Exactly one periodic update not received for each test attribute.")
 
+    def test_static_attribute_change_event_subscription(self):
+        poll_period = 10000        # in milliseconds
+        scalar_events_attr = "ScalarDevDoubleEvents"
+        set_attributes_polling(self, self.tango_dp, self.test_device,
+                               {scalar_events_attr: poll_period})
+        recorded_samples = {scalar_events_attr: []}
+        self.DUT.inspect()
+        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
+            def side_effect(attr, *x):
+                if attr == scalar_events_attr:
+                    recorded_samples[attr].append(x)
+                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+            sec.side_effect = side_effect
+            self.addCleanup(self.DUT.clear_attribute_sampling)
+            LOGGER.debug('Setting attribute sampling')
+            self.DUT.setup_attribute_sampling()
+            self.DUT.clear_attribute_sampling()
+
+        # Check that the initial updates were received for each attribute for
+        # at least the change event
+        attr_event_type_events = {}
+        for attr, events in recorded_samples.items():
+            attr_event_type_events[attr] = defaultdict(list)
+            for event in events:
+                event_type = event[4]
+                attr_event_type_events[attr][event_type].append(event)
+
+        change_updates_per_attr = {
+            scalar_events_attr: len(attr_event_type_events[attr]['change'])}
+
+        self.assertEqual(
+            change_updates_per_attr,
+            {scalar_events_attr: 1},
+            "Exactly one change update not received for each test attribute.")
+
+    def test_dynamic_attribute_change_event_subscription(self):
+
+        self.DUT.inspect()
+        def read_attributes(self, attr):
+            return 1
+
+        dynamic_scalar_events_attr = "ScalarDevDoubleEvents2"
+
+        attr = Attr(dynamic_scalar_events_attr, DevLong)
+        attr_props = UserDefaultAttrProp()
+        attr_props.set_event_abs_change("1")
+        attr_props.set_event_rel_change("0.5")
+        attr.set_default_properties(attr_props)
+        self.test_device.add_attribute(attr, read_attributes)
+        time.sleep(0.5) # Find alternative, rather than sleeping
+        self.assertIn(dynamic_scalar_events_attr, self.tango_dp.get_attribute_list())
+
+        poll_period = 10000        # in milliseconds
+        
+        set_attributes_polling(self, self.tango_dp, self.test_device,
+                               {dynamic_scalar_events_attr: poll_period})
+        recorded_samples = {dynamic_scalar_events_attr: []}
+        self.DUT.inspect()
+        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
+            def side_effect(attr, *x):
+                if attr == dynamic_scalar_events_attr:
+                    recorded_samples[attr].append(x)
+                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+            sec.side_effect = side_effect
+            self.addCleanup(self.DUT.clear_attribute_sampling)
+            LOGGER.debug('Setting attribute sampling')
+            self.DUT.setup_attribute_sampling()
+            self.DUT.clear_attribute_sampling()
+
+        # Check that the initial updates were received for each attribute for
+        # at least the change event
+        attr_event_type_events = {}
+        for attr, events in recorded_samples.items():
+            attr_event_type_events[attr] = defaultdict(list)
+            for event in events:
+                event_type = event[4]
+                attr_event_type_events[attr][event_type].append(event)
+        
+        change_updates_per_attr = {
+            dynamic_scalar_events_attr: len(attr_event_type_events[attr]['change'])}
+
+        self.assertEqual(
+            change_updates_per_attr,
+            {dynamic_scalar_events_attr: 1},
+            "Exactly one change update not received for each test attribute.")
+
+        # Now remove the attribute.
+        self.test_device.remove_attribute(dynamic_scalar_events_attr)
+        time.sleep(0.5)
+        self.assertNotIn(dynamic_scalar_events_attr, self.tango_dp.get_attribute_list())
+
     def test_interface_change_subscription(self):
         self.assertNotEquals(self.DUT._interface_change_event_id, None,
                              "Interface change event subscription was not setup.")
         self._test_attributes(self.DUT.device_attributes)
         self._test_commands(self.DUT.device_commands)
+        self.DUT.inspect()
+        self.assertGreater(self.DUT._interface_change_event_id, 0,
+                           "Interface change event subscription was setup.")
 
 
 class test_TangoInspectingClientStandard(TangoSetUpClass):
