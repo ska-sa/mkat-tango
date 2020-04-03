@@ -111,7 +111,6 @@ class TangoTestDevice(TS.Device):
         dtype="DevBoolean",
         doc="An example scalar boolean attribute",
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarBool(self):
@@ -121,7 +120,6 @@ class TangoTestDevice(TS.Device):
         dtype="DevUChar",
         doc="An example scalar UChar attribute",
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarDevUChar(self):
@@ -131,7 +129,6 @@ class TangoTestDevice(TS.Device):
         dtype="DevLong",
         doc="An example scalar Long attribute",
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarDevLong(self):
@@ -141,7 +138,6 @@ class TangoTestDevice(TS.Device):
         dtype="DevDouble",
         doc="An example scalar Double attribute",
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarDevDouble(self):
@@ -151,7 +147,6 @@ class TangoTestDevice(TS.Device):
         dtype="DevString",
         doc="An example scalar String attribute",
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarDevString(self):
@@ -161,7 +156,6 @@ class TangoTestDevice(TS.Device):
         dtype="DevEncoded",
         doc="An example scalar Encoded attribute",
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarDevEncoded(self):
@@ -172,7 +166,6 @@ class TangoTestDevice(TS.Device):
         doc="An example scalar Enum attribute",
         enum_labels=["ONLINE", "OFFLINE", "RESERVE"],
         polling_period=1000,
-        event_period=25,
     )
     @_test_attr
     def ScalarDevEnum(self):
@@ -182,7 +175,6 @@ class TangoTestDevice(TS.Device):
         dtype=("DevDouble",),
         doc="An example spectrum Double attribute",
         polling_period=1000,
-        event_period=25,
         max_dim_x=5,
     )
     @_test_attr
@@ -193,10 +185,8 @@ class TangoTestDevice(TS.Device):
         dtype="DevDouble",
         doc="An example scalar Double attribute with event properties",
         polling_period=1000,
-        event_period=25,
         abs_change="1",
         rel_change="0.5",
-        period=2000,
     )
     @_test_attr
     def ScalarDevDoubleEvents(self):
