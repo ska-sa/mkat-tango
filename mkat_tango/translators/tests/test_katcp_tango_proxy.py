@@ -220,7 +220,10 @@ class test_TangoDevice2KatcpProxy(
             # attributes: ScalarDevLong, ScalarDevUChar, ScalarDevDouble.
             self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
-            self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
+            number_of_updates = len(obs.updates)
+            self.assertAlmostEqual(
+                number_of_updates, num_periods, delta=2,
+                msg="Sensor {} had {} updates.".format(sensor, number_of_updates))
 
     def test_requests_list(self):
         tango_td = self.tango_test_device
