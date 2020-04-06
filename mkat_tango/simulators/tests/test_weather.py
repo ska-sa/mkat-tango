@@ -22,10 +22,11 @@ from mkat_tango.simulators import weather
 
 LOGGER = logging.getLogger(__name__)
 
+
 class AlwaysDifferentGauss(object):
 
     def __init__(self):
-        self.gauss_cache = set([None])
+        self.gauss_cache = {None}
 
     def __call__(self, *args, **kwargs):
         val = None
@@ -33,6 +34,7 @@ class AlwaysDifferentGauss(object):
             val = gauss(*args, **kwargs)
         self.gauss_cache.add(val)
         return val
+
 
 def never_repeat(fn):
     """Decorate random quantity next_value() to prevent any value from repeating"""
@@ -56,6 +58,7 @@ def never_repeat(fn):
         return val
 
     return decorated_fn
+
 
 def read_attributes_as_dicts(dev, attrs):
     result = {}
@@ -87,7 +90,9 @@ class test_Weather(unittest.TestCase):
         super(test_Weather, self).setUp()
         self.tango_dp = self.tango_context.device
         self.instance = weather.Weather.instances[self.tango_dp.name()]
+
         def cleanup_refs(): del self.instance
+
         self.addCleanup(cleanup_refs)
 
     @classmethod
@@ -105,7 +110,7 @@ class test_Weather(unittest.TestCase):
         self.maxDiff = None
         model = self.instance.model
         varying_attributes = tuple(self.varying_attributes)
-        ## Test that quantities don't change faster than update time
+        # Test that quantities don't change faster than update time
         # Set update time to very long
         model.min_update_period = 999999
         # Cause an initial update
@@ -139,19 +144,19 @@ class test_Weather(unittest.TestCase):
                 self.addCleanup(patcher.stop)
                 mock_next_val.side_effect = unique_next_val
 
-        ## Test that quantities change after more some time
+        # Test that quantities change after more some time
         # Set update time quite short
         update_period = 0.01
         model.min_update_period = update_period
         # Sleep long enough to ensure an update post mocking
-        time.sleep(update_period*1.05)
+        time.sleep(update_period * 1.05)
         # Ensure that always_executed_hook() is called
         self.tango_dp.State()
         # Get initial values
         LOGGER.debug('Getting init values')
         initial_vals = read_attributes_as_dicts(self.tango_dp, varying_attributes)
         LOGGER.debug('Sleeping')
-        time.sleep(1.05*update_period)
+        time.sleep(1.05 * update_period)
         # Ensure that always_executed_hook() is called
         self.tango_dp.State()
         LOGGER.debug('Getting updated values')

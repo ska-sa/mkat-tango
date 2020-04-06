@@ -25,6 +25,7 @@ setup(name="mkat_tango",
           "tango-simlib"],
       tests_require=[
           'numpy',
+          'mock',
           'nose_xunitmp'],
       zip_safe=False,
       entry_points={
