@@ -40,7 +40,6 @@ PYTHON_TYPES_TO_TANGO_TYPE = {
 
 
 class Weather(Device):
-    __metaclass__ = DeviceMeta
 
     instances = weakref.WeakValueDictionary()  # Access instances for debugging
     DEFAULT_POLLING_PERIOD_MS = int(1 * 1000)
