@@ -18,7 +18,7 @@ import weakref
 
 from functools import partial
 
-from tango.server import Device, DeviceMeta, attribute, command, server_run
+from tango.server import Device, attribute, command, server_run
 
 from tango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 
@@ -27,7 +27,6 @@ LOGGER = logging.getLogger(__name__)
 
 class AntennaPositioner(Device):
     '''Antenna Positioner device server with simulated attributes'''
-    __metaclass__ = DeviceMeta
 
     #Access instances for debugging
     instances = weakref.WeakValueDictionary()
