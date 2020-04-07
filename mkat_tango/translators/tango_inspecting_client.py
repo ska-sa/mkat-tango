@@ -17,6 +17,7 @@ from tango import AttrQuality
 
 log = logging.getLogger("mkat_tango.translators.tango_inspecting_client")
 
+
 class TangoInspectingClient(object):
     """Wrapper around a Tango DeviceProxy that tracks commands/attributes
 
@@ -29,6 +30,7 @@ class TangoInspectingClient(object):
     tango_device_proxy : :class:`tango.DeviceProxy` instance.
 
     """
+
     def __init__(self, tango_device_proxy, logger=log):
         self.tango_dp = tango_device_proxy
         self.device_attributes = {}
@@ -160,8 +162,8 @@ class TangoInspectingClient(object):
             attr_name = self.orig_attr_names_map[attr_name_.lower()]
             received_timestamp = event_data.reception_date.totime()
             quality = AttrQuality.ATTR_INVALID  # Events with errors do not send
-                                                # the attribute value, so regard
-                                                # its reading as invalid.
+            # the attribute value, so regard
+            # its reading as invalid.
             timestamp = time.time()
             event_type = event_data.event
             value = event_data.attr_value
@@ -169,7 +171,7 @@ class TangoInspectingClient(object):
                                str(event_data.errors))
             self.sample_event_callback(attr_name, received_timestamp,
                                        timestamp, value, quality, event_type)
-            
+
             return
 
         event_type = event_data.event
@@ -248,14 +250,13 @@ class TangoInspectingClient(object):
                                      'attribute {}'.format(attribute_name))
             elif 'API_EventPropertiesNotSet' in exc_reasons:
                 self._logger.info('Attribute {} has no event properties set'
-                                    .format(attribute_name))
+                                  .format(attribute_name))
             else:
                 raise
 
     def setup_attribute_sampling(self, attributes=None, periodic=True,
                                  change=True, archive=True, data_ready=False, user=True):
         """Subscribe to all or some types of Tango attribute events"""
-        dp = self.tango_dp
         attributes = attributes if attributes is not None else self.device_attributes
         for attr_name in attributes:
             self._setup_attribute_polling(attr_name)
@@ -270,7 +271,7 @@ class TangoInspectingClient(object):
 
             if archive:
                 if self._is_event_properties_set(events.arch_event):
-                   self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
+                    self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
 
             if data_ready:
                 self._subscribe_to_event(tango.EventType.DATA_READY_EVENT, attr_name)
@@ -307,7 +308,6 @@ class TangoInspectingClient(object):
                     self._logger.info("Polling on attribute '%s' was set up"
                                       " successfully" % attribute_name)
 
-
     def _is_event_properties_set(self, event_info):
         for attr in dir(event_info):
             if attr.startswith('__'):
@@ -330,6 +330,6 @@ class TangoInspectingClient(object):
                 exc_reasons = {arg.reason for arg in exc.args}
                 if 'API_EventNotFound' in exc_reasons:
                     self._logger.info('No event with id {} was set up.'
-                                       .format(event_id))
+                                      .format(event_id))
                 else:
                     raise
