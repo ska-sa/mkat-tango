@@ -29,9 +29,9 @@ from katcp import Sensor, kattypes, Message
 from katcp import server as katcp_server
 from katcp.server import BASE_REQUESTS
 from tango import DevState, AttrDataFormat, CmdArgType
-from tango import (DevFloat, DevDouble,AttrQuality,
-                     DevUChar, DevShort, DevUShort, DevLong, DevULong,
-                     DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
+from tango import (DevFloat, DevDouble, AttrQuality,
+                   DevUChar, DevShort, DevUShort, DevLong, DevULong,
+                   DevLong64, DevULong64, DevBoolean, DevString, DevEnum)
 
 from mkat_tango.translators.utilities import tangoname2katcpname
 from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
@@ -39,7 +39,7 @@ from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
 log = logging.getLogger(__name__)
 
 KATCP_REQUEST_DOC_TEMPLATE = (
-"""?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
+    """?{desc.cmd_name} {desc.in_type} -> {desc.out_type}
 
 Input Parameter
 ---------------
@@ -53,6 +53,7 @@ Returns
 """
 )
 
+
 def dtype_params(dtype):
     try:
         info = np.iinfo(dtype)
@@ -60,11 +61,11 @@ def dtype_params(dtype):
         info = np.finfo(dtype)
     return (info.min, info.max)
 
+
 KatcpTypeInfo = namedtuple('KatcpTypeInfo', ('KatcpType', 'sensor_type', 'params'))
 
-TANGO_FLOAT_TYPES = set([DevFloat, DevDouble])
-TANGO_INT_TYPES = set([DevUChar, DevShort, DevUShort, DevLong,
-                       DevULong, DevLong64, DevULong64])
+TANGO_FLOAT_TYPES = {DevFloat, DevDouble}
+TANGO_INT_TYPES = {DevUChar, DevShort, DevUShort, DevLong, DevULong, DevLong64, DevULong64}
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name
                              for name, num in tango.CmdArgType.names.items()}
@@ -113,12 +114,11 @@ TANGO2KATCP_TYPE_INFO = {
         params=(DevState.names.keys()))
 }
 
-
 TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS = {
-        AttrQuality.ATTR_VALID: Sensor.NOMINAL,
-        AttrQuality.ATTR_WARNING: Sensor.WARN,
-        AttrQuality.ATTR_ALARM: Sensor.ERROR,
-        AttrQuality.ATTR_INVALID: Sensor.FAILURE
+    AttrQuality.ATTR_VALID: Sensor.NOMINAL,
+    AttrQuality.ATTR_WARNING: Sensor.WARN,
+    AttrQuality.ATTR_ALARM: Sensor.ERROR,
+    AttrQuality.ATTR_INVALID: Sensor.FAILURE
 }
 
 
@@ -139,7 +139,7 @@ def tango_attr_descr2katcp_sensors(attr_descr):
     sensor_params = None
 
     if (attr_descr.data_format != AttrDataFormat.SCALAR and
-        attr_descr.data_format != AttrDataFormat.SPECTRUM):
+            attr_descr.data_format != AttrDataFormat.SPECTRUM):
         raise NotImplementedError(
             "KATCP complexity with non-scalar/spectrum data formats")
 
@@ -159,15 +159,15 @@ def tango_attr_descr2katcp_sensors(attr_descr):
     for index in range(attr_descr.max_dim_x):
         if attr_descr.data_type in TANGO_INT_TYPES:
             min_value = (katcp_type_info.params[0]
-                     if attr_min_val == 'Not specified' else int(attr_min_val))
+                         if attr_min_val == 'Not specified' else int(attr_min_val))
             max_value = (katcp_type_info.params[1]
-                     if attr_max_val == 'Not specified' else int(attr_max_val))
+                         if attr_max_val == 'Not specified' else int(attr_max_val))
             sensor_params = [min_value, max_value]
         elif attr_descr.data_type in TANGO_FLOAT_TYPES:
             min_value = (katcp_type_info.params[0]
-                     if attr_min_val == 'Not specified' else float(attr_min_val))
+                         if attr_min_val == 'Not specified' else float(attr_min_val))
             max_value = (katcp_type_info.params[1]
-                     if attr_max_val == 'Not specified' else float(attr_max_val))
+                         if attr_max_val == 'Not specified' else float(attr_max_val))
             sensor_params = [min_value, max_value]
         elif attr_descr.data_type == DevEnum:
             sensor_params = attr_descr.enum_labels
@@ -234,7 +234,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name, input_param)
         raise Return(
-            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+            ('ok', tango_retval) if tango_retval is not None else ('ok',))
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
@@ -244,7 +244,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name, input_param)
         raise Return(
-            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+            ('ok', tango_retval) if tango_retval is not None else ('ok',))
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
@@ -253,7 +253,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name)
         raise Return(
-            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+            ('ok', tango_retval) if tango_retval is not None else ('ok',))
 
     if in_kattype:
         if 'Array' in str(tango_command_descr.in_type):
@@ -384,14 +384,14 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
 
     def add_request(self, request_name, handler):
         """Add a request handler to the internal list."""
-        assert(handler.__doc__ is not None)
+        assert (handler.__doc__ is not None)
         self._request_handlers[request_name] = handler
         setattr(self, 'request_{}'.format(request_name), handler)
 
     def remove_request(self, request_name):
         """Remove a request handler from the internal list."""
         if request_name not in BASE_REQUESTS:
-            del(self._request_handlers[request_name])
+            del (self._request_handlers[request_name])
             delattr(self, 'request_{}'.format(request_name))
 
 
@@ -511,7 +511,7 @@ class TangoDevice2KatcpProxy(object):
                 self._logger.debug(str(nierr), exc_info=True)
 
         new_attributes = [sensor_attribute_map[sensor].name for sensor in sensors_to_add]
-        lower_case_attributes = map(lambda attr_name:attr_name.lower(), new_attributes)
+        lower_case_attributes = map(lambda attr_name: attr_name.lower(), new_attributes)
         orig_attr_names_map = dict(zip(lower_case_attributes, new_attributes))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
         self.inspecting_client.setup_attribute_sampling(new_attributes)
@@ -542,6 +542,7 @@ class TangoDevice2KatcpProxy(object):
         # translated
         def request_dummy(self, req, msg):
             return ('fail', 'Untranslated command {}'.format(request_name))
+
         request_dummy = kattypes.return_reply(request_dummy)
         request_dummy.__doc__ = textwrap.dedent("""
         ?{} Untranslated tango command.
@@ -654,12 +655,12 @@ def tango2katcp_main(args=None, start_ioloop=True):
         description="Launch Tango device -> KATCP translator")
     parser.add_argument('-l', '--loglevel', default='INFO',
                         help='Level for logging as per Python loglevel names, '
-                        '"NO" for no log config. Default: %(default)s')
+                             '"NO" for no log config. Default: %(default)s')
     parser.add_argument("--katcp-server-address", type=address,
                         help="HOST:PORT for the device to listen on", required=True)
     parser.add_argument('tango_device_address', type=str, help=
-                        'Address of the tango device to connect to '
-                        '(in tango format)')
+    'Address of the tango device to connect to '
+    '(in tango format)')
 
     opts = parser.parse_args(args=args)
 
@@ -667,8 +668,8 @@ def tango2katcp_main(args=None, start_ioloop=True):
     if loglevel != 'NO':
         python_loglevel = getattr(logging, loglevel)
         logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
-        '%(pathname)s : %(lineno)d - %(message)s',
+            format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
+                   '%(pathname)s : %(lineno)d - %(message)s',
             level=python_loglevel)
 
     ioloop = tornado.ioloop.IOLoop.current()
@@ -680,6 +681,7 @@ def tango2katcp_main(args=None, start_ioloop=True):
             ioloop.start()
         except KeyboardInterrupt:
             proxy.stop()
+
 
 if __name__ == '__main__':
     tango2katcp_main()
