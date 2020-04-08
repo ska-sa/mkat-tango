@@ -17,14 +17,13 @@ import weakref
 from functools import partial
 
 from tango import AttrQuality, DevState
-from tango.server import Device, DeviceMeta, attribute, command, server_run
+from tango.server import Device, attribute, command, server_run
 
 #Module logger reporting events that occur during normal operation of device
 LOGGER = logging.getLogger(__name__)
 
 class AntennaPositioner(Device):
     '''Antenna Positioner device server with simulated attributes'''
-    __metaclass__ = DeviceMeta
 
     #Access instances for debugging
     instances = weakref.WeakValueDictionary()

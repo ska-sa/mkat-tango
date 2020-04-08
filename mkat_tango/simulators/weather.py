@@ -20,7 +20,7 @@ from tango import Attr, AttrWriteType
 from tango import AttrQuality, DevState, DevLong
 from tango import DevString, DevDouble, DevBoolean
 from tango import UserDefaultAttrProp
-from tango.server import Device, DeviceMeta
+from tango.server import Device
 from tango_simlib import main
 from tango_simlib import model
 from tango_simlib import quantities
@@ -39,7 +39,6 @@ PYTHON_TYPES_TO_TANGO_TYPE = {
         }
 
 class Weather(Device):
-    __metaclass__ = DeviceMeta
 
     instances = weakref.WeakValueDictionary()  # Access instances for debugging
     DEFAULT_POLLING_PERIOD_MS = int(1 * 1000)

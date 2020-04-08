@@ -70,7 +70,6 @@ def _test_attr(attr_dummy_fn):
 
 
 class TangoTestDevice(TS.Device):
-    __metaclass__ = TS.DeviceMeta
     instances = weakref.WeakValueDictionary()  # Access instances for debugging
     # Can be mocked to control timestamps returned by attributes
     attr_time = time.time

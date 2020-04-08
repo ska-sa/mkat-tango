@@ -19,7 +19,6 @@ from katcp import DeviceServer, Sensor, Message
 from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcp.resource_client import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup
-from tango.server import DeviceMeta
 from tango.test_context import DeviceTestContext
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
@@ -140,8 +139,7 @@ class KatcpTestDeviceValidSensorsOnly(DeviceServer):
 
 
 class TangoDeviceServer(TangoDeviceServerBase):
-    __metaclass__ = DeviceMeta
-
+    pass
 
 class _test_KatcpTango2DeviceProxy(unittest.TestCase):
     longMessage = True

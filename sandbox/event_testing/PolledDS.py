@@ -6,7 +6,6 @@ from PyTango import Database, DbDevInfo
 from PyTango import server as TS
 
 class Polled(TS.Device):
-    __metaclass__ = TS.DeviceMeta
 
     @TS.attribute(dtype='DevBoolean',
                   doc='An example scalar boolean attribute', polling_period=1000)
