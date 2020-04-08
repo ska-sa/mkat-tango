@@ -6,37 +6,34 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-import time
 import logging
-import unittest
-import textwrap
-import mock
-import socket
-import tempfile
-import shutil
 import os
-import pkg_resources
+import shutil
+import socket
 import subprocess
+import tempfile
+import textwrap
+import time
+import unittest
 
-import tornado.testing
+import mock
+import pkg_resources
 import tornado.gen
-
-from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat, DevFailed, DeviceProxy
-from tango.server import command
-from tango.test_context import DeviceTestContext
-
+import tornado.testing
 from katcp import Message, Sensor
 from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
-from tango_simlib import model, tango_sim_generator
+from tango import DevVoid, Attr, DevLong, AttrDataFormat, DevFailed, DeviceProxy
+from tango.server import command
+from tango.test_context import DeviceTestContext
+from tango_simlib import tango_sim_generator
 from tango_simlib.utilities import helper_module
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
-from mkat_tango.translators.tests.test_tango_inspecting_client import (
-    TangoTestDevice, ClassCleanupUnittestMixin)
-
 from mkat_tango import testutils
 from mkat_tango.translators import katcp_tango_proxy, utilities
+from mkat_tango.translators.tests.test_tango_inspecting_client import (
+    TangoTestDevice, ClassCleanupUnittestMixin)
 
 LOGGER = logging.getLogger(__name__)
 

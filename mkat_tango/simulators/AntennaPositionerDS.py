@@ -10,17 +10,14 @@
 """
 Tango Device AP simulator.
 """
-import sys
-import time
-import threading
 import logging
+import threading
+import time
 import weakref
-
 from functools import partial
 
+from tango import AttrQuality, DevState
 from tango.server import Device, DeviceMeta, attribute, command, server_run
-
-from tango import AttrQuality, AttrWriteType, DispLevel, DevState, DebugIt
 
 #Module logger reporting events that occur during normal operation of device
 LOGGER = logging.getLogger(__name__)

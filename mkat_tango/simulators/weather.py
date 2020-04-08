@@ -12,25 +12,19 @@ MeerKAT weather simulator and weather simulator control.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 
-import time
-import weakref
 import logging
-import collections
-import tango
-
+import weakref
 from functools import partial
 
-from tango import UserDefaultAttrProp
+from tango import Attr, AttrWriteType
 from tango import AttrQuality, DevState, DevLong
-from tango import Attr, AttrWriteType, WAttribute
 from tango import DevString, DevDouble, DevBoolean
+from tango import UserDefaultAttrProp
 from tango.server import Device, DeviceMeta
-from tango.server import attribute, command
-
-from tango_simlib import sim_test_interface
-from tango_simlib import quantities
-from tango_simlib import model
 from tango_simlib import main
+from tango_simlib import model
+from tango_simlib import quantities
+from tango_simlib import sim_test_interface
 
 MODULE_LOGGER = logging.getLogger(__name__)
 

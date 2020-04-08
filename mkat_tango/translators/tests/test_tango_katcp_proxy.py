@@ -12,32 +12,27 @@
 import logging
 import time
 import unittest
+
 import mock
-
-import tornado.testing
-import tornado.gen
 import tango
-
+from katcp import DeviceServer, Sensor, Message
+from katcp.kattypes import Float, Timestamp, request, return_reply
+from katcp.resource_client import IOLoopThreadWrapper
+from katcp.testutils import start_thread_with_cleanup
 from tango.server import DeviceMeta
 from tango.test_context import DeviceTestContext
-
-from katcp import DeviceServer, Sensor, ProtocolFlags, Message
-from katcp.resource_client import IOLoopThreadWrapper
-from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
-from katcp.kattypes import Float, Timestamp, request, return_reply
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
+from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.tango_katcp_proxy import (get_tango_device_server,
                                                       remove_tango_server_attribute_list,
                                                       add_tango_server_attribute_list,
                                                       create_command2request_handler,
                                                       TangoDeviceServerBase,
                                                       get_katcp_request_data)
-from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
-from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
-        ClassCleanupUnittestMixin)
-
+    ClassCleanupUnittestMixin)
+from mkat_tango.translators.utilities import katcpname2tangoname, tangoname2katcpname
 
 logger = logging.getLogger(__name__)
 

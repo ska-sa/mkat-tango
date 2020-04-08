@@ -1,5 +1,4 @@
 import PyTango
-import subprocess
 
 db = PyTango.Database()
 

@@ -1,9 +1,6 @@
-import time
 import argparse
-import sys
 
 import PyTango
-
 
 parser = argparse.ArgumentParser(description='Setup device archiving')
 parser.add_argument('devices', nargs='+')
