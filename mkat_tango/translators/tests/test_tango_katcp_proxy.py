@@ -9,6 +9,13 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import map
+
 import logging
 import time
 import unittest
@@ -83,8 +90,8 @@ def reset_katcp_tango_server(katcp_server, tango_server):
         """For removing any sensors/attributes that were added during testing.
         """
         extra_sensors = {}
-        for sensor_name, sensor in katcp_server._sensors.items():
-            if sensor_name not in sensors.keys():
+        for sensor_name, sensor in list(katcp_server._sensors.items()):
+            if sensor_name not in list(sensors.keys()):
                 katcp_server.remove_sensor(sensor_name)
                 extra_sensors[sensor_name] = sensor
         remove_tango_server_attribute_list(tango_server, extra_sensors)
@@ -97,7 +104,7 @@ class KatcpTestDevice(DeviceServer):
 
     def setup_sensors(self):
         """Setup some server sensors."""
-        for sensor in sensors.values():
+        for sensor in list(sensors.values()):
             self.add_sensor(sensor)
 
     @request(Float(), Float())
@@ -131,7 +138,7 @@ class KatcpTestDeviceValidSensorsOnly(DeviceServer):
 
     def setup_sensors(self):
         """Setup some server sensors."""
-        for sensor in sensors.values():
+        for sensor in list(sensors.values()):
             # Skip invalid sensors
             if sensor.name in invalid_sensor_names:
                 continue
@@ -287,7 +294,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         for def_attr in default_attributes:
             attr_list.remove(def_attr)
 
-        sens_names = sensors.keys()
+        sens_names = list(sensors.keys())
         sensname2tangoname_list = []
         for sen_name in sens_names:
             if sen_name in invalid_sensor_names:
@@ -302,7 +309,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """
         remove_tango_server_attribute_list(self.instance, sensors)
         add_tango_server_attribute_list(self.instance, sensors)
-        for sensor in self.katcp_server._sensors.values():
+        for sensor in list(self.katcp_server._sensors.values()):
             if sensor.name in invalid_sensor_names:
                 continue
             attr_desc = self.tango_dp.get_attribute_config(
@@ -344,7 +351,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """ Testing if the sensor object properties were translated correctly using the
         proxy translator.
         """
-        for sensor in self.katcp_server._sensors.values():
+        for sensor in list(self.katcp_server._sensors.values()):
             if sensor.name in invalid_sensor_names:
                 continue
             attr_desc = self.tango_dp.get_attribute_config(
@@ -388,7 +395,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         """
         initial_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
         sensor_name = 'failure-present'
-        self.assertIn(sensor_name, self.katcp_server._sensors.keys(), "Sensor not in"
+        self.assertIn(sensor_name, list(self.katcp_server._sensors.keys()), "Sensor not in"
                       " list")
         self.assertIn(katcpname2tangoname(sensor_name), initial_tango_dev_attr_list,
                       "The attribute was not removed")
@@ -408,7 +415,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         initial_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
         sens = Sensor(Sensor.FLOAT, "experimental-sens", "A test sensor", "",
                       [-1.5, 1.5])
-        self.assertNotIn(sens.name, self.katcp_server._sensors.keys(), "Unexpected"
+        self.assertNotIn(sens.name, list(self.katcp_server._sensors.keys()), "Unexpected"
                       " sensor in the sensor list")
         self.assertNotIn(katcpname2tangoname(sens.name),
                          initial_tango_dev_attr_list,
@@ -418,7 +425,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         self.in_ioloop(self.katcp_ic.until_data_synced)()
         time.sleep(0.5)
         current_tango_dev_attr_list = set(list(self.tango_dp.get_attribute_list()))
-        self.assertIn(sens.name, self.katcp_server._sensors.keys(),
+        self.assertIn(sens.name, list(self.katcp_server._sensors.keys()),
                       "Sensor was not added to the katcp device server.")
         self.assertIn(katcpname2tangoname(sens.name),
                       current_tango_dev_attr_list,
@@ -553,7 +560,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         command_list = [command.cmd_name for command in
                         self.device.command_list_query()]
         reqname2tangoname_list = []
-        for req in req_dict.keys():
+        for req in list(req_dict.keys()):
             katcp_tango_name = katcpname2tangoname(req)
             reqname2tangoname_list.append(katcp_tango_name)
             self.assertIn(katcp_tango_name, command_list)
@@ -580,7 +587,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         # (req_name, [[dtype_in, doc_in,], [dtype_out, doc_out], {}])
         doc_in = command.__tango_command__[1][0][1]
         doc_out = command.__tango_command__[1][1][1]
-        self.assertEqual(command.func_name, katcpname2tangoname(req_name),
+        self.assertEqual(command.__name__, katcpname2tangoname(req_name),
                 'The command name is not tango format as expected')
         if with_parameters:
             self.assertEqual(doc_in, req_doc)
@@ -610,7 +617,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
                 'The initial value of the sensor is simalar to the test input result')
         command = getattr(self.instance, req.split('-')[0])
         if len(args) > 0:
-            reply = command(map(str, *args))
+            reply = command(list(map(str, *args)))
         else:
             reply = command()
         self.assertEqual(reply[0], 'ok', 'Request unsuccessful')

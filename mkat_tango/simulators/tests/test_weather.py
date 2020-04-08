@@ -6,6 +6,9 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import time
 import logging
 import mock
@@ -39,7 +42,7 @@ def never_repeat(fn):
     cache = set()
 
     def decorated_fn(*args, **kwargs):
-        quant = fn.im_self
+        quant = fn.__self__
         last_update_time = quant.last_update_time
         val = fn(*args, **kwargs)
         i = 0
@@ -131,7 +134,7 @@ class test_Weather(unittest.TestCase):
         # Mock the simulation quantities' next_val() call to ensure that the same value is
         # never returned twice, otherwise it is impossible to tell if a value really
         # changed
-        for var, quant in model.sim_quantities.items():
+        for var, quant in list(model.sim_quantities.items()):
             if var in varying_attributes:
                 unique_next_val = never_repeat(quant.next_val)
                 patcher = mock.patch.object(quant, 'next_val')
@@ -159,7 +162,7 @@ class test_Weather(unittest.TestCase):
 
         # 1) check that the value of *each* attribute has changed
         # 2) check that the difference in timestamp is more than update_period
-        for attr_name, initial_attr in initial_vals.items():
+        for attr_name, initial_attr in list(initial_vals.items()):
             updated_attr = updated_vals[attr_name]
             self.assertNotEqual(updated_attr['value'], initial_attr['value'],
                                 "attribute {!r} unchanged after update".format(attr_name))

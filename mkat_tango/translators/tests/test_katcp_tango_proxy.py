@@ -6,6 +6,12 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import logging
 import os
 import shutil
@@ -127,7 +133,7 @@ class test_TangoDevice2KatcpProxy(
 
         # The SpectrumDevDouble attribute name needs to be broken down to the KATCP
         # equivalent.
-        for attr_name, attr_config in attributes.items():
+        for attr_name, attr_config in list(attributes.items()):
             if attr_config.data_format == AttrDataFormat.SPECTRUM:
                 attribute_list.remove(attr_name)
                 for index in range(attr_config.max_dim_x):

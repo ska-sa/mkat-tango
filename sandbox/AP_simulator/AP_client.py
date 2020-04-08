@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
 import time
 import PyTango
 import logging
@@ -16,7 +21,7 @@ AP = PyTango.DeviceProxy("test/antenna_positioner/1")
 # Set up a listener
 def printer(event_data):
     try:
-        print event_data # A PyTango.EventData instance
+        print(event_data) # A PyTango.EventData instance
     except Exception:
         logger.exception('Exception while handling event, event_data: {}'
                          .format(event_data))

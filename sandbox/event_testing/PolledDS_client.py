@@ -1,3 +1,9 @@
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+
 import sys
 import time
 import logging
@@ -30,8 +36,8 @@ def printer(event_data):
         name = attr_value.name
         timestamp = attr_value.time.totime()
         received_timestamp = event_data.reception_date.totime()
-        print 'event_type: {} name: {} val: {}  time: {:.5f} received_time: {:.5f}'.format(
-            event_type, name, value, timestamp, received_timestamp)
+        print('event_type: {} name: {} val: {}  time: {:.5f} received_time: {:.5f}'.format(
+            event_type, name, value, timestamp, received_timestamp))
     except Exception:
         logger.exception('Exception while handling event, event_data: {}'
                          .format(event_data))

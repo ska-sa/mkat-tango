@@ -6,8 +6,15 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
 
+from builtins import object
 import time
 import logging
 
@@ -41,7 +48,7 @@ class TangoInspectingClient(object):
     def __del__(self):
         try:
             self.tango_dp.unsubscribe_event(self._interface_change_event_id)
-        except tango.DevFailed, exc:
+        except tango.DevFailed as exc:
             exc_reasons = {arg.reason for arg in exc.args}
             if 'API_EventNotFound' in exc_reasons:
                 self._logger.debug('No event with id {} was set up.'
@@ -240,7 +247,7 @@ class TangoInspectingClient(object):
                     stateless=True
                 )
                 self._event_ids.add(event_id)
-        except tango.DevFailed, exc:
+        except tango.DevFailed as exc:
             exc_reasons = {arg.reason for arg in exc.args}
             if 'API_AttributePollingNotStarted' in exc_reasons:
                 self._logger.warning('TODO NM: Need to implement something for '
@@ -289,7 +296,7 @@ class TangoInspectingClient(object):
                     self._logger.info(
                         "Setting up polling on attribute '%s'." % attribute_name)
                     self.tango_dp.poll_attribute(attribute_name, poll_period)
-                except tango.DevFailed, exc:
+                except tango.DevFailed as exc:
                     exc_reasons = {arg.reason for arg in exc.args}
                     if 'API_AlreadyPolled' in exc_reasons:
                         retry = False
@@ -326,7 +333,7 @@ class TangoInspectingClient(object):
             event_id = self._event_ids.pop()
             try:
                 self.tango_dp.unsubscribe_event(event_id)
-            except tango.DevFailed, exc:
+            except tango.DevFailed as exc:
                 exc_reasons = {arg.reason for arg in exc.args}
                 if 'API_EventNotFound' in exc_reasons:
                     self._logger.info('No event with id {} was set up.'
