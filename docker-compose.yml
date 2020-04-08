@@ -1,0 +1,6 @@
+version: '3'
+services:
+  mkat-tango:
+    build: .
+    volumes:
+    - .:/usr/src/code
