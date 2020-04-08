@@ -529,6 +529,7 @@ def get_tango_device_server():
     # The device __metaclass__ must be in the final class defination and cannot
     # come from the super class. i.e. The double-definitation
     class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
+        pass
 
     return TangoDeviceServer
 
