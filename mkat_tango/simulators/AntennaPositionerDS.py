@@ -162,7 +162,7 @@ class AntennaPositioner(Device):
 
         while running.is_set():
             if (self.req_mode[0] == 'stop'
-                    and sim_quantities['moving'] == False):
+                    and sim_quantities['moving'] is False):
                 self.act_mode = 'stop', time_func(), AttrQuality.ATTR_VALID
                 time.sleep(self.UPDATE_PERIOD)
                 continue
@@ -182,7 +182,7 @@ class AntennaPositioner(Device):
                 requested = sim_quantities['requested'][0]
                 curr_delta = abs(actual - requested)
                 move_delta = min(max_slew, curr_delta)
-                new_position = actual + cmp(requested, actual) * move_delta
+                new_position = actual + cmp(requested, actual) * move_delta # noqa: F82
                 quality = AttrQuality.ATTR_VALID
                 sim_quantities['actual'] = (new_position, sim_time, quality)
                 self.push_change_event(attr_name, new_position, sim_time,

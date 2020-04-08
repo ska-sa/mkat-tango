@@ -38,8 +38,9 @@ class AntennaPositionerTestCase(unittest.TestCase):
         super(AntennaPositionerTestCase, self).setUp()
 
         self.tango_dp = self.tango_context.device
-        self.device_server_instance = (AntennaPositionerDS.AntennaPositioner
-            .instances[self.tango_dp.name()])
+        self.device_server_instance = (
+            AntennaPositionerDS.AntennaPositioner.instances[self.tango_dp.name()]
+        )
         self.az_state = self.device_server_instance.azimuth_quantities
         self.el_state = self.device_server_instance.elevation_quantities
 

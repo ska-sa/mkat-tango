@@ -161,21 +161,31 @@ class WeatherModel(model.Model):
                 max_value=30, min_value=0,
                 unit="m/s",
                 period=Weather.DEFAULT_POLLING_PERIOD_MS))
-        self.sim_quantities['wind-direction'] = GaussianSlewLimited(
-            mean=0, std_dev=150, max_slew_rate=60,
-            min_bound=0, max_bound=359.9999, meta=dict(
-                label="Wind direction",
-                dtype=float,
-                description="Wind direction in central telescope area.",
-                max_value=360, min_value=0,
-                unit="Degrees",
-                period=Weather.DEFAULT_POLLING_PERIOD_MS))
-        self.sim_quantities['input-comms-ok'] = ConstantQuantity(
-            start_value=True, meta=dict(
-                label="Input communication OK",
-                dtype=bool,
-                description="Communications with all weather sensors are nominal.",
-                period=Weather.DEFAULT_POLLING_PERIOD_MS))
+        self.sim_quantities["wind-direction"] = GaussianSlewLimited(
+            mean=0,
+            std_dev=150,
+            max_slew_rate=60,
+            min_bound=0,
+            max_bound=359.9999,
+            meta={
+                "label": "Wind direction",
+                "dtype": float,
+                "description": "Wind direction in central telescope area.",
+                "max_value": 360,
+                "min_value": 0,
+                "unit": "Degrees",
+                "period": Weather.DEFAULT_POLLING_PERIOD_MS,
+            },
+        )
+        self.sim_quantities["input-comms-ok"] = ConstantQuantity(
+            start_value=True,
+            meta={
+                "label": "Input communication OK",
+                "dtype": bool,
+                "description": "Communications with all weather sensors are nominal.",
+                "period": Weather.DEFAULT_POLLING_PERIOD_MS,
+            },
+        )
         super(WeatherModel, self).setup_sim_quantities()
 
 
