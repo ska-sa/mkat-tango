@@ -10,26 +10,22 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
-import sys
-import weakref
 import logging
-import os
+import weakref
 
-import tornado
 import tango
-
+import tornado
 from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager, Message
-from katcp.core import Sensor
 from katcp.client import BlockingClient
+from katcp.core import Sensor
+from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
+from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
+from tango.server import Device, command, attribute
+from tango.server import server_run, device_property
 
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
-
-from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
-from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
-from tango.server import Device, DeviceMeta, command, attribute
-from tango.server import server_run, device_property
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -533,7 +529,7 @@ def get_tango_device_server():
     # The device __metaclass__ must be in the final class defination and cannot
     # come from the super class. i.e. The double-definitation
     class TangoDeviceServer(TangoDeviceServerBase, TangoDeviceServerCommands):
-        __metaclass__ = DeviceMeta
+        pass
 
     return TangoDeviceServer
 

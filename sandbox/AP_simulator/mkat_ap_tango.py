@@ -20,7 +20,7 @@ from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 from mkat_tango.translators.tango_katcp_proxy import katcp_sensor2tango_attr
 from mkat_tango.translators.utilities import tangoname2katcpname
 
-from PyTango.server import Device, DeviceMeta, command, server_run
+from PyTango.server import Device, command, server_run
 from PyTango import  DevState
 from PyTango import DevString, DevBoolean, DevDouble, DevVarDoubleArray
 from PyTango import  Except, ErrSeverity
@@ -29,7 +29,6 @@ MODULE_LOGGER = logging.getLogger(__name__)
 
 
 class MkatAntennaPositioner(Device):
-    __metaclass__ = DeviceMeta
     instances = weakref.WeakValueDictionary()
 
     COMMAND_ERROR_REASON = "MkatAntennaPositioner_CommandFailed"

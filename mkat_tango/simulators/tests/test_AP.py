@@ -10,13 +10,13 @@
 Tango Device AP simulator test cases.
 """
 import time
-import mock
 import unittest
-import threading
 
+import mock
 from tango.test_context import DeviceTestContext
 
 from mkat_tango.simulators import AntennaPositionerDS
+
 
 class AntennaPositionerTestCase(unittest.TestCase):
     '''Test case for the Antenna Positioner device server'''

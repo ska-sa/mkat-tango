@@ -6,22 +6,19 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-import unittest
 import logging
-import weakref
-import time
 import operator
-import sys
-import mock
-
-from functools import wraps
+import time
+import unittest
+import weakref
 from collections import defaultdict
+from functools import wraps
 
-from tango import server as TS
-from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
-from tango.test_context import DeviceTestContext
-
+import mock
 from katcp.testutils import start_thread_with_cleanup
+from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
+from tango import server as TS
+from tango.test_context import DeviceTestContext
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
@@ -73,7 +70,6 @@ def _test_attr(attr_dummy_fn):
 
 
 class TangoTestDevice(TS.Device):
-    __metaclass__ = TS.DeviceMeta
     instances = weakref.WeakValueDictionary()  # Access instances for debugging
     # Can be mocked to control timestamps returned by attributes
     attr_time = time.time
