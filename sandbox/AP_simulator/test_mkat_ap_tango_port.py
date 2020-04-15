@@ -14,7 +14,6 @@ Tests for the MeerKAT Antenna Positioner Simulator.
 """
 from __future__ import division, print_function, absolute_import
 
-
 import unittest2 as unittest
 import time
 import logging
@@ -47,7 +46,10 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "acu-spline-status",
-        "Status relating to the number of track samples that are currently available in the ACU stack (green=optimal)",
+        (
+            "Status relating to the number of track samples that are currently available in "
+            "the ACU stack (green=optimal)"
+        ),
         "",
         "discrete",
         "green",
@@ -56,7 +58,10 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "amp-power-cycle-interlocked",
-        "True if waiting time presently applies because there has been too many power cycles of the main contactor for one of the drives",
+        (
+            "True if waiting time presently applies because there has been too many power"
+            " cycles of the main contactor for one of the drives"
+        ),
         "",
         "boolean",
     ),
@@ -175,7 +180,10 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "azim-range-switch-failed",
-        "Azimuth range switch signal is not as expected at either the azimuth travel limits or in the non-ambiguous range",
+        (
+            "Azimuth range switch signal is not as expected at either the azimuth travel"
+            " limits or in the non-ambiguous range"
+        ),
         "",
         "boolean",
     ),
@@ -629,7 +637,10 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "regen-resistor-overtemp",
-        "The regeneration resistor of the power supply module for the servo amplifiers reports an overtemperature or not",
+        (
+            "The regeneration resistor of the power supply module for the"
+            " servo amplifiers reports an overtemperature or not"
+        ),
         "",
         "boolean",
     ),
@@ -888,9 +899,11 @@ class TestProxyWrapper(object):
                 reply = derr[0].desc
         else:
             try:
-                reply = self.device_proxy.command_inout(
-                    command_name, params if len(params) > 1 else params[0]
-                )
+                if len(params):
+                    command_params = params
+                else:
+                    command_params = params[0]
+                reply = self.device_proxy.command_inout(command_name, command_params)
             except DevFailed as derr:
                 reply = derr[0].desc
 
@@ -900,17 +913,17 @@ class TestProxyWrapper(object):
             command_name,
             "Reply to request '%s'" "has name '%s'." % (command_name, reply_name),
         )
+        if reply:
+            msg_reply = reply[1]
+        else:
+            msg_reply = "(with no error message)"
+
         msg = (
             "Expected command '%s' called with parameters %r to succeed, "
-            "but it failed %s."
-            % (
-                command_name,
-                params,
-                ("with error '%s'" % reply[1] if reply else "(with no error message)"),
-            )
+            "but it failed %s." % (command_name, params, ("with error '%s'" % msg_reply))
         )
 
-        self.test_inst.assertTrue(reply == None, msg)
+        self.test_inst.assertTrue(reply is None, msg)
 
     def assertCommandFails(self, command_name, *params, **kwargs):
         """Assert that given command fails when called with given parameters.
@@ -928,10 +941,12 @@ class TestProxyWrapper(object):
             except DevFailed as derr:
                 reply = derr[0].desc
         else:
+            if len(params) > 1:
+                command_params = params
+            else:
+                command_params = params[0]
             try:
-                reply = self.device_proxy.command_inout(
-                    command_name, params if len(params) > 1 else params[0]
-                )
+                reply = self.device_proxy.command_inout(command_name, command_params)
             except DevFailed as derr:
                 reply = derr[0].desc
 
@@ -942,7 +957,7 @@ class TestProxyWrapper(object):
             "Expected command '%s' called with parameters %r to fail, "
             "but it was successful." % (command_name, params)
         )
-        self.test_inst.assertFalse(reply == None, msg)
+        self.test_inst.assertFalse(reply is None, msg)
 
     def wait_until_attribute_equals(
         self,
@@ -998,7 +1013,6 @@ class TestProxyWrapper(object):
 
 
 class MkatApTangoTests(DeviceTestCase):
-
     external = False
     device = MkatAntennaPositioner
 
@@ -1033,8 +1047,8 @@ class MkatApTangoTests(DeviceTestCase):
             "\n\n!Actual sensor list differs from expected list!\n\nThese sensors are"
             " missing:\n%s\n\nFound these unexpected sensors:\n%s"
             % (
-                "\n".join(sorted([str(t) for t in expected_set - actual_set])),
-                "\n".join(sorted([str(t) for t in actual_set - expected_set])),
+                "\n".join(sorted(expected_set - actual_set)),
+                "\n".join(sorted(actual_set - expected_set)),
             ),
         )
 
@@ -1055,14 +1069,13 @@ class MkatApTangoTests(DeviceTestCase):
             "\n\n!Actual request list differs from expected list!\n\nThese requests are"
             " missing:\n%s\n\nFound these unexpected requests:\n%s"
             % (
-                "\n".join(sorted([str(t) for t in expected_set - actual_set])),
-                "\n".join(sorted([str(t) for t in actual_set - expected_set])),
+                "\n".join(sorted(expected_set - actual_set)),
+                "\n".join(sorted(actual_set - expected_set)),
             ),
         )
 
 
 class TestMkatAp(DeviceTestCase):
-
     external = False
     device = MkatAntennaPositioner
 
@@ -1409,6 +1422,5 @@ class TestMkatAp(DeviceTestCase):
 
 
 if __name__ == "__main__":
-
     logging.basicConfig(level=logging.INFO)
     unittest.main()
