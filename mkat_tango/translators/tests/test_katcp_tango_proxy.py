@@ -184,9 +184,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 attr_name = utilities.katcpname2tangoname(sensor.name)
                 attribute_value = attributes[attr_name][0]
                 if sensor.name in ["ScalarDevEnum"]:
-                    self.assertEqual(
-                        {"ONLINE", "OFFLINE", "RESERVE"}, set(sensor.params)
-                    )
+                    self.assertEqual({"ONLINE", "OFFLINE", "RESERVE"}, set(sensor.params))
                     self.assertEqual(sensor_value, sensor.params[attribute_value])
                 else:
                     self.assertEqual(sensor_value, attribute_value)
