@@ -29,7 +29,10 @@ alarm_descriptions = {
 alarm_receivers = {
     "AlarmReceivers": [
         "ANC_Wind_Speed:cam@ska.ac.za",
-        "ANC_Wind_Gust:cam@ska.ac.za, ACTION(alarm:command:mkat_sim/mkat_ap_tango/1/Stow)",
+        (
+            "ANC_Wind_Gust:cam@ska.ac.za,"
+            " ACTION(alarm:command:mkat_sim/mkat_ap_tango/1/Stow)"
+        ),
     ]
 }
 alarm_severities = {"AlarmSeverities": ["ANC_Wind_Speed:ALARM", "ANC_Wind_Gust:ALARM"]}
