@@ -11,6 +11,7 @@
 Tango Device AP simulator.
 """
 from __future__ import print_function, division, absolute_import
+from builtins import cmp
 
 import logging
 import threading
@@ -206,7 +207,7 @@ class AntennaPositioner(Device):
         last_update_time = time_func()
 
         while running.is_set():
-            if self.req_mode[0] == "stop" and sim_quantities["moving"] == False:
+            if self.req_mode[0] is "stop" and sim_quantities["moving"] is False:
                 self.act_mode = "stop", time_func(), AttrQuality.ATTR_VALID
                 time.sleep(self.UPDATE_PERIOD)
                 continue
@@ -249,8 +250,8 @@ class AntennaPositioner(Device):
         """Checkes the motion flag of both el-az coordinates if false
                and then sets the AP mode to stop"""
         if (
-            self.azimuth_quantities["moving"] == False
-            and self.elevation_quantities["moving"] == False
+            self.azimuth_quantities["moving"] is False
+            and self.elevation_quantities["moving"] is False
         ):
             self.act_mode = "stop", time.time(), AttrQuality.ATTR_VALID
 
