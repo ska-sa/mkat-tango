@@ -100,46 +100,46 @@ class WeatherModel(model.Model):
         )
         ConstantQuantity = partial(quantities.ConstantQuantity, start_time=start_time)
         self.sim_quantities.update(
-            dict(
-                temperature=GaussianSlewLimited(
+            {
+                "temperature": GaussianSlewLimited(
                     mean=20,
                     std_dev=20,
                     max_slew_rate=5,
                     min_bound=-10,
                     max_bound=55,
-                    meta=dict(
-                        label="Outside Temperature",
-                        dtype=float,
-                        description="Current temperature outside near the telescope.",
-                        min_warning=-5,
-                        max_warning=45,
-                        min_alarm=-9,
-                        max_alarm=50,
-                        min_value=-10,
-                        max_value=51,
-                        unit="Degrees Centrigrade",
-                        period=Weather.DEFAULT_POLLING_PERIOD_MS,
-                    ),
+                    meta={
+                        "label": "Outside Temperature",
+                        "dtype": float,
+                        "description": "Current temperature outside near the telescope.",
+                        "min_warning": -5,
+                        "max_warning": 45,
+                        "min_alarm": -9,
+                        "max_alarm": 50,
+                        "min_value": -10,
+                        "max_value": 51,
+                        "unit": "Degrees Centrigrade",
+                        "period": Weather.DEFAULT_POLLING_PERIOD_MS,
+                    },
                 ),
-                insolation=GaussianSlewLimited(
+                "insolation": GaussianSlewLimited(
                     mean=500,
                     std_dev=1000,
                     max_slew_rate=100,
                     min_bound=0,
                     max_bound=1100,
-                    meta=dict(
-                        label="Insolation",
-                        dtype=float,
-                        description="Sun intensity in central telescope area.",
-                        max_warning=1000,
-                        max_alarm=1100,
-                        max_value=1200,
-                        min_value=0,
-                        unit="W/m^2",
-                        period=Weather.DEFAULT_POLLING_PERIOD_MS,
-                    ),
+                    meta={
+                        "label": "Insolation",
+                        "dtype": float,
+                        "description": "Sun intensity in central telescope area.",
+                        "max_warning": 1000,
+                        "max_alarm": 1100,
+                        "max_value": 1200,
+                        "min_value": 0,
+                        "unit": "W/m^2",
+                        "period": Weather.DEFAULT_POLLING_PERIOD_MS,
+                    },
                 ),
-                pressure=GaussianSlewLimited(
+                "pressure": GaussianSlewLimited(
                     mean=650,
                     std_dev=100,
                     max_slew_rate=50,
@@ -157,7 +157,7 @@ class WeatherModel(model.Model):
                         "period": Weather.DEFAULT_POLLING_PERIOD_MS,
                     },
                 ),
-                rainfall=GaussianSlewLimited(
+                "rainfall": GaussianSlewLimited(
                     mean=1.5,
                     std_dev=0.5,
                     max_slew_rate=0.1,
@@ -175,7 +175,7 @@ class WeatherModel(model.Model):
                         "period": Weather.DEFAULT_POLLING_PERIOD_MS,
                     },
                 ),
-            )
+            }
         )
         self.sim_quantities["relative-humidity"] = GaussianSlewLimited(
             mean=65,
