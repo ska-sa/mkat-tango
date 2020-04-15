@@ -43,10 +43,10 @@ def printer(event_data):
         )
 
 
-event_ids = dict(
-    change=td.subscribe_event(attr_name, PyTango.EventType.CHANGE_EVENT, printer),
-    periodic=td.subscribe_event(attr_name, PyTango.EventType.PERIODIC_EVENT, printer),
-)
+event_ids = {
+    "change": td.subscribe_event(attr_name, PyTango.EventType.CHANGE_EVENT, printer),
+    "periodic": td.subscribe_event(attr_name, PyTango.EventType.PERIODIC_EVENT, printer),
+}
 
 
 time.sleep(1000)
