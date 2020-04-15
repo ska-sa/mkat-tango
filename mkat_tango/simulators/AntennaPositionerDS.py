@@ -10,6 +10,8 @@
 """
 Tango Device AP simulator.
 """
+from __future__ import print_function, division, absolute_import
+
 import logging
 import threading
 import time

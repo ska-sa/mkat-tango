@@ -11,6 +11,8 @@
 MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+from __future__ import division, print_function, absolute_import
+
 
 from katproxy.sim.mkat_ap import MkatApModel
 

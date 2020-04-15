@@ -9,6 +9,8 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+from __future__ import print_function, division, absolute_import
+
 import logging
 import time
 import unittest
@@ -580,7 +582,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         # (req_name, [[dtype_in, doc_in,], [dtype_out, doc_out], {}])
         doc_in = command.__tango_command__[1][0][1]
         doc_out = command.__tango_command__[1][1][1]
-        self.assertEqual(command.func_name, katcpname2tangoname(req_name),
+        self.assertEqual(command.__name__, katcpname2tangoname(req_name),
                 'The command name is not tango format as expected')
         if with_parameters:
             self.assertEqual(doc_in, req_doc)

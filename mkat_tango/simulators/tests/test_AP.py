@@ -9,6 +9,8 @@
 """
 Tango Device AP simulator test cases.
 """
+from __future__ import print_function, division, absolute_import
+
 import time
 import unittest
 

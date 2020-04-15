@@ -6,6 +6,8 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from __future__ import print_function, division, absolute_import
+
 import time
 import logging
 import mock
@@ -39,7 +41,7 @@ def never_repeat(fn):
     cache = set()
 
     def decorated_fn(*args, **kwargs):
-        quant = fn.im_self
+        quant = fn.__self__
         last_update_time = quant.last_update_time
         val = fn(*args, **kwargs)
         i = 0

@@ -1,3 +1,5 @@
+from __future__ import division, print_function, absolute_import
+
 import time
 import sys
 import logging
@@ -10,7 +12,7 @@ class Polled(TS.Device):
     @TS.attribute(dtype='DevBoolean',
                   doc='An example scalar boolean attribute', polling_period=1000)
     def ScalarBool(self):
-        print "Getting ScalarBool at {}".format(time.time())
+        print("Getting ScalarBool at {}".format(time.time()))
         return True
 
 if __name__ == "__main__":

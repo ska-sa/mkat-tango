@@ -6,6 +6,8 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from __future__ import print_function, division, absolute_import
+
 import logging
 import os
 import shutil

@@ -9,6 +9,7 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+from __future__ import division, print_function, absolute_import
 
 SENSOR_ATTRIBUTE_NAMES = {}
 
