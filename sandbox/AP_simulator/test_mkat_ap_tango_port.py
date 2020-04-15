@@ -1031,11 +1031,6 @@ class MkatApTangoTests(DeviceTestCase):
             # Some sensors are specific to the simulator and not specified in the
             # ICD and as such should not be tested for on the KATCP interface
             # of external devices.
-            # expected_set = set([s[0]
-            # for s in EXPECTED_SENSOR_LIST
-            # if s[0] not in ['actual-azim-rate', 'actual-elev-rate',
-            # 'requested-azim-rate', 'requested-elev-rate']
-            # ])
             pass
         else:
             expected_set = set([s[0] for s in EXPECTED_SENSOR_LIST])
