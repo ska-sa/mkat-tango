@@ -38,7 +38,7 @@ device_proxy.Clear_Track_Stack()
 
 # 7.Enable_Point_Error_Refraction (enable/disable the compensation for
 # RF refraction provided by the ACU)
-# Input: boolean
+# Input : boolean
 device_proxy.Enable_Point_Error_Refraction(True)
 
 # 8.Reset_Failures (Informs the AP to clear/acknowledge any failures)
