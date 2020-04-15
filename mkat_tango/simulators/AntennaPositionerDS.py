@@ -250,8 +250,8 @@ class AntennaPositioner(Device):
         """Checkes the motion flag of both el-az coordinates if false
                and then sets the AP mode to stop"""
         if (
-            self.azimuth_quantities["moving"] is False and
-            self.elevation_quantities["moving"] is False
+            self.azimuth_quantities["moving"] is False
+            and self.elevation_quantities["moving"] is False
         ):
             self.act_mode = "stop", time.time(), AttrQuality.ATTR_VALID
 

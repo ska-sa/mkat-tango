@@ -172,7 +172,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("azim-overcurrent-error",
-     "True if the current drawn by the azimuth drive exceeds the configured overcurrent threshold",
+     ("True if the current drawn by the azimuth drive exceeds the"
+      " configured overcurrent threshold"),
      "",
      "boolean",
      ),
@@ -222,7 +223,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("cabinet-breakers-all-ok",
-     "Not ok if at least one of the automatic breakers inside the drive cabinet has tripped",
+     ("Not ok if at least one of the automatic breakers"
+      " inside the drive cabinet has tripped"),
      "",
      "boolean",
      ),
@@ -340,7 +342,8 @@ EXPECTED_SENSOR_LIST = [
      "fail",
      ),
     ("drive-power-supply-failed",
-     "The power supply module for the servo amplifiers failed or indicate an overtemperature",
+     ("The power supply module for the servo amplifiers"
+      " failed or indicate an overtemperature"),
      "",
      "boolean",
      ),
@@ -422,7 +425,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("elev-overcurrent-error",
-     "True if the current drawn by the elevation drive exceeds the configured overcurrent threshold",
+     ("True if the current drawn by the elevation drive exceeds the configured"
+      " overcurrent threshold"),
      "",
      "boolean",
      ),
@@ -461,7 +465,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("failure-present",
-     "Indicates whether at least one failure that prevents antenna movement is currently latched",
+     ("Indicates whether at least one failure that prevents antenna"
+      " movement is currently latched"),
      "",
      "boolean",
      ),
@@ -470,7 +475,8 @@ EXPECTED_SENSOR_LIST = [
      "",
      "boolean"),
     ("indexer-position",
-     "The current receiver indexer position as a discrete mapped to the receiver band it is at",
+     ("The current receiver indexer position as a discrete mapped to the"
+      " receiver band it is at"),
      "",
      "discrete",
      "undefined",
@@ -553,7 +559,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("on-source-threshold",
-     "Current threshold value used by the 'on-source-threshold' condition to determine if on target",
+     ("Current threshold value used by the 'on-source-threshold'"
+      " condition to determine if on target"),
      "deg",
      "float",
      "-10000000",
@@ -684,7 +691,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("ridx-overcurrent-error",
-     "True if the current drawn by the receiver indexer drive exceeds the configured overcurrent threshold",
+     ("True if the current drawn by the receiver indexer drive exceeds the"
+      " configured overcurrent threshold"),
      "",
      "boolean",
      ),
@@ -704,7 +712,8 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("ridx-soft-prelimit-ccw-reached",
-     "Receiver indexer software prelimit has been reached in the counterclockwise direction",
+     ("Receiver indexer software prelimit has been reached in the"
+      " counterclockwise direction"),
      "",
      "boolean",
      ),
@@ -729,14 +738,16 @@ EXPECTED_SENSOR_LIST = [
      "boolean",
      ),
     ("spem-corr-azim",
-     "Currently applied pointing error correction in azimuth based on systematic error model",
+     ("Currently applied pointing error correction in azimuth based on"
+      " systematic error model"),
      "arcsec",
      "float",
      "-3600",
      "3600",
      ),
     ("spem-corr-elev",
-     "Currently applied pointing error correction in elevation based on systematic error model",
+     ("Currently applied pointing error correction in elevation based on"
+      " systematic error model"),
      "arcsec",
      "float",
      "-3600",
@@ -776,7 +787,8 @@ EXPECTED_SENSOR_LIST = [
      "3600",
      ),
     ("tilt-corr-elev",
-     "Currently applied pointing error correction in elevation based on tiltmeter readout",
+     ("Currently applied pointing error correction in"
+      " elevation based on tiltmeter readout"),
      "arcsec",
      "float",
      "-3600",
@@ -994,10 +1006,11 @@ class TestProxyWrapper(object):
         success = False
 
         if attr_data_type == CmdArgType.DevDouble:
-            def cmpfun(got, exp): return abs(got - exp) < 10 ** -places
+            def cmpfun(got, exp):
+                return abs(got - exp) < 10 ** -places
         else:
-            def cmpfun(got, exp): return got == exp
-
+            def cmpfun(got, exp):
+                return got == exp
         lastval = None
         while time.time() < stoptime:
             lastval = self.device_proxy.read_attribute(attr_name).value
