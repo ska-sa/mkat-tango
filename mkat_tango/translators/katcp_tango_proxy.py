@@ -288,7 +288,11 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name, input_param)
-        raise Return(("ok", tango_retval) if tango_retval is not None else ("ok",))
+        if tango_retval is not None:
+            retval = ("ok", tango_retval)
+        else:
+            retval = ("ok",)
+        raise Return(retval)
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
@@ -297,7 +301,11 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name, input_param)
-        raise Return(("ok", tango_retval) if tango_retval is not None else ("ok",))
+        if tango_retval is not None:
+            retval = ("ok", tango_retval)
+        else:
+            retval = ("ok",)
+        raise Return(retval)
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
@@ -306,10 +314,10 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name)
         if tango_retval is not None:
-            return_message = ("ok", tango_retval)
+            retval = ("ok", tango_retval)
         else:
-            return_message = ("ok",)
-        raise Return(return_message)
+            retval = ("ok",)
+        raise Return(retval)
 
     if in_kattype:
         if "Array" in str(tango_command_descr.in_type):
