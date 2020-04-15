@@ -78,7 +78,7 @@ sensors = {
 }
 
 # Names of the KATCP sensors that cannot be converted to a valid tango attribute
-invalid_sensor_names = set(["invalid-float", "a-bad-bad-int"])
+invalid_sensor_names = {"invalid-float", "a-bad-bad-int"}
 
 default_attributes = {
     "State",
@@ -169,9 +169,9 @@ class _test_KatcpTango2DeviceProxy(unittest.TestCase):
         cls.katcp_server.start()
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
-        cls.properties = dict(
-            katcp_address=katcp_server_host + ":" + str(katcp_server_port)
-        )
+        cls.properties = {
+            "katcp_address": katcp_server_host + ":" + str(katcp_server_port)
+        }
         cls.tango_context = DeviceTestContext(cls.device, properties=cls.properties)
         cls.tango_context.start()
         super(_test_KatcpTango2DeviceProxy, cls).setUpClass()
@@ -214,9 +214,9 @@ class _test_KatcpTango2DeviceProxyCommands(ClassCleanupUnittestMixin, unittest.T
         start_thread_with_cleanup(cls, cls.katcp_server)
         address = cls.katcp_server.bind_address
         katcp_server_host, katcp_server_port = address
-        cls.properties = dict(
-            katcp_address=katcp_server_host + ":" + str(katcp_server_port)
-        )
+        cls.properties = {
+            "katcp_address": katcp_server_host + ":" + str(katcp_server_port)
+        }
         with mock.patch(
             "mkat_tango.translators.tango_katcp_proxy.get_katcp_address"
         ) as mock_get_katcp_address:
