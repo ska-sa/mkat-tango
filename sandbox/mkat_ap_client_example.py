@@ -36,7 +36,8 @@ device_proxy.Stow()
 # 6.Clear_Track_Stack (Clear the stack with the track samples)
 device_proxy.Clear_Track_Stack()
 
-# 7.Enable_Point_Error_Refraction (enable/disable the compensation for RF refraction provided by the ACU)
+# 7.Enable_Point_Error_Refraction (enable/disable the compensation for
+# RF refraction provided by the ACU)
 # Input: boolean
 device_proxy.Enable_Point_Error_Refraction(True)
 
@@ -44,15 +45,16 @@ device_proxy.Enable_Point_Error_Refraction(True)
 device_proxy.Reset_Failures()
 
 # 9.Set_Indexer_Position (select receiver indexer position)
-# Input: string [select from: 'l', 'x', 'u', 's']
+# Input : string [select from: 'l', 'x', 'u', 's']
 device_proxy.Set_Indexer_Position("l")
 
 # 10.Set_On_Source_Threshold (set the threshold for the "not-on-source" condition)
-# Input: double [between 0.0 and 1.0]
+# Input : double [between 0.0 and 1.0]
 device_proxy.Set_On_Source_Threshold(0.5)
 
-# 11.Track_Az_El (AP to set the antenna at the position specified by the azimuth and elevation parameters at a specified time)
-# Input: list containing timestamp, azim & azim position
+# 11.Track_Az_El (AP to set the antenna at the position specified by the azimuth and
+# elevation parameters at a specified time)
+# Input : list containing timestamp, azim & azim position
 # timestamp - The time when the position coordinates should be applied
 device_proxy.Track_Az_El([time.time() + 5, -10.0, 20.0])
 
