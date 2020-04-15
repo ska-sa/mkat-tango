@@ -76,10 +76,16 @@ def dtype_params(dtype):
 
 KatcpTypeInfo = namedtuple("KatcpTypeInfo", ("KatcpType", "sensor_type", "params"))
 
-TANGO_FLOAT_TYPES = set([DevFloat, DevDouble])
-TANGO_INT_TYPES = set(
-    [DevUChar, DevShort, DevUShort, DevLong, DevULong, DevLong64, DevULong64]
-)
+TANGO_FLOAT_TYPES = {DevFloat, DevDouble}
+TANGO_INT_TYPES = {
+    DevUChar,
+    DevShort,
+    DevUShort,
+    DevLong,
+    DevULong,
+    DevLong64,
+    DevULong64,
+}
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
 TANGO_CMDARGTYPE_NUM2NAME = {num: name for name, num in tango.CmdArgType.names.items()}
 
@@ -192,28 +198,24 @@ def tango_attr_descr2katcp_sensors(attr_descr):
 
     for index in range(attr_descr.max_dim_x):
         if attr_descr.data_type in TANGO_INT_TYPES:
-            min_value = (
-                katcp_type_info.params[0]
-                if attr_min_val == "Not specified"
-                else int(attr_min_val)
-            )
-            max_value = (
-                katcp_type_info.params[1]
-                if attr_max_val == "Not specified"
-                else int(attr_max_val)
-            )
+            if attr_min_val == "Not specified":
+                min_value = katcp_type_info.params[0]
+            else:
+                min_value = int(attr_min_val)
+            if attr_max_val == "Not specified":
+                max_value = katcp_type_info.params[1]
+            else:
+                max_value = int(attr_max_val)
             sensor_params = [min_value, max_value]
         elif attr_descr.data_type in TANGO_FLOAT_TYPES:
-            min_value = (
-                katcp_type_info.params[0]
-                if attr_min_val == "Not specified"
-                else float(attr_min_val)
-            )
-            max_value = (
-                katcp_type_info.params[1]
-                if attr_max_val == "Not specified"
-                else float(attr_max_val)
-            )
+            if attr_min_val == "Not specified":
+                min_value = katcp_type_info.params[0]
+            else:
+                min_value = float(attr_min_val)
+            if attr_max_val == "Not specified":
+                max_value = katcp_type_info.params[1]
+            else:
+                max_value = float(attr_max_val)
             sensor_params = [min_value, max_value]
         elif attr_descr.data_type == DevEnum:
             sensor_params = attr_descr.enum_labels
@@ -303,7 +305,11 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield tango_request(cmd_name)
-        raise Return(("ok", tango_retval) if tango_retval is not None else ("ok",))
+        if tango_retval is not None:
+            return_message = ("ok", tango_retval)
+        else:
+            return_message = ("ok",)
+        raise Return(return_message)
 
     if in_kattype:
         if "Array" in str(tango_command_descr.in_type):
