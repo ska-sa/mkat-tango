@@ -15,8 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-# device_name = 'test/withdb/polled'
-# device_name = 'localhost:12345/test/nodb/polled#dbase=no'
+
 device_name = sys.argv[1]
 
 td = PyTango.DeviceProxy(device_name)
