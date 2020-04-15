@@ -147,7 +147,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 for index in range(attr_config.max_dim_x):
                     attribute_list.add(attr_name + "." + str(index))
 
-        NOT_IMPLEMENTED_SENSORS = set(["ScalarDevEncoded"])
+        NOT_IMPLEMENTED_SENSORS = {"ScalarDevEncoded"}
         attribute_list_ = attribute_list - NOT_IMPLEMENTED_SENSORS
         self.assertEqual(
             attribute_list_,
@@ -156,8 +156,8 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             "attribute list!\n\nThese sensors are"
             " extra:\n%s\n\nFound these attributes with no corresponding sensors:\n%s"
             % (
-                "\n".join(sorted([str(t) for t in sensor_list - attribute_list_])),
-                "\n".join(sorted([str(t) for t in attribute_list_ - sensor_list])),
+                "\n".join(sorted(sensor_list - attribute_list_)),
+                "\n".join(sorted(attribute_list_ - sensor_list)),
             ),
         )
 
@@ -185,7 +185,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 attribute_value = attributes[attr_name][0]
                 if sensor.name in ["ScalarDevEnum"]:
                     self.assertEqual(
-                        set(["ONLINE", "OFFLINE", "RESERVE"]), set(sensor.params)
+                        {"ONLINE", "OFFLINE", "RESERVE"}, set(sensor.params)
                     )
                     self.assertEqual(sensor_value, sensor.params[attribute_value])
                 else:
@@ -207,14 +207,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             self.tango_test_device,
             {attr: poll_period for attr in self.tango_device_proxy.get_attribute_list()},
         )
-        EXCLUDED_ATTRS = set(
-            [
-                "State",  # Tango library attribute, Cannot change event_period
-                "Status",  # Tango library attribute, Cannot change event_period
-                "ScalarDevEncoded"  # Not implemented sensor, to be removed once
-                # attribute type DevEncoded is handled as katcp server sensor types
-            ]
-        )
+        EXCLUDED_ATTRS = {"State", "Status", "ScalarDevEncoded"}
 
         for attr_name in self.tango_device_proxy.get_attribute_list():
             if attr_name not in EXCLUDED_ATTRS:
@@ -256,7 +249,8 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             (
                 ("Init", "?Init DevVoid -> DevVoid"),
                 ("Status", "?Status DevVoid -> DevString"),
-                # TODO NM 2016-05-20 Need to check what State should actually be and implement
+                # TODO NM 2016-05-20 Need to check what State should actually be
+                #  and implement
                 ("State", "?State DevVoid -> DevState"),
                 (
                     "ReverseString",
