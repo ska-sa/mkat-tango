@@ -30,6 +30,6 @@ def get_server_name():
     and sys.argv[1] is the server instance.
 
     """
-    executable_name = os.path.split(sys.argv[0])[-1].split('.')[0]
-    server_name = executable_name + '/' + sys.argv[1]
+    executable_name = os.path.split(sys.argv[0])[-1].split(".")[0]
+    server_name = executable_name + "/" + sys.argv[1]
     return server_name
