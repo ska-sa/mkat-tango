@@ -912,7 +912,7 @@ class TestProxyWrapper(object):
                 reply = derr[0].desc
         else:
             try:
-                if len(params):
+                if len(params) > 1:
                     command_params = params
                 else:
                     command_params = params[0]

@@ -206,6 +206,11 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             {attr: poll_period for attr in self.tango_device_proxy.get_attribute_list()},
         )
         EXCLUDED_ATTRS = {"State", "Status", "ScalarDevEncoded"}
+        # Information about EXCLUDED_ATTRS
+        # "State" - Tango library attribute, Cannot change event_period
+        # "Status" - Tango library attribute, Cannot change event_period
+        # "ScalarDevEncoded" - Not implemented sensor, to be removed once
+        # attribute type DevEncoded is handled as katcp server sensor types
 
         for attr_name in self.tango_device_proxy.get_attribute_list():
             if attr_name not in EXCLUDED_ATTRS:
