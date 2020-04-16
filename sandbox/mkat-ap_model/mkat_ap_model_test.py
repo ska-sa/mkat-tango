@@ -13,6 +13,10 @@ MeerKAT AP simulator.
 """
 from __future__ import absolute_import, print_function, division
 
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 from mkat_ap import MkatApModel
 
 if __name__ == "__main__":

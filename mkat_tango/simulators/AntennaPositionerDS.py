@@ -11,6 +11,11 @@
 Tango Device AP simulator.
 """
 from __future__ import print_function, division, absolute_import
+
+from past.builtins import cmp
+from future import standard_library
+standard_library.install_aliases()
+
 from builtins import cmp
 
 import logging

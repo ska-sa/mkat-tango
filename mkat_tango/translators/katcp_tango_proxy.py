@@ -14,6 +14,14 @@
 """
 from __future__ import print_function, division, absolute_import
 
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import zip
+
+from builtins import range
+
+from builtins import object
 import logging
 import textwrap
 import time
@@ -87,7 +95,7 @@ TANGO_INT_TYPES = {
     DevULong64,
 }
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
-TANGO_CMDARGTYPE_NUM2NAME = {num: name for name, num in tango.CmdArgType.names.items()}
+TANGO_CMDARGTYPE_NUM2NAME = {num: name for name, num in list(tango.CmdArgType.names.items())}
 
 
 class TangoStateDiscrete(kattypes.Discrete):
@@ -147,7 +155,7 @@ TANGO2KATCP_TYPE_INFO = {
     CmdArgType.DevState: KatcpTypeInfo(
         KatcpType=TangoStateDiscrete,
         sensor_type=Sensor.DISCRETE,
-        params=(DevState.names.keys()),
+        params=(list(DevState.names.keys())),
     ),
 }
 
@@ -442,10 +450,10 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
         """Need a no-op setup_sensors() to satisfy superclass"""
 
     def get_sensor_list(self):
-        return self._sensors.keys()
+        return list(self._sensors.keys())
 
     def get_request_list(self):
-        return self._request_handlers.keys()
+        return list(self._request_handlers.keys())
 
     def add_request(self, request_name, handler):
         """Add a request handler to the internal list."""
@@ -531,7 +539,7 @@ class TangoDevice2KatcpProxy(object):
         tango2katcp_sensors = []
         sensor_attribute_map = {}
 
-        for attribute_name, attribute_config in attributes.items():
+        for attribute_name, attribute_config in list(attributes.items()):
             if attribute_name == "AttributesNotAdded":
                 self._logger.debug(
                     "Skipping creation of sensor objects for attribute %s.",
@@ -578,8 +586,8 @@ class TangoDevice2KatcpProxy(object):
                 self._logger.debug(str(nierr), exc_info=True)
 
         new_attributes = [sensor_attribute_map[sensor].name for sensor in sensors_to_add]
-        lower_case_attributes = map(lambda attr_name: attr_name.lower(), new_attributes)
-        orig_attr_names_map = dict(zip(lower_case_attributes, new_attributes))
+        lower_case_attributes = [attr_name.lower() for attr_name in new_attributes]
+        orig_attr_names_map = dict(list(zip(lower_case_attributes, new_attributes)))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
         self.inspecting_client.setup_attribute_sampling(new_attributes)
 

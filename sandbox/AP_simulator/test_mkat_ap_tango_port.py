@@ -14,6 +14,12 @@ Tests for the MeerKAT Antenna Positioner Simulator.
 """
 from __future__ import absolute_import, print_function, division
 
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import *
+from builtins import object
 import unittest2 as unittest
 import time
 import logging
@@ -1219,7 +1225,7 @@ class TestMkatAp(DeviceTestCase):
             elev = MAX_ELEV_FOR_TEST
         # Load a few samples to track
         t0 = time.time() + 5
-        for i in xrange(0, 50):
+        for i in range(0, 50):
             # New sample every 500ms with 0.1deg movement
             self.client.assertCommandSucceeds(
                 "Track_Az_El",
