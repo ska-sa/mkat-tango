@@ -1036,15 +1036,23 @@ class MkatApTangoTests(DeviceTestCase):
         """
 
         def get_actual_sensor_list():
-            """Return the list of actual attributes of the connected device server"""
+            """Return the list of actual attributes of the connected device server
+
+            The comment is w.r.t `if self.external`
+            Some sensors are specific to the simulator and not specified in the
+            ICD and as such should not be tested for on the KATCP interface
+            of external devices.
+            expected_set = set([s[0]
+            for s in EXPECTED_SENSOR_LIST
+            if s[0] not in ['actual-azim-rate', 'actual-elev-rate',
+            'requested-azim-rate', 'requested-elev-rate']
+            ])
+            """
             attr_list = self.device.get_attribute_list()
             sens_list = [tangoname2katcpname(attr) for attr in attr_list]
             return sens_list
 
         if self.external:
-            # Some sensors are specific to the simulator and not specified in the
-            # ICD and as such should not be tested for on the KATCP interface
-            # of external devices.
             pass
         else:
             expected_set = set([s[0] for s in EXPECTED_SENSOR_LIST])
