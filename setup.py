@@ -24,6 +24,8 @@ setup(
         "tornado>=4.3, <5",
         "katcp",
         "tango-simlib",
+        "future",
+        "futures; python_version<'3'",
     ],
     tests_require=["numpy", "nose_xunitmp"],
     zip_safe=False,
