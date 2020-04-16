@@ -12,7 +12,7 @@
 """
 Tests for the MeerKAT Antenna Positioner Simulator.
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, print_function, division
 
 import unittest2 as unittest
 import time

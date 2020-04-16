@@ -2,7 +2,7 @@
 
 # BEGIN VERSION CHECK
 # Get package version when locally imported from repo or via -e develop install
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, print_function, division
 
 try:
     import katversion as _katversion

@@ -12,7 +12,7 @@
 """Utility to help launch a TANGO device in a KATCP eco-system
 Helps by auto-registering a TANGO device if needed
 """
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, print_function, division
 
 import os
 import sys
