@@ -17,7 +17,7 @@ import threading
 import time
 import weakref
 
-from builtins import cmp
+
 from functools import partial
 
 from future import standard_library
