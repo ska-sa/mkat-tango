@@ -9,8 +9,10 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
+from __future__ import absolute_import, print_function, division
 
 SENSOR_ATTRIBUTE_NAMES = {}
+
 
 def katcpname2tangoname(sensor_name):
     """
@@ -31,10 +33,11 @@ def katcpname2tangoname(sensor_name):
 
         'actual_azim' or 'acs_temperature_01'
     """
-    #TODO (KM) 13-06-2016 : Need to find a way to deal with sensor names with dots.
-    attribute_name = sensor_name.replace('-', '_').replace('.', '_')
+    # TODO (KM) 13-06-2016 : Need to find a way to deal with sensor names with dots.
+    attribute_name = sensor_name.replace("-", "_").replace(".", "_")
     SENSOR_ATTRIBUTE_NAMES[attribute_name] = sensor_name
     return attribute_name
+
 
 def tangoname2katcpname(attribute_name):
     """
@@ -58,8 +61,9 @@ def tangoname2katcpname(attribute_name):
     try:
         return SENSOR_ATTRIBUTE_NAMES[attribute_name]
     except KeyError:
-        sensor_name = attribute_name.replace('_', '-')
+        sensor_name = attribute_name.replace("_", "-")
         return sensor_name
+
 
 def address(host_port):
     """Convert a HOST:PORT argument to a (host, port) tuple.

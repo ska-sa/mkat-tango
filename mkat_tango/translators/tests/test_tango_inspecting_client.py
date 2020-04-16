@@ -6,6 +6,8 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from __future__ import print_function, division, absolute_import
+
 import logging
 import operator
 import time
@@ -23,6 +25,7 @@ from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
 from mkat_tango.translators import tango_inspecting_client
+from functools import reduce
 
 LOGGER = logging.getLogger(__name__)
 
@@ -486,10 +489,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
 
 class test_TangoInspectingClientStandard(TangoSetUpClass):
     def test_tango_standard_attributes(self):
-        standard_tango_attributes = (
-            "State",
-            "Status",
-        )
+        standard_tango_attributes = ("State", "Status")
         is_polled = self.tango_dp.is_attribute_polled
         get_poll_period = self.tango_dp.get_attribute_poll_period
 

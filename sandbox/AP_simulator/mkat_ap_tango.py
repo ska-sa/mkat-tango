@@ -12,6 +12,8 @@ MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 
 """
+from __future__ import absolute_import, print_function, division
+
 import logging
 import weakref
 
@@ -21,9 +23,9 @@ from mkat_tango.translators.tango_katcp_proxy import katcp_sensor2tango_attr
 from mkat_tango.translators.utilities import tangoname2katcpname
 
 from PyTango.server import Device, command, server_run
-from PyTango import  DevState
+from PyTango import DevState
 from PyTango import DevString, DevBoolean, DevDouble, DevVarDoubleArray
-from PyTango import  Except, ErrSeverity
+from PyTango import Except, ErrSeverity
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ class MkatAntennaPositioner(Device):
             self.add_attribute(attribute, self.read_attr)
 
     def read_attr(self, attr):
-        '''Read value for an attribute from the AP model into the Tango attribute
+        """Read value for an attribute from the AP model into the Tango attribute
 
         Parameters
         ==========
@@ -60,7 +62,7 @@ class MkatAntennaPositioner(Device):
 
         Note: `attr` is modified in place.
 
-        '''
+        """
         self.info_stream("Reading attribute %s", attr.get_name())
         sensor_name = tangoname2katcpname(attr.get_name())
         sensor = self.ap_model.get_sensor(sensor_name)
@@ -90,9 +92,12 @@ class MkatAntennaPositioner(Device):
             self.ap_model.set_mode(ApOperMode.stop)
             MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                   "Antenna is not in remote control", command_name,
-                                   ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Antenna is not in remote control",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command
     def Maintenance(self):
@@ -114,20 +119,31 @@ class MkatAntennaPositioner(Device):
         command_name = "Maintenance()"
         if self.ap_model.in_remote_control():
             if self.ap_model.mode() in [ApOperMode.gtm, ApOperMode.maint]:
-                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is"
-                                       "in '%s' mode." % self.ap_model.mode(),
-                                       command_name, ErrSeverity.WARN)
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Antenna is" "in '%s' mode." % self.ap_model.mode(),
+                    command_name,
+                    ErrSeverity.WARN,
+                )
             elif self.ap_model.mode() not in [ApOperMode.stop]:
-                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna mode "
-                                       "'{}' != 'stop'.".format(self.ap_model.mode()),
-                                        command_name, ErrSeverity.WARN)
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Antenna mode " "'{}' != 'stop'.".format(self.ap_model.mode()),
+                    command_name,
+                    ErrSeverity.WARN,
+                )
             else:
                 self.ap_model.set_mode(ApOperMode.gtm)
-                MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
+                MODULE_LOGGER.info(
+                    "Command '{}' executed successfully".format(command_name)
+                )
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                   "Antenna is not in remote control", command_name,
-                                   ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Antenna is not in remote control",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command
     def Stow(self):
@@ -148,19 +164,30 @@ class MkatAntennaPositioner(Device):
         """
         command_name = "Stow()"
         if self.ap_model.in_remote_control():
-            if self.ap_model.mode() in [ApOperMode.shutdown, ApOperMode.stowing,
-                                        ApOperMode.stowed, ApOperMode.estop]:
-                Except.throw_exception(self.COMMAND_ERROR_REASON,
-                                       "Fail, Antenna is in '%s' mode."
-                                       % self.ap_model.mode(), command_name,
-                                       ErrSeverity.WARN)
+            if self.ap_model.mode() in [
+                ApOperMode.shutdown,
+                ApOperMode.stowing,
+                ApOperMode.stowed,
+                ApOperMode.estop,
+            ]:
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Antenna is in '%s' mode." % self.ap_model.mode(),
+                    command_name,
+                    ErrSeverity.WARN,
+                )
             else:
                 self.ap_model.set_mode(ApOperMode.stowing)
-                MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
+                MODULE_LOGGER.info(
+                    "Command '{}' executed successfully".format(command_name)
+                )
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command(dtype_in=DevVarDoubleArray)
     def Slew(self, azim_elev_coordinates):
@@ -187,20 +214,28 @@ class MkatAntennaPositioner(Device):
         """
         command_name = "Slew()"
         if self.ap_model.in_remote_control():
-            if self.ap_model.mode() not in [ApOperMode.stop,
-                                            ApOperMode.slew]:
-                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
-                                       "switch Antenna mode to 'slew' while in mode"
-                                       "'%s'" % self.ap_model.mode(), command_name,
-                                       ErrSeverity.WARN)
+            if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.slew]:
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Unable to "
+                    "switch Antenna mode to 'slew' while in mode"
+                    "'%s'" % self.ap_model.mode(),
+                    command_name,
+                    ErrSeverity.WARN,
+                )
             else:
                 requested_azim, requested_elev = azim_elev_coordinates
                 self.ap_model.slew(requested_azim, requested_elev)
-                MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
+                MODULE_LOGGER.info(
+                    "Command '{}' executed successfully".format(command_name)
+                )
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command
     def Clear_Track_Stack(self):
@@ -242,9 +277,12 @@ class MkatAntennaPositioner(Device):
             self.ap_model.get_sensor("point-error-refraction-enabled").set_value(enable)
             MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command(dtype_in=DevVarDoubleArray)
     def Rate(self, azim_elev_rates):
@@ -271,16 +309,24 @@ class MkatAntennaPositioner(Device):
         azim_rate, elev_rate = azim_elev_rates
         if self.ap_model.in_remote_control():
             if self.ap_model.mode() not in [ApOperMode.stop]:
-                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna mode"
-                                       "'%s' != 'stop'." % self.ap_model.mode(),
-                                       command_name, ErrSeverity.WARN)
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Antenna mode" "'%s' != 'stop'." % self.ap_model.mode(),
+                    command_name,
+                    ErrSeverity.WARN,
+                )
             else:
                 self.ap_model.rate(azim_rate, elev_rate)
-                MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
+                MODULE_LOGGER.info(
+                    "Command '{}' executed successfully".format(command_name)
+                )
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command
     def Reset_Failures(self):
@@ -302,9 +348,12 @@ class MkatAntennaPositioner(Device):
             self.ap_model.reset_failures()
             MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command(dtype_in=DevString)
     def Set_Indexer_Position(self, ridx_pos):
@@ -326,16 +375,25 @@ class MkatAntennaPositioner(Device):
         """
         command_name = "Set_Indexer_Position()"
         if ridx_pos not in ["x", "l", "u", "s"]:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Illegal indexer positions '%s'" %ridx_pos,
-                                   command_name, ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Illegal indexer positions '%s'" % ridx_pos,
+                command_name,
+                ErrSeverity.WARN,
+            )
         else:
             if self.ap_model.in_remote_control():
                 self.ap_model.set_ridx_position(ridx_pos)
-                MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
+                MODULE_LOGGER.info(
+                    "Command '{}' executed successfully".format(command_name)
+                )
             else:
-                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Antenna is not " "in remote control.",
+                    command_name,
+                    ErrSeverity.WARN,
+                )
 
     @command(dtype_in=DevDouble)
     def Set_On_Source_Threshold(self, threshold):
@@ -360,9 +418,12 @@ class MkatAntennaPositioner(Device):
             self.ap_model.get_sensor("on-source-threshold").set_value(threshold)
             MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command
     def Track(self):
@@ -383,19 +444,27 @@ class MkatAntennaPositioner(Device):
         """
         command_name = "Track()"
         if self.ap_model.in_remote_control():
-            if self.ap_model.mode() not in [ApOperMode.stop,
-                                            ApOperMode.track]:
-                Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Unable to "
-                                       "switch Antenna mode to 'track' while in "
-                                       "mode '%s'" % self.ap_model.mode(), command_name,
-                                        ErrSeverity.WARN)
+            if self.ap_model.mode() not in [ApOperMode.stop, ApOperMode.track]:
+                Except.throw_exception(
+                    self.COMMAND_ERROR_REASON,
+                    "Fail, Unable to "
+                    "switch Antenna mode to 'track' while in "
+                    "mode '%s'" % self.ap_model.mode(),
+                    command_name,
+                    ErrSeverity.WARN,
+                )
             else:
                 self.ap_model.set_mode(ApOperMode.track)
-                MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
+                MODULE_LOGGER.info(
+                    "Command '{}' executed successfully".format(command_name)
+                )
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
     @command(dtype_in=DevVarDoubleArray)
     def Track_Az_El(self, timestamp_azim_elev):
@@ -428,105 +497,110 @@ class MkatAntennaPositioner(Device):
             self.ap_model.set_az_el(timestamp, azim, elev)
             MODULE_LOGGER.info("Command '{}' executed successfully".format(command_name))
         else:
-            Except.throw_exception(self.COMMAND_ERROR_REASON, "Fail, Antenna is not "
-                                   "in remote control.", command_name,
-                                    ErrSeverity.WARN)
+            Except.throw_exception(
+                self.COMMAND_ERROR_REASON,
+                "Fail, Antenna is not " "in remote control.",
+                command_name,
+                ErrSeverity.WARN,
+            )
 
-# Unimplemented commands where added just for testing the command list population
+    # Unimplemented commands where added just for testing the command list population
 
     @command
     def Enable_Motion_Profiler(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Enable_Point_Error_Systematic(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Enable_Point_Error_Tiltmeter(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Enable_Warning_Horn(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Halt(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Help(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command()
     def Log_Level(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Restart(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Set_Average_Tilt_An0(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Set_Average_Tilt_Aw0(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Sensor_List(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Sensor_Sampling(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Sensor_Value(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Set_Stow_Time_Period(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Set_Weather_Data(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Star_Track(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Version_List(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
 
     @command
     def Watchdog(self):
-        #TODO Implement if required
+        # TODO Implement if required
         pass
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
     server_run([MkatAntennaPositioner])
+
 
 if __name__ == "__main__":
     main()
