@@ -10,22 +10,25 @@
 """
 Tango Device AP simulator.
 """
-from __future__ import print_function, division, absolute_import
-
-from past.builtins import cmp
-from future import standard_library
-standard_library.install_aliases()
-
-from builtins import cmp
+from __future__ import absolute_import, division, print_function
 
 import logging
 import threading
 import time
 import weakref
+
+from builtins import cmp
 from functools import partial
 
+from future import standard_library
+from past.builtins import cmp
 from tango import AttrQuality, DevState
 from tango.server import Device, attribute, command, server_run
+
+standard_library.install_aliases()
+
+
+
 
 # Module logger reporting events that occur during normal operation of device
 LOGGER = logging.getLogger(__name__)

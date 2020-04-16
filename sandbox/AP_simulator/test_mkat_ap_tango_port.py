@@ -12,24 +12,26 @@
 """
 Tests for the MeerKAT Antenna Positioner Simulator.
 """
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
 
-
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import *
-from builtins import object
-import unittest2 as unittest
-import time
 import logging
+import time
+
+
+from builtins import object, range
+
+import unittest2 as unittest
 
 from devicetest import DeviceTestCase
-
+from future import standard_library
 from mkat_tango.simulators.mkat_ap_tango import MkatAntennaPositioner
 from mkat_tango.translators.utilities import tangoname2katcpname
+from PyTango import CmdArgType, DevFailed, DevState
 
-from PyTango import CmdArgType, DevState, DevFailed
+standard_library.install_aliases()
+
+
+
 
 logger = logging.getLogger(__name__)
 

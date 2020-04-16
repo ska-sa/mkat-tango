@@ -9,19 +9,21 @@
 """
 Tango Device AP simulator test cases.
 """
-from __future__ import print_function, division, absolute_import
-
-
-from future import standard_library
-standard_library.install_aliases()
+from __future__ import absolute_import, division, print_function
 
 import time
 import unittest
 
 import mock
+
+from future import standard_library
+from mkat_tango.simulators import AntennaPositionerDS
 from tango.test_context import DeviceTestContext
 
-from mkat_tango.simulators import AntennaPositionerDS
+standard_library.install_aliases()
+
+
+
 
 
 class AntennaPositionerTestCase(unittest.TestCase):

@@ -6,14 +6,15 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import absolute_import, print_function, division
-
-
-from future import standard_library
-standard_library.install_aliases()
+from __future__ import absolute_import, division, print_function
 
 import os
 import sys
+
+from future import standard_library
+
+standard_library.install_aliases()
+
 
 
 def get_server_name():

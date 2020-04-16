@@ -6,30 +6,32 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import print_function, division, absolute_import
-
-
-from future import standard_library
-standard_library.install_aliases()
+from __future__ import absolute_import, division, print_function
 
 import logging
 import operator
 import time
 import unittest
 import weakref
+
 from collections import defaultdict
-from functools import wraps
+from functools import reduce, wraps
 
 import mock
+
+from future import standard_library
 from katcp.testutils import start_thread_with_cleanup
+from mkat_tango.testutils import ClassCleanupUnittestMixin, set_attributes_polling
+from mkat_tango.translators import tango_inspecting_client
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
 from tango import server as TS
 from tango.test_context import DeviceTestContext
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
-from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
-from mkat_tango.translators import tango_inspecting_client
-from functools import reduce
+standard_library.install_aliases()
+
+
+
 
 LOGGER = logging.getLogger(__name__)
 

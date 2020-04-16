@@ -1,10 +1,12 @@
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
 
+
+
+import PyTango
 
 from future import standard_library
+
 standard_library.install_aliases()
-from builtins import *
-import PyTango
 
 weather_name = "mkat_sim/weather/1"
 weather_simcontrol_name = "mkat_simcontrol/weather/1"

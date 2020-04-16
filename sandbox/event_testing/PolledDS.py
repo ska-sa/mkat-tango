@@ -1,15 +1,17 @@
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
+
+import logging
+import sys
+import time
+
 
 
 from future import standard_library
-standard_library.install_aliases()
-from builtins import *
-import time
-import sys
-import logging
-
 from PyTango import Database, DbDevInfo
 from PyTango import server as TS
+
+standard_library.install_aliases()
+
 
 
 class Polled(TS.Device):

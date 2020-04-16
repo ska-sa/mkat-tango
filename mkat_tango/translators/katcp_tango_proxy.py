@@ -12,51 +12,39 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 
 """
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
 
-
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-
-from builtins import range
-
-from builtins import object
 import logging
+import re
 import textwrap
 import time
-import re
 
-import numpy as np
-import tornado
-import tango
-
+from builtins import object, range, zip
 from collections import namedtuple
 from functools import partial
 
-from tornado.gen import Return
-from katcp import Sensor, kattypes, Message
+import numpy as np
+import tango
+import tornado
+
+from future import standard_library
+from katcp import Message, Sensor, kattypes
 from katcp import server as katcp_server
 from katcp.server import BASE_REQUESTS
-from tango import DevState, AttrDataFormat, CmdArgType
-from tango import (
-    DevFloat,
-    DevDouble,
-    AttrQuality,
-    DevUChar,
-    DevShort,
-    DevUShort,
-    DevLong,
-    DevULong,
-    DevLong64,
-    DevULong64,
-    DevBoolean,
-    DevString,
-    DevEnum,
-)
-
-from mkat_tango.translators.utilities import tangoname2katcpname
 from mkat_tango.translators.tango_inspecting_client import TangoInspectingClient
+from mkat_tango.translators.utilities import tangoname2katcpname
+from tango import (
+    AttrDataFormat, AttrQuality, CmdArgType, DevBoolean, DevDouble, DevEnum, DevFloat, DevLong, DevLong64, DevShort,
+    DevState, DevString, DevUChar, DevULong, DevULong64, DevUShort,)
+from tornado.gen import Return
+
+standard_library.install_aliases()
+
+
+
+
+
+
 
 log = logging.getLogger(__name__)
 

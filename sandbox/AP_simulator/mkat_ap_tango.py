@@ -12,24 +12,24 @@ MeerKAT AP simulator.
     @author MeerKAT CAM team <cam@ska.ac.za>
 
 """
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
 
-
-from future import standard_library
-standard_library.install_aliases()
-from builtins import *
 import logging
 import weakref
 
-from katproxy.sim.mkat_ap import MkatApModel, ApOperMode
 
+
+from future import standard_library
+from katproxy.sim.mkat_ap import ApOperMode, MkatApModel
 from mkat_tango.translators.tango_katcp_proxy import katcp_sensor2tango_attr
 from mkat_tango.translators.utilities import tangoname2katcpname
-
+from PyTango import DevBoolean, DevDouble, DevState, DevString, DevVarDoubleArray, ErrSeverity, Except
 from PyTango.server import Device, command, server_run
-from PyTango import DevState
-from PyTango import DevString, DevBoolean, DevDouble, DevVarDoubleArray
-from PyTango import Except, ErrSeverity
+
+standard_library.install_aliases()
+
+
+
 
 MODULE_LOGGER = logging.getLogger(__name__)
 

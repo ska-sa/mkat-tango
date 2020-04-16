@@ -6,26 +6,29 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
 
-
-from future import standard_library
-standard_library.install_aliases()
-
-from builtins import object
-import time
 import logging
-import mock
+import time
 import unittest
 
+from builtins import object
 from random import gauss
 
-from tango.test_context import DeviceTestContext
+import mock
 
-from mkat_tango.testutils import disable_attributes_polling
-
+from future import standard_library
 # DUT
 from mkat_tango.simulators import weather
+from mkat_tango.testutils import disable_attributes_polling
+from tango.test_context import DeviceTestContext
+
+standard_library.install_aliases()
+
+
+
+
+
 
 LOGGER = logging.getLogger(__name__)
 

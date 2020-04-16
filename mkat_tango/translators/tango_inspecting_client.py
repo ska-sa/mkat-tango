@@ -6,20 +6,23 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
 
-
-from future import standard_library
-standard_library.install_aliases()
-
+import logging
+import time
 
 from builtins import object
-import time
-import logging
 
 import tango
 
+from future import standard_library
 from tango import AttrQuality
+
+standard_library.install_aliases()
+
+
+
+
 
 log = logging.getLogger("mkat_tango.translators.tango_inspecting_client")
 

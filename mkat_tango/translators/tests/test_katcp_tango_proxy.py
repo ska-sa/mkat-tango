@@ -6,15 +6,8 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
 
-
-from future import standard_library
-standard_library.install_aliases()
-
-from builtins import range
-
-from builtins import object
 import logging
 import os
 import shutil
@@ -25,26 +18,32 @@ import textwrap
 import time
 import unittest
 
-import mock
+from builtins import object, range
+
 import pkg_resources
+
+import mock
 import tornado.gen
 import tornado.testing
+
+from future import standard_library
 from katcp import Message, Sensor
-from katcp.testutils import mock_req
-from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
-from tango import DevVoid, Attr, DevLong, AttrDataFormat, DevFailed, DeviceProxy
+from katcp.testutils import BlockingTestClient, mock_req, start_thread_with_cleanup
+from mkat_tango import testutils
+from mkat_tango.translators import katcp_tango_proxy, utilities
+from mkat_tango.translators.tests.test_tango_inspecting_client import ClassCleanupUnittestMixin, TangoTestDevice
+from tango import Attr, AttrDataFormat, DevFailed, DeviceProxy, DevLong, DevVoid
 from tango.server import command
 from tango.test_context import DeviceTestContext
 from tango_simlib import tango_sim_generator
 from tango_simlib.utilities import helper_module
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
-from mkat_tango import testutils
-from mkat_tango.translators import katcp_tango_proxy, utilities
-from mkat_tango.translators.tests.test_tango_inspecting_client import (
-    TangoTestDevice,
-    ClassCleanupUnittestMixin,
-)
+standard_library.install_aliases()
+
+
+
+
 
 LOGGER = logging.getLogger(__name__)
 

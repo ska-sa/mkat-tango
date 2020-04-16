@@ -1,10 +1,12 @@
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
 
+
+
+import panic
 
 from future import standard_library
+
 standard_library.install_aliases()
-from builtins import *
-import panic
 
 alarms = panic.api()
 
