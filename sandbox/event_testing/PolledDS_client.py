@@ -10,16 +10,16 @@ import PyTango
 logger = logging.getLogger()
 
 logging.basicConfig(
-        format='%(asctime)s - %(name)s - %(levelname)s - %(module)s - '
-        '%(pathname)s : %(lineno)d - %(message)s',
-        level=logging.INFO)
+    format="%(asctime)s - %(name)s - %(levelname)s - %(module)s - "
+    "%(pathname)s : %(lineno)d - %(message)s",
+    level=logging.INFO,
+)
 
-#device_name = 'test/withdb/polled'
-#device_name = 'localhost:12345/test/nodb/polled#dbase=no'
+
 device_name = sys.argv[1]
 
 td = PyTango.DeviceProxy(device_name)
-attr_name = 'ScalarBool'
+attr_name = "ScalarBool"
 
 
 # Set up a listener
@@ -32,15 +32,21 @@ def printer(event_data):
         name = attr_value.name
         timestamp = attr_value.time.totime()
         received_timestamp = event_data.reception_date.totime()
-        print('event_type: {} name: {} val: {}  time: {:.5f} received_time: {:.5f}'.format(
-            event_type, name, value, timestamp, received_timestamp))
+        print(
+            "event_type: {} name: {} val: {}  time: {:.5f} received_time: {:.5f}".format(
+                event_type, name, value, timestamp, received_timestamp
+            )
+        )
     except Exception:
-        logger.exception('Exception while handling event, event_data: {}'
-                         .format(event_data))
-event_ids = dict(change=td.subscribe_event(
-    attr_name, PyTango.EventType.CHANGE_EVENT, printer),
-                 periodic=td.subscribe_event(
-    attr_name, PyTango.EventType.PERIODIC_EVENT, printer))
+        logger.exception(
+            "Exception while handling event, event_data: {}".format(event_data)
+        )
+
+
+event_ids = {
+    "change": td.subscribe_event(attr_name, PyTango.EventType.CHANGE_EVENT, printer),
+    "periodic": td.subscribe_event(attr_name, PyTango.EventType.PERIODIC_EVENT, printer),
+}
 
 
 time.sleep(1000)

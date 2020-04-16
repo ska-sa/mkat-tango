@@ -489,10 +489,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
 
 class test_TangoInspectingClientStandard(TangoSetUpClass):
     def test_tango_standard_attributes(self):
-        standard_tango_attributes = (
-            "State",
-            "Status",
-        )
+        standard_tango_attributes = ("State", "Status")
         is_polled = self.tango_dp.is_attribute_polled
         get_poll_period = self.tango_dp.get_attribute_poll_period
 
