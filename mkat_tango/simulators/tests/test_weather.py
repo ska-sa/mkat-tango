@@ -21,6 +21,7 @@ from future import standard_library
 # DUT
 from mkat_tango.simulators import weather
 from mkat_tango.testutils import disable_attributes_polling
+
 from tango.test_context import DeviceTestContext
 
 standard_library.install_aliases()

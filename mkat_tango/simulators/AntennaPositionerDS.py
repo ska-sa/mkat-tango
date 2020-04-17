@@ -17,7 +17,6 @@ import threading
 import time
 import weakref
 
-
 from functools import partial
 
 from future import standard_library

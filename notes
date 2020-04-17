@@ -1,0 +1,1 @@
+python3 -m nose --with-xunitmp test_tango_katcp_proxy.py:test_KatcpTango2DeviceProxyCommands.test_add_command  > /tmp/single.output 2>&1

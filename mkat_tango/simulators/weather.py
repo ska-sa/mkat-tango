@@ -20,13 +20,20 @@ from functools import partial
 
 from future import standard_library
 from tango import (
-    Attr, AttrQuality, AttrWriteType, DevBoolean, DevDouble, DevLong, DevState, DevString, UserDefaultAttrProp,)
+    Attr,
+    AttrQuality,
+    AttrWriteType,
+    DevBoolean,
+    DevDouble,
+    DevLong,
+    DevState,
+    DevString,
+    UserDefaultAttrProp,
+)
 from tango.server import Device
 from tango_simlib import main, model, quantities, sim_test_interface
 
 standard_library.install_aliases()
-
-
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
@@ -57,7 +64,7 @@ class Weather(Device):
     def initialize_dynamic_attributes(self):
         """The device method that sets up attributes during run time"""
         model_sim_quants = self.model.sim_quantities
-        attribute_list = set([attr for attr in list(model_sim_quants.keys())])
+        attribute_list = set([attr for attr in list(model_sim_quants.keys())])  # noqa: C403,C416
 
         for attribute_name in attribute_list:
             model.MODULE_LOGGER.info(
