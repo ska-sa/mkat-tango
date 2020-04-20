@@ -13,18 +13,15 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-
-
-
-from builtins import map
-
-
 import logging
 import time
 import unittest
 
 import mock
 import tango
+
+from functools import reduce
+
 from katcp import DeviceServer, Sensor, Message
 from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcp.resource_client import IOLoopThreadWrapper

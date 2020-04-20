@@ -14,13 +14,13 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-from builtins import cmp
-
 import logging
 import threading
 import time
 import weakref
+
 from functools import partial
+from builtins import cmp
 
 from tango import AttrQuality, DevState
 from tango.server import Device, attribute, command, server_run

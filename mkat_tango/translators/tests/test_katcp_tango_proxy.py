@@ -10,13 +10,6 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-
-
-
-
-from builtins import range
-
-from builtins import object
 import logging
 import os
 import shutil
@@ -31,6 +24,9 @@ import mock
 import pkg_resources
 import tornado.gen
 import tornado.testing
+
+from builtins import object, range
+
 from katcp import Message, Sensor
 from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient

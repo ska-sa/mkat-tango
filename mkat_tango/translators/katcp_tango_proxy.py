@@ -16,14 +16,6 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-
-
-
-from builtins import zip
-
-from builtins import range
-
-from builtins import object
 import logging
 import textwrap
 import time
@@ -33,6 +25,7 @@ import numpy as np
 import tornado
 import tango
 
+from builtins import object, range, zip
 from collections import namedtuple
 from functools import partial
 

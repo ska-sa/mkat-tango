@@ -10,19 +10,17 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-
-
-
-
 import logging
 import operator
 import time
 import unittest
 import weakref
-from collections import defaultdict
-from functools import wraps
 
 import mock
+
+from collections import defaultdict
+from functools import reduce, wraps
+
 from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
 from tango import server as TS
@@ -31,7 +29,7 @@ from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
 from mkat_tango.translators import tango_inspecting_client
-from functools import reduce
+
 
 LOGGER = logging.getLogger(__name__)
 

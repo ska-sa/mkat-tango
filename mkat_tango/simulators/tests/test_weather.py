@@ -10,10 +10,6 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-
-
-
-
 from builtins import object
 import time
 import logging
@@ -137,7 +133,7 @@ class test_Weather(unittest.TestCase):
         self.maxDiff = None
         model = self.instance.model
         varying_attributes = tuple(self.varying_attributes)
-        ## Test that quantities don't change faster than update time
+        # Test that quantities don't change faster than update time
         # Set update time to very long
         model.min_update_period = 999999
         # Cause an initial update
@@ -170,7 +166,7 @@ class test_Weather(unittest.TestCase):
                 self.addCleanup(patcher.stop)
                 mock_next_val.side_effect = unique_next_val
 
-        ## Test that quantities change after more some time
+        # Test that quantities change after more some time
         # Set update time quite short
         update_period = 0.01
         model.min_update_period = update_period
