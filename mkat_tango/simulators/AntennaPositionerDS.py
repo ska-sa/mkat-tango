@@ -20,7 +20,7 @@ import time
 import weakref
 
 from functools import partial
-from builtins import cmp
+from past.builtins import cmp
 
 from tango import AttrQuality, DevState
 from tango.server import Device, attribute, command, server_run
