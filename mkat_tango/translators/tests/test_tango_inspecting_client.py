@@ -6,8 +6,12 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
 
+
+from future import standard_library
+standard_library.install_aliases()
+from builtins import *
 import logging
 import operator
 import time
@@ -292,7 +296,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
             tuple(sorted(attributes_data_copy.keys())), self.test_device.static_attributes
         )
         # And check some of their data
-        for attr_name, attr_data in attributes_data_copy.items():
+        for attr_name, attr_data in list(attributes_data_copy.items()):
             td_props = getattr(self.test_device, attr_name).get_properties()
             self.assertEqual(attr_data.description, td_props.description)
 
@@ -350,7 +354,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the periodic event
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
@@ -390,7 +394,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the change event
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
@@ -450,7 +454,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the change event
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
@@ -517,7 +521,7 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
             self.assertEqual(get_poll_period(attr), 1000)
 
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
