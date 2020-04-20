@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 from past.builtins import cmp
 from future import standard_library
 standard_library.install_aliases()
-from builtins import *
+
 from builtins import cmp
 
 import logging
