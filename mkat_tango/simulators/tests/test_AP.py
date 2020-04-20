@@ -10,10 +10,8 @@
 Tango Device AP simulator test cases.
 """
 from __future__ import absolute_import, division, print_function
-
-
 from future import standard_library
-standard_library.install_aliases()
+standard_library.install_aliases()  # noqa: E402
 
 import time
 import unittest
