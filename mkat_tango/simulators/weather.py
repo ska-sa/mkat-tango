@@ -58,7 +58,7 @@ class Weather(Device):
     def initialize_dynamic_attributes(self):
         """The device method that sets up attributes during run time"""
         model_sim_quants = self.model.sim_quantities
-        attribute_list = set([attr for attr in list(model_sim_quants.keys())])
+        attribute_list = set(attr for attr in list(model_sim_quants.keys()))
 
         for attribute_name in attribute_list:
             model.MODULE_LOGGER.info(
@@ -68,7 +68,7 @@ class Weather(Device):
             meta_data = model_sim_quants[attribute_name].meta
             attr_dtype = PYTHON_TYPES_TO_TANGO_TYPE[meta_data.pop("dtype")]
             attr = Attr(attribute_name, attr_dtype, AttrWriteType.READ)
-            for prop in list(meta_data.keys()):
+            for prop in meta_data.keys():
                 attr_prop = getattr(attr_props, "set_" + prop)
                 if attr_prop:
                     attr_prop(str(meta_data[prop]))
