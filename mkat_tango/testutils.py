@@ -46,7 +46,7 @@ def set_attributes_polling(test_case, device_proxy, device_server, poll_periods)
     # some reason it only works if the device_proxy is used to set polling, but the
     # device_server is used to clear the polling. If polling is cleared using device_proxy
     # it seem to be impossible to restore the polling afterwards.
-    attributes = list(poll_periods.keys())
+    attributes = poll_periods.keys()
     initial_polling = {
         attr: device_proxy.get_attribute_poll_period(attr) for attr in attributes
     }
