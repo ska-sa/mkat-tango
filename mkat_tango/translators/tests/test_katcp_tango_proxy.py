@@ -26,6 +26,7 @@ import tornado.gen
 import tornado.testing
 
 from builtins import object, range
+from six import ensure_str
 
 from katcp import Message, Sensor
 from katcp.testutils import mock_req
@@ -136,7 +137,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
 
     def test_sensor_attribute_match(self):
         reply, informs = self.client.blocking_request(Message.request("sensor-list"))
-        sensor_list = set([inform.arguments[0] for inform in informs])
+        sensor_list = set([ensure_str(inform.arguments[0]) for inform in informs])
         attribute_list = set(self.tango_device_proxy.get_attribute_list())
 
         attributes = {
