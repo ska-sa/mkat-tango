@@ -20,11 +20,11 @@ import time
 import weakref
 
 from functools import partial
-from builtins import cmp
 
 from tango import AttrQuality, DevState
-from tango.server import Device, attribute, command, server_run
 
+from tango.server import Device, attribute, command, server_run
+from past.builtins import cmp
 # Module logger reporting events that occur during normal operation of device
 LOGGER = logging.getLogger(__name__)
 
