@@ -192,6 +192,7 @@ def create_command2request_handler(req_name, req_doc):
     command : tango.server.command obj
         Tango device server command
     """
+    req_doc = ensure_native_str(req_doc)
     if "Parameters" in req_doc:
 
         def cmd_handler(self, request_args):
@@ -395,7 +396,7 @@ class KatcpTango2DeviceProxy(object):
         def _wait_synced():
             try:
                 reply, informs = yield self.katcp_inspecting_client.simple_request(
-                    req, *request_args
+                    ensure_native_str(req), *request_args
                 )
             except Exception as exc:
                 f.set_exception(exc)
