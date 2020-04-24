@@ -15,6 +15,7 @@ standard_library.install_aliases()  # noqa: E402
 
 SENSOR_ATTRIBUTE_NAMES = {}
 
+from katcp.compat import ensure_native_str
 
 def katcpname2tangoname(sensor_name):
     """
@@ -36,6 +37,7 @@ def katcpname2tangoname(sensor_name):
         'actual_azim' or 'acs_temperature_01'
     """
     # TODO (KM) 13-06-2016 : Need to find a way to deal with sensor names with dots.
+    sensor_name = ensure_native_str(sensor_name)
     attribute_name = sensor_name.replace("-", "_").replace(".", "_")
     SENSOR_ATTRIBUTE_NAMES[attribute_name] = sensor_name
     return attribute_name
