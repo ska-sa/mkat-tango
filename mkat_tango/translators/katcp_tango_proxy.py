@@ -191,6 +191,7 @@ def tango_attr_descr2katcp_sensors(attr_descr):
         katcp_type_info = TANGO2KATCP_TYPE_INFO[attr_descr.data_type]
     except KeyError:
         data_type_name = TANGO_CMDARGTYPE_NUM2NAME[attr_descr.data_type]
+
         raise NotImplementedError("Unhandled attribute type {!r}".format(data_type_name))
 
     sensor_type = katcp_type_info.sensor_type
@@ -565,7 +566,6 @@ class TangoDevice2KatcpProxy(object):
 
         sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
         sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
-
         for sensor_name in sensors_to_remove:
             self.katcp_server.remove_sensor(sensor_name)
 
@@ -580,7 +580,7 @@ class TangoDevice2KatcpProxy(object):
                 # Temporarily for unhandled attribute types
                 self._logger.debug(str(nierr), exc_info=True)
 
-        new_attributes = [sensor_attribute_map[sensor].name for sensor in sensors_to_add]
+        new_attributes = sorted([sensor_attribute_map[sensor].name for sensor in sensors_to_add])
         lower_case_attributes = [attr_name.lower() for attr_name in new_attributes]
         orig_attr_names_map = dict(list(zip(lower_case_attributes, new_attributes)))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
@@ -636,7 +636,6 @@ class TangoDevice2KatcpProxy(object):
         if name == "AttributesNotAdded":
             self._logger.debug("Sensor %s.* was never added on the KATCP server.", name)
             return
-
         katcp_name = tangoname2katcpname(name)
         # when we create KATCP sensors for spectrum attributes we add a dot before the
         # index. There could be a case where a device server has attributes that start

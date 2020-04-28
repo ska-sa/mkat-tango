@@ -372,7 +372,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             self.assertIn("test_attr", self.DUT.inspecting_client.orig_attr_names_map)
 
             # Check that attribute sampling was recalled for the new attribute
-            sec.assert_called_with(["test_attr", "ScalarDevEncoded"])
+            sec.assert_called_with(["ScalarDevEncoded", "test_attr"])
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute("test_attr")
