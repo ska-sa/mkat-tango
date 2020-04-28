@@ -648,7 +648,8 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                 # Address sensor type contains a Tuple contaning (host, port) and
                 # mapped to tango DevString type i.e "host:port"
                 sensor_value = ":".join(str(s) for s in sensor_value)
-            self.assertEqual(attribute_value, sensor_value)
+
+            self.assertAlmostEqual(attribute_value, sensor_value)
 
 
 class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
