@@ -649,7 +649,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                 # mapped to tango DevString type i.e "host:port"
                 sensor_value = ":".join(str(s) for s in sensor_value)
 
-            self.assertAlmostEqual(attribute_value, sensor_value)
+            self.assertAlmostEqual(attribute_value, sensor_value, places=6)
 
 
 class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
