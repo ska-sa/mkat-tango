@@ -29,6 +29,7 @@ setup(
     ],
     tests_require=["numpy", "nose_xunitmp"],
     zip_safe=False,
+    include_package_data=True,
     entry_points={
         "console_scripts": [
             "mkat-tango-weather-DS = mkat_tango.simulators.weather:weather_main",
