@@ -580,7 +580,7 @@ class TangoDevice2KatcpProxy(object):
                 # Temporarily for unhandled attribute types
                 self._logger.debug(str(nierr), exc_info=True)
 
-        new_attributes = sorted([sensor_attribute_map[sensor].name for sensor in sensors_to_add])
+        new_attributes = sorted(sensor_attribute_map[sensor].name for sensor in sensors_to_add)
         lower_case_attributes = [attr_name.lower() for attr_name in new_attributes]
         orig_attr_names_map = dict(list(zip(lower_case_attributes, new_attributes)))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
