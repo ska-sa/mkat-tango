@@ -23,7 +23,7 @@ setup(
         "numpy",
         "tornado>=4.3, <5",
         "katcp",
-        "tango-simlib>=0.4.0",
+        "tango-simlib>=0.5.0",
         "future",
         "futures; python_version<'3'",
     ],
