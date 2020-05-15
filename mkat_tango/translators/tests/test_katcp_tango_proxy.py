@@ -132,11 +132,11 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
 
     def test_from_address(self):
         self.assertEqual(self.client.is_connected(), True)
-        reply, informs = self.client.blocking_request(Message.request("watchdog"))
+        reply, informs = self.client.blocking_request(Message.request(ensure_native_str("watchdog")))
         self.assertTrue(reply.reply_ok(), True)
 
     def test_sensor_attribute_match(self):
-        reply, informs = self.client.blocking_request(Message.request("sensor-list"))
+        reply, informs = self.client.blocking_request(Message.request(ensure_native_str("sensor-list")))
         sensor_list = {ensure_native_str(inform.arguments[0]) for inform in informs}
         attribute_list = set(self.tango_device_proxy.get_attribute_list())
 
@@ -297,7 +297,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
     def test_request(self):
         mid = 5
         reply, _ = self.client.blocking_request(
-            Message.request("ReverseString", "polony", mid=mid)
+            Message.request(ensure_native_str("ReverseString"), ensure_native_str("polony"), mid=mid)
         )
         self.assertEqual(str(reply), "!ReverseString[{}] ok ynolop".format(mid))
 
@@ -372,7 +372,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             self.assertIn("test_attr", self.DUT.inspecting_client.orig_attr_names_map)
 
             # Check that attribute sampling was recalled for the new attribute
-            sec.assert_called_with(["test_attr", "ScalarDevEncoded"])
+            sec.assert_called_with(["ScalarDevEncoded", "test_attr"])
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute("test_attr")

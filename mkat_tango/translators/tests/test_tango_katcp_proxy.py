@@ -26,6 +26,7 @@ from katcp import DeviceServer, Sensor, Message
 from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcp.resource_client import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup
+from katcp.compat import ensure_native_str
 from tango.test_context import DeviceTestContext
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
@@ -647,7 +648,8 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                 # Address sensor type contains a Tuple contaning (host, port) and
                 # mapped to tango DevString type i.e "host:port"
                 sensor_value = ":".join(str(s) for s in sensor_value)
-            self.assertEqual(attribute_value, sensor_value)
+
+            self.assertAlmostEqual(attribute_value, sensor_value, places=6)
 
 
 class test_KatcpTango2DeviceProxyValidSensorsOnly(_test_KatcpTango2DeviceProxy):
@@ -750,7 +752,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
             reply = command(list(map(str, *args)))
         else:
             reply = command()
-        self.assertEqual(reply[0], "ok", "Request unsuccessful")
+        self.assertEqual(ensure_native_str(reply[0]), "ok", "Request unsuccessful")
         sensor_value = self.katcp_server.get_sensor(req)
         self.assertEqual(
             sensor_value.value(),
