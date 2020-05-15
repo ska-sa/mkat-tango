@@ -20,6 +20,8 @@ import time
 import weakref
 
 from functools import partial
+from past.builtins import cmp
+
 
 from tango import AttrQuality, DevState
 

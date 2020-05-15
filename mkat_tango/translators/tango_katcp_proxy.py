@@ -14,11 +14,6 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-
-
-
-
-
 from builtins import object
 import logging
 import weakref
@@ -29,6 +24,7 @@ from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager, Message
 from katcp.client import BlockingClient
 from katcp.core import Sensor
+from katcp.compat import ensure_native_str
 from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
 from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from tango.server import Device, command, attribute
@@ -196,6 +192,7 @@ def create_command2request_handler(req_name, req_doc):
     command : tango.server.command obj
         Tango device server command
     """
+    req_doc = ensure_native_str(req_doc)
     if "Parameters" in req_doc:
 
         def cmd_handler(self, request_args):
@@ -399,7 +396,7 @@ class KatcpTango2DeviceProxy(object):
         def _wait_synced():
             try:
                 reply, informs = yield self.katcp_inspecting_client.simple_request(
-                    req, *request_args
+                    ensure_native_str(req), *request_args
                 )
             except Exception as exc:
                 f.set_exception(exc)
@@ -549,7 +546,7 @@ def get_katcp_request_data(katcp_connect_timeout=60.0):
     try:
         client.start()
         client.wait_connected(timeout=katcp_connect_timeout)
-        help_m = Message.request("help")
+        help_m = Message.request(ensure_native_str("help"))
         reply, informs = client.blocking_request(help_m)
     finally:
         client.stop()
