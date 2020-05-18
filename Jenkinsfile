@@ -26,8 +26,8 @@ pipeline {
         stage ('Static analysis') {
             steps {
                 sh "echo 'Linting commented out'"
-                //sh "pylint ./${KATPACKAGE} --output-format=parseable --exit-zero > pylint.out"
-                //sh "lint_diff.sh -r ${KATPACKAGE}"
+                sh "pylint ./${KATPACKAGE} --output-format=parseable --exit-zero > pylint.out"
+                sh "lint_diff.sh -r ${KATPACKAGE}"
             }
 
             post {

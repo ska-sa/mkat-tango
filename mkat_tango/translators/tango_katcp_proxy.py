@@ -546,7 +546,7 @@ def get_katcp_request_data(katcp_connect_timeout=60.0):
     try:
         client.start()
         client.wait_connected(timeout=katcp_connect_timeout)
-        help_m = Message.request(ensure_native_str("help"))
+        help_m = Message.request("help")
         reply, informs = client.blocking_request(help_m)
     finally:
         client.stop()
