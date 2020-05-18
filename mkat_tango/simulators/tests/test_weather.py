@@ -19,9 +19,7 @@ from builtins import object
 from random import gauss
 
 from tango.test_context import DeviceTestContext
-
 from mkat_tango.testutils import disable_attributes_polling
-
 # DUT
 from mkat_tango.simulators import weather
 
