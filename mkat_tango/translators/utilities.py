@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-from katcp.compat import ensure_native_str
+from katcp.compat import ensure_native_str  # noqa: E402
 
 SENSOR_ATTRIBUTE_NAMES = {}
 
