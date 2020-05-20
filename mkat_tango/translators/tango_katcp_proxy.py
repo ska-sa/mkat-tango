@@ -11,27 +11,33 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 from __future__ import absolute_import, division, print_function
-from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-from builtins import object  # noqa: E402
 import logging
 import weakref
 
+from builtins import object  # noqa: E402
+from concurrent.futures import Future
+
 import tango
 import tornado
-from concurrent.futures import Future
-from katcp import inspecting_client, ioloop_manager, Message
-from katcp.client import BlockingClient
-from katcp.core import Sensor
-from katcp.compat import ensure_native_str  # noqa: E402
-from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
-from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
-from tango.server import Device, command, attribute
-from tango.server import server_run, device_property
 
+from future import standard_library
+from katcp import Message, inspecting_client, ioloop_manager
+from katcp.client import BlockingClient
+from katcp.compat import ensure_native_str
+from katcp.core import Sensor
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
+from tango import (
+    Attr, AttrQuality, AttrWriteType, Database, DevBoolean, DevDouble, DevFailed, DevLong64, DevState, DevString,
+    UserDefaultAttrProp,)
+from tango.server import Device, attribute, command, device_property, server_run
+
+
+
+
+
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
