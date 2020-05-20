@@ -104,7 +104,7 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "azim-emergency-limit-ccw-reached",
-        "Azimuth axis emergency-limit has been reached in the counterclockwise direction",
+        "Azimuth axis emergency-limit has been reached in the counterclockwise direction",  # noqa: E505
         "",
         "boolean",
     ),
