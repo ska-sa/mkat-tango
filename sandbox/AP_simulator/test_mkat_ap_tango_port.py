@@ -52,7 +52,7 @@ EXPECTED_SENSOR_LIST = [
     (
         "acu-spline-status",
         (
-            "Status relating to the number of track samples that are currently available in "
+            "Status relating to the number of track samples that are currently available in "  # noqa: E501
             "the ACU stack (green=optimal)"
         ),
         "",
@@ -84,13 +84,13 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "azim-aux1-mode-selected",
-        "Azimuth axis auxiliary1 mode activated or not (i.e. azimuth only driven by motor 1",
+        "Azimuth axis auxiliary1 mode activated or not (i.e. azimuth only driven by motor 1",  # noqa: E501
         "",
         "boolean",
     ),
     (
         "azim-aux2-mode-selected",
-        "Azimuth axis auxiliary2 mode activated or not (i.e. azimuth only driven by motor 2",
+        "Azimuth axis auxiliary2 mode activated or not (i.e. azimuth only driven by motor 2",  # noqa: E501
         "",
         "boolean",
     ),
@@ -116,7 +116,7 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "azim-emergency2-limit-ccw-reached",
-        "Azimuth axis emergency2-limit has been reached in the counterclockwise direction",
+        "Azimuth axis emergency2-limit has been reached in the counterclockwise direction",  # noqa: E501
         "",
         "boolean",
     ),
@@ -210,7 +210,7 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "azim-soft-prelimit-ccw-reached",
-        "Azimuth axis software prelimit has been reached in the counterclockwise direction",
+        "Azimuth axis software prelimit has been reached in the counterclockwise direction",  # noqa: E501
         "",
         "boolean",
     ),
@@ -231,7 +231,7 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "cabinet-overtemp-all-ok",
-        "Not ok if one of the overtemperature sensors in the drive cabinet reports an alarm",
+        "Not ok if one of the overtemperature sensors in the drive cabinet reports an alarm",  # noqa: E501
         "",
         "boolean",
     ),
@@ -735,7 +735,7 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "ridx-soft-limit-ccw-reached",
-        "Receiver indexer software limit has been reached in the counterclockwise direction",
+        "Receiver indexer software limit has been reached in the counterclockwise direction",  # noqa: E501
         "",
         "boolean",
     ),
@@ -820,7 +820,7 @@ EXPECTED_SENSOR_LIST = [
     ("struct-tilt-y", "Structural tilt in Y direction", "arcsec", "float", "-120", "120"),
     (
         "tilt-corr-azim",
-        "Currently applied pointing error correction in azimuth based on tiltmeter readout",
+        "Currently applied pointing error correction in azimuth based on tiltmeter readout",  # noqa: E501
         "arcsec",
         "float",
         "-3600",
