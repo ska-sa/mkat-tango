@@ -90,8 +90,9 @@ TANGO_INT_TYPES = {
     DevULong64,
 }
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
-TANGO_CMDARGTYPE_NUM2NAME = {num: name for name, num in list(tango.CmdArgType.names.items())}
-
+TANGO_CMDARGTYPE_NUM2NAME = {
+    num: name for name, num in list(tango.CmdArgType.names.items())
+}
 
 class TangoStateDiscrete(kattypes.Discrete):
     """A kattype that is compatible with the tango.DevState enumeration"""
