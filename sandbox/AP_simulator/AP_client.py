@@ -3,10 +3,12 @@ from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
 import threading
-import pylab as pl
 import logging
-import PyTango
 import time
+
+import PyTango
+
+import pylab as pl
 
 logger = logging.getLogger()
 

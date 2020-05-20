@@ -20,13 +20,11 @@ import unittest
 import mock
 import tango
 
-from functools import reduce
-
 from katcp import DeviceServer, Sensor, Message
 from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcp.resource_client import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup
-from katcp.compat import ensure_native_str
+from katcp.compat import ensure_native_str  # noqa: E402
 from tango.test_context import DeviceTestContext
 from tango_simlib.utilities.testutils import cleanup_tempfile
 

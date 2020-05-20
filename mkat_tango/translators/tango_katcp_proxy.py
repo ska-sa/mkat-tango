@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
-from builtins import object
+from builtins import object # noqa: E402
 import logging
 import weakref
 
@@ -24,7 +24,7 @@ from concurrent.futures import Future
 from katcp import inspecting_client, ioloop_manager, Message
 from katcp.client import BlockingClient
 from katcp.core import Sensor
-from katcp.compat import ensure_native_str
+from katcp.compat import ensure_native_str # noqa: E402
 from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
 from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
 from tango.server import Device, command, attribute
