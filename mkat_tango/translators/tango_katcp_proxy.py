@@ -18,21 +18,31 @@ import logging
 import weakref
 
 from builtins import object  # noqa: E402
-from concurrent.futures import Future
+from concurrent.futures import Future  # noqa: E402
 
 import tango
 import tornado
 
-from katcp import Message, inspecting_client, ioloop_manager
+from katcp import Message, inspecting_client, ioloop_manager  # noqa: E402
 from katcp.client import BlockingClient
-from katcp.compat import ensure_native_str
+from katcp.compat import ensure_native_str  # noqa: E402
 from katcp.core import Sensor
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
-from tango import (
-    Attr, AttrQuality, AttrWriteType, Database, DevBoolean, DevDouble, DevFailed, DevLong64, DevState, DevString,
-    UserDefaultAttrProp,)
-from tango.server import Device, attribute, command, device_property, server_run
+from tango import (   # noqa: E402
+    Attr,
+    AttrQuality,
+    AttrWriteType,
+    Database,
+    DevBoolean,
+    DevDouble,
+    DevFailed,
+    DevLong64,
+    DevState,
+    DevString,
+    UserDefaultAttrProp,
+)
+from tango.server import Device, attribute, command, device_property, server_run   # noqa: E402
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
