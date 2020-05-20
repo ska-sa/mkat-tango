@@ -29,7 +29,7 @@ from katcp.compat import ensure_native_str  # noqa: E402
 from katcp.core import Sensor
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
-from tango import (
+from tango import (  # noqa: E402
     Attr,
     AttrQuality,
     AttrWriteType,
@@ -41,14 +41,14 @@ from tango import (
     DevState,
     DevString,
     UserDefaultAttrProp,
-)  # noqa: E402
-from tango.server import (
+)
+from tango.server import (  # noqa: E402
     Device,
     attribute,
     command,
     device_property,
     server_run,
-)  # noqa: E402
+)
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
