@@ -38,10 +38,10 @@ from mkat_tango.translators.tango_katcp_proxy import (
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
     ClassCleanupUnittestMixin,
 )  # noqa: E402
-from mkat_tango.translators.utilities import (
+from mkat_tango.translators.utilities import (  # noqa: E402
     katcpname2tangoname,
     tangoname2katcpname,
-)  # noqa: E402
+)
 from tango.test_context import DeviceTestContext  # noqa: E402
 from tango_simlib.utilities.testutils import cleanup_tempfile  # noqa: E402
 
