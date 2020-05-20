@@ -52,7 +52,7 @@ EXPECTED_SENSOR_LIST = [
     (
         "acu-spline-status",
         (
-            "Status relating to the number of track samples that are currently available in "  # noqa: E501
+            "Status relating to the number of track samples that are currently available in "  # noqa: E501,W505
             "the ACU stack (green=optimal)"
         ),
         "",
@@ -104,7 +104,7 @@ EXPECTED_SENSOR_LIST = [
     ),
     (
         "azim-emergency-limit-ccw-reached",
-        "Azimuth axis emergency-limit has been reached in the counterclockwise direction",  # noqa: E505
+        "Azimuth axis emergency-limit has been reached in the counterclockwise direction",  # noqa: W505,E501
         "",
         "boolean",
     ),
