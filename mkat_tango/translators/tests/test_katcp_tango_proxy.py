@@ -31,25 +31,25 @@ import tornado.testing
 
 from katcp import Message, Sensor
 from katcp.compat import ensure_native_str  # noqa: E402
-from katcp.testutils import (
+from katcp.testutils import (  # noqa: E402
     BlockingTestClient,
     mock_req,
     start_thread_with_cleanup,
-)  # noqa: E402
+)
 from mkat_tango import testutils  # noqa: E402
 from mkat_tango.translators import katcp_tango_proxy, utilities  # noqa: E402
-from mkat_tango.translators.tests.test_tango_inspecting_client import (
+from mkat_tango.translators.tests.test_tango_inspecting_client import (  # noqa: E402
     ClassCleanupUnittestMixin,
     TangoTestDevice,
-)  # noqa: E402
-from tango import (
+)
+from tango import (  # noqa: E402
     Attr,
     AttrDataFormat,
     DevFailed,
     DeviceProxy,
     DevLong,
     DevVoid,
-)  # noqa: E402
+)
 from tango.server import command
 from tango.test_context import DeviceTestContext
 from tango_simlib import tango_sim_generator
