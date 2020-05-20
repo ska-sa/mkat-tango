@@ -11,7 +11,7 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 from __future__ import absolute_import, division, print_function
-from future import standard_library
+from future import standard_library # noqa: E402
 standard_library.install_aliases()  # noqa: E402
 
 import logging
