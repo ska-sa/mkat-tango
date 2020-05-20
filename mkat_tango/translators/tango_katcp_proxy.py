@@ -11,6 +11,7 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 from __future__ import absolute_import, division, print_function
+from future import standard_library
 standard_library.install_aliases()  # noqa: E402
 
 import logging
@@ -22,7 +23,6 @@ from concurrent.futures import Future
 import tango
 import tornado
 
-from future import standard_library
 from katcp import Message, inspecting_client, ioloop_manager
 from katcp.client import BlockingClient
 from katcp.compat import ensure_native_str
@@ -33,10 +33,6 @@ from tango import (
     Attr, AttrQuality, AttrWriteType, Database, DevBoolean, DevDouble, DevFailed, DevLong64, DevState, DevString,
     UserDefaultAttrProp,)
 from tango.server import Device, attribute, command, device_property, server_run
-
-
-
-
 
 
 MODULE_LOGGER = logging.getLogger(__name__)
