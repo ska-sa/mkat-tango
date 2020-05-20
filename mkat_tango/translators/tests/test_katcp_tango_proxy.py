@@ -25,12 +25,12 @@ import pkg_resources
 import tornado.gen
 import tornado.testing
 
-from builtins import object, range # noqa: E402
+from builtins import object, range  # noqa: E402
 
 from katcp import Message, Sensor
 from katcp.testutils import mock_req
 from katcp.testutils import start_thread_with_cleanup, BlockingTestClient
-from katcp.compat import ensure_native_str # noqa: E402
+from katcp.compat import ensure_native_str  # noqa: E402
 from tango import DevVoid, Attr, DevLong, AttrDataFormat, DevFailed, DeviceProxy
 from tango.server import command
 from tango.test_context import DeviceTestContext

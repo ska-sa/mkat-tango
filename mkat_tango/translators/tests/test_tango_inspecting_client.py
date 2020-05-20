@@ -18,8 +18,8 @@ import weakref
 
 import mock
 
-from collections import defaultdict # noqa: E402
-from functools import reduce, wraps # noqa: E402
+from collections import defaultdict  # noqa: E402
+from functools import reduce, wraps  # noqa: E402
 
 from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
