@@ -15,7 +15,7 @@ import logging
 import mock
 import unittest
 
-from builtins import object # noqa: E402
+from builtins import object  # noqa: E402
 from random import gauss
 
 from tango.test_context import DeviceTestContext

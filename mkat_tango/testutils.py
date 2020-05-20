@@ -15,7 +15,7 @@ import logging
 import time
 import mock
 
-from builtins import object # noqa: E402
+from builtins import object  # noqa: E402
 
 LOGGER = logging.getLogger(__name__)
 

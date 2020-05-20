@@ -25,7 +25,7 @@ import numpy as np
 import tornado
 import tango
 
-from builtins import object, range, zip
+from builtins import object, range, zip   # noqa: E402
 from collections import namedtuple
 from functools import partial
 
