@@ -58,7 +58,7 @@ class Weather(Device):
     def initialize_dynamic_attributes(self):
         """The device method that sets up attributes during run time"""
         model_sim_quants = self.model.sim_quantities
-        attribute_list = set(list(model_sim_quants.keys()))
+        attribute_list = set(model_sim_quants.keys())
 
         for attribute_name in attribute_list:
             model.MODULE_LOGGER.info(
