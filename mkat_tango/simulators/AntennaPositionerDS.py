@@ -22,7 +22,7 @@ import weakref
 from functools import partial
 
 
-from past.builtins import cmp
+from past.builtins import cmp  # noqa: E402
 from tango import AttrQuality, DevState
 from tango.server import Device, attribute, command, server_run
 
