@@ -8,6 +8,7 @@
 ###############################################################################
 from __future__ import absolute_import, division, print_function
 from future import standard_library
+
 standard_library.install_aliases()  # noqa: E402
 
 import time
@@ -20,6 +21,7 @@ from random import gauss
 
 from tango.test_context import DeviceTestContext
 from mkat_tango.testutils import disable_attributes_polling
+
 # DUT
 from mkat_tango.simulators import weather
 
