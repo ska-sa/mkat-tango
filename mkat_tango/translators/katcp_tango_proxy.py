@@ -14,7 +14,8 @@
 """
 from __future__ import absolute_import, division, print_function
 from future import standard_library
-standard_library.install_aliases()  # noqa: E402
+
+standard_library.install_aliases()
 
 import logging
 import textwrap
@@ -90,7 +91,7 @@ TANGO_INT_TYPES = {
     DevULong64,
 }
 TANGO_NUMERIC_TYPES = TANGO_FLOAT_TYPES | TANGO_INT_TYPES
-TANGO_CMDARGTYPE_NUM2NAME = {num: name for name, num in list(tango.CmdArgType.names.items())}
+TANGO_CMDARGTYPE_NUM2NAME = {num: name for name, num in tango.CmdArgType.names.items()}
 
 
 class TangoStateDiscrete(kattypes.Discrete):
@@ -580,7 +581,9 @@ class TangoDevice2KatcpProxy(object):
                 # Temporarily for unhandled attribute types
                 self._logger.debug(str(nierr), exc_info=True)
 
-        new_attributes = sorted(sensor_attribute_map[sensor].name for sensor in sensors_to_add)
+        new_attributes = sorted(
+            sensor_attribute_map[sensor].name for sensor in sensors_to_add
+        )
         lower_case_attributes = [attr_name.lower() for attr_name in new_attributes]
         orig_attr_names_map = dict(list(zip(lower_case_attributes, new_attributes)))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
