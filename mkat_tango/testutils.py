@@ -9,14 +9,14 @@
 from __future__ import absolute_import, division, print_function
 from future import standard_library
 
-standard_library.install_aliases()  # noqa: E402
+standard_library.install_aliases()
 
 import sys
 import logging
 import time
 import mock
 
-from builtins import object  # noqa: E402
+from builtins import object
 
 LOGGER = logging.getLogger(__name__)
 

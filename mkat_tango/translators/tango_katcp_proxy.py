@@ -11,26 +11,26 @@
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
 from __future__ import absolute_import, division, print_function
-from future import standard_library  # noqa: E402
+from future import standard_library
 
-standard_library.install_aliases()  # noqa: E402
+standard_library.install_aliases()
 
 import logging
 import weakref
 
-from builtins import object  # noqa: E402
-from concurrent.futures import Future  # noqa: E402
+from builtins import object
+from concurrent.futures import Future
 
 import tango
 import tornado
 
-from katcp import Message, inspecting_client, ioloop_manager  # noqa: E402
+from katcp import Message, inspecting_client, ioloop_manager
 from katcp.client import BlockingClient
-from katcp.compat import ensure_native_str  # noqa: E402
+from katcp.compat import ensure_native_str
 from katcp.core import Sensor
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
-from tango import (  # noqa: E402
+from tango import (
     Attr,
     AttrQuality,
     AttrWriteType,
@@ -43,7 +43,7 @@ from tango import (  # noqa: E402
     DevString,
     UserDefaultAttrProp,
 )
-from tango.server import (  # noqa: E402
+from tango.server import (
     Device,
     attribute,
     command,

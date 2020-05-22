@@ -9,7 +9,7 @@
 from __future__ import absolute_import, division, print_function
 from future import standard_library
 
-standard_library.install_aliases()  # noqa: E402
+standard_library.install_aliases()
 
 import logging
 import operator
@@ -19,8 +19,8 @@ import weakref
 
 import mock
 
-from collections import defaultdict  # noqa: E402
-from functools import reduce, wraps  # noqa: E402
+from collections import defaultdict
+from functools import reduce, wraps
 
 from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp

@@ -12,7 +12,7 @@
 from __future__ import absolute_import, division, print_function
 from future import standard_library
 
-standard_library.install_aliases()  # noqa: E402
+standard_library.install_aliases()
 
 import logging
 import time
@@ -21,8 +21,8 @@ import unittest
 import mock
 import tango
 
-from katcp import DeviceServer, Message, Sensor  # noqa: E402
-from katcp.compat import ensure_native_str  # noqa: E402
+from katcp import DeviceServer, Message, Sensor
+from katcp.compat import ensure_native_str
 from katcp.kattypes import Float, Timestamp, request, return_reply
 from katcp.resource_client import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup
@@ -34,16 +34,16 @@ from mkat_tango.translators.tango_katcp_proxy import (
     get_katcp_request_data,
     get_tango_device_server,
     remove_tango_server_attribute_list,
-)  # noqa: E402
+)
 from mkat_tango.translators.tests.test_tango_inspecting_client import (
     ClassCleanupUnittestMixin,
-)  # noqa: E402
-from mkat_tango.translators.utilities import (  # noqa: E402
+)
+from mkat_tango.translators.utilities import (
     katcpname2tangoname,
     tangoname2katcpname,
 )
-from tango.test_context import DeviceTestContext  # noqa: E402
-from tango_simlib.utilities.testutils import cleanup_tempfile  # noqa: E402
+from tango.test_context import DeviceTestContext
+from tango_simlib.utilities.testutils import cleanup_tempfile
 
 
 logger = logging.getLogger(__name__)

@@ -7,9 +7,9 @@
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
 from __future__ import absolute_import, division, print_function
-from future import standard_library  # noqa: E402
+from future import standard_library
 
-standard_library.install_aliases()  # noqa: E402
+standard_library.install_aliases()
 
 import logging
 import os
@@ -21,28 +21,28 @@ import textwrap
 import time
 import unittest
 
-from builtins import object, range  # noqa: E402
+from builtins import object, range
 
-import pkg_resources  # noqa: E402
+import pkg_resources
 
 import mock
 import tornado.gen
 import tornado.testing
 
 from katcp import Message, Sensor
-from katcp.compat import ensure_native_str  # noqa: E402
-from katcp.testutils import (  # noqa: E402
+from katcp.compat import ensure_native_str
+from katcp.testutils import (
     BlockingTestClient,
     mock_req,
     start_thread_with_cleanup,
 )
-from mkat_tango import testutils  # noqa: E402
-from mkat_tango.translators import katcp_tango_proxy, utilities  # noqa: E402
-from mkat_tango.translators.tests.test_tango_inspecting_client import (  # noqa: E402
+from mkat_tango import testutils
+from mkat_tango.translators import katcp_tango_proxy, utilities
+from mkat_tango.translators.tests.test_tango_inspecting_client import (
     ClassCleanupUnittestMixin,
     TangoTestDevice,
 )
-from tango import (  # noqa: E402
+from tango import (
     Attr,
     AttrDataFormat,
     DevFailed,
