@@ -425,17 +425,21 @@ class TangoDevice2KatcpProxy(object):
         For clean shutdown and thread cleanup, stop() needs to be called
 
         """
-        tango_device_proxy = self.inspecting_client.tango_dp
-        if not is_tango_device_running(tango_device_proxy, logger=self._logger):
-            wait_for_device(tango_device_proxy, logger=self._logger)
-        self._logger.info("Connection to the device server established")
-        self.inspecting_client.inspect()
-        self.inspecting_client.sample_event_callback = self.update_sensor_values
-        self.inspecting_client.interface_change_callback = (
-            self.update_request_sensor_list)
-        self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
-        self.update_katcp_server_request_list(self.inspecting_client.device_commands)
-        return self.katcp_server.start(timeout=timeout)
+        with tango.EnsureOmniThread():
+            tango_device_proxy = self.inspecting_client.tango_dp
+            if not is_tango_device_running(tango_device_proxy, logger=self._logger):
+                wait_for_device(tango_device_proxy, logger=self._logger)
+            self._logger.info(
+                "Connection to %s established", tango_device_proxy.name())
+            self.inspecting_client.inspect()
+            self.inspecting_client.sample_event_callback = self.update_sensor_values
+            self.inspecting_client.interface_change_callback = (
+                self.update_request_sensor_list)
+            self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
+            self.update_katcp_server_request_list(self.inspecting_client.device_commands)
+            self.katcp_server.start(timeout=timeout)
+            self._logger.info(
+                "Completed startup of device handler for %s", tango_device_proxy.name())
 
     def stop(self, timeout=1.0):
         """Stop the translator
@@ -514,6 +518,8 @@ class TangoDevice2KatcpProxy(object):
         lower_case_attributes = map(lambda attr_name:attr_name.lower(), new_attributes)
         orig_attr_names_map = dict(zip(lower_case_attributes, new_attributes))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
+        self._logger.info(
+            "Setting up attribute sampling for %s attributes.", len(new_attributes))
         self.inspecting_client.setup_attribute_sampling(new_attributes)
 
     def update_katcp_server_request_list(self, commands):
