@@ -587,7 +587,25 @@ class TangoDevice2KatcpProxy(object):
         lower_case_attributes = [attr_name.lower() for attr_name in new_attributes]
         orig_attr_names_map = dict(zip(lower_case_attributes, new_attributes))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
-        self.inspecting_client.setup_attribute_sampling(new_attributes)
+        self._logger.info(
+            "Setting up attribute sampling for %s attributes.", len(new_attributes))
+
+        # TODO (AJ 2020-05-25) Remove HACK for SKA MPI Dish element master
+        # Polling on the server side can affect the device's performance,
+        # so we prefer not to do.  However, for dish master we enable it
+        # as the performance hit is not a problem, and there are some critical
+        # attributes we need to be sampled periodically (they don't push change
+        # events).  Ideally this should be a config option set by the user of
+        # this class, but we are hacking it in for now.
+        device_name = self.inspecting_client.tango_dp.name()
+        if re.match(r"mid_dsh_\d\d\d\d/elt/master", device_name):
+            polling_fallback = True
+        else:
+            polling_fallback = False
+        # END HACK
+
+        self.inspecting_client.setup_attribute_sampling(
+            new_attributes, server_polling_fallback=polling_fallback)
 
     def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
