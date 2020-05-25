@@ -79,18 +79,12 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         # events working properly.
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
-                                              port=get_open_port())
+                                              port=get_open_port(), host=socket.getfqdn())
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
-        # Pytango now returns the ip address instead of the hostname in the test_context.
-        # Use the ip address to retrieve the hostname and reconstruct the device address
-        # before instantiating the device proxy.
-        ip = self.tango_device_address.split('/')[2].split(':')[0]
-        hostname = socket.gethostbyaddr(ip)[0]
-        self.tango_device_address = self.tango_device_address.replace(ip, hostname)
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
             ("", 0), self.tango_device_address)
         if hasattr(self, 'io_loop'):
@@ -461,11 +455,25 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
              "-ORBendPoint", "giop:tcp::{}".format(cls.tango_port)])
 
         # Note that tango demands that connection to the server must
-        # be delayed by atleast 1000 ms of device server start up.
+        # be delayed by at least 1000 ms of device server start up.
+        # Besides that delay, we still have to keep retrying since there
+        # could be an unknown delay before the subprocess starts.
         time.sleep(1)
-        cls.sim_device = DeviceProxy(
-                '%s:%s/test/nodb/tangodeviceserver#dbase=no' % (
-                    cls.tango_host, cls.tango_port))
+        pinged = False
+        start_time = time.time()
+        startup_timeout = 5
+        while not pinged and (time.time() - start_time) < startup_timeout:
+            try:
+                cls.sim_device = DeviceProxy(
+                    '%s:%s/test/nodb/tangodeviceserver#dbase=no' % (
+                        cls.tango_host, cls.tango_port))
+                cls.sim_device.ping()
+                pinged = True
+            except DevFailed:
+                time.sleep(0.2)
+        if not pinged:
+            cls.sub_proc.kill()
+            raise RuntimeError("Failed to connect to device at startup - aborting")
 
     def setUp(self):
         super(test_TangoDeviceShutdown, self).setUp()
