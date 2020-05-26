@@ -159,7 +159,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
 
         # The SpectrumDevDouble attribute name needs to be broken down to the KATCP
         # equivalent.
-        for attr_name, attr_config in attributes.items():
+        for attr_name, attr_config in list(attributes.items()):
             if attr_config.data_format == AttrDataFormat.SPECTRUM:
                 attribute_list.remove(attr_name)
                 for index in range(attr_config.max_dim_x):
