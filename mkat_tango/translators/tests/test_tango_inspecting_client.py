@@ -6,17 +6,22 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
 
 import logging
 import operator
 import time
 import unittest
 import weakref
-from collections import defaultdict
-from functools import wraps
 
 import mock
+
+from collections import defaultdict
+from functools import reduce, wraps
+
 from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
 from tango import server as TS
@@ -25,7 +30,7 @@ from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
 from mkat_tango.translators import tango_inspecting_client
-from functools import reduce
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -390,7 +395,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the change event
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
@@ -450,7 +455,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the change event
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
@@ -517,7 +522,7 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
             self.assertEqual(get_poll_period(attr), 1000)
 
         attr_event_type_events = {}
-        for attr, events in recorded_samples.items():
+        for attr, events in list(recorded_samples.items()):
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]

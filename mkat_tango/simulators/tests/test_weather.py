@@ -6,17 +6,20 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
 
 import time
 import logging
 import mock
 import unittest
 
+from builtins import object
 from random import gauss
 
 from tango.test_context import DeviceTestContext
-
 from mkat_tango.testutils import disable_attributes_polling
 
 # DUT
@@ -130,7 +133,7 @@ class test_Weather(unittest.TestCase):
         self.maxDiff = None
         model = self.instance.model
         varying_attributes = tuple(self.varying_attributes)
-        ## Test that quantities don't change faster than update time
+        # Test that quantities don't change faster than update time
         # Set update time to very long
         model.min_update_period = 999999
         # Cause an initial update
@@ -163,7 +166,7 @@ class test_Weather(unittest.TestCase):
                 self.addCleanup(patcher.stop)
                 mock_next_val.side_effect = unique_next_val
 
-        ## Test that quantities change after more some time
+        # Test that quantities change after more some time
         # Set update time quite short
         update_period = 0.01
         model.min_update_period = update_period

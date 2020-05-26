@@ -11,10 +11,14 @@
 MeerKAT weather simulator and weather simulator control.
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
 
 import logging
 import weakref
+
 from functools import partial
 
 from tango import Attr, AttrWriteType
@@ -55,7 +59,7 @@ class Weather(Device):
     def initialize_dynamic_attributes(self):
         """The device method that sets up attributes during run time"""
         model_sim_quants = self.model.sim_quantities
-        attribute_list = set([attr for attr in model_sim_quants.keys()])
+        attribute_list = set(model_sim_quants.keys())
 
         for attribute_name in attribute_list:
             model.MODULE_LOGGER.info(

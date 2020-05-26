@@ -1,4 +1,7 @@
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
 
 import panic
 
@@ -14,8 +17,9 @@ alarms.add(
 alarms.add(
     "Outside_Temperature",
     "mkat/panic/kataware",
-    formula=("(mkat_sim/weather/1/temperature<-9.0 or"
-             " mkat_sim/weather/1/temperature>50.0)"),
+    formula=(
+        "(mkat_sim/weather/1/temperature<-9.0 or" " mkat_sim/weather/1/temperature>50.0)"
+    ),
     description="Current temperature outside near the telescope.",
     receivers="kmadisa@ska.ac.za",
 )

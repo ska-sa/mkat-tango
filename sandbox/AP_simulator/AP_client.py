@@ -1,10 +1,15 @@
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
+from future import standard_library
 
-import time
-import PyTango
-import logging
-import pylab as pl
+standard_library.install_aliases()
+
 import threading
+import logging
+import time
+
+import PyTango
+
+import pylab as pl
 
 logger = logging.getLogger()
 
@@ -16,6 +21,8 @@ logging.basicConfig(
 AP = PyTango.DeviceProxy("test/antenna_positioner/1")
 
 # Set up a listener
+
+
 def printer(event_data):
     try:
         print(event_data)  # A PyTango.EventData instance

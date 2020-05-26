@@ -10,24 +10,46 @@
 """
     @author MeerKAT CAM team <cam@ska.ac.za>
 """
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
 
 import logging
 import weakref
 
+from builtins import object
+from concurrent.futures import Future
+
 import tango
 import tornado
-from concurrent.futures import Future
-from katcp import inspecting_client, ioloop_manager, Message
-from katcp.client import BlockingClient
-from katcp.core import Sensor
-from tango import Attr, UserDefaultAttrProp, AttrWriteType, AttrQuality, Database
-from tango import DevDouble, DevLong64, DevBoolean, DevString, DevFailed, DevState
-from tango.server import Device, command, attribute
-from tango.server import server_run, device_property
 
+from katcp import Message, inspecting_client, ioloop_manager
+from katcp.client import BlockingClient
+from katcp.compat import ensure_native_str
+from katcp.core import Sensor
 from mkat_tango import helper_module
 from mkat_tango.translators.utilities import katcpname2tangoname
+from tango import (
+    Attr,
+    AttrQuality,
+    AttrWriteType,
+    Database,
+    DevBoolean,
+    DevDouble,
+    DevFailed,
+    DevLong64,
+    DevState,
+    DevString,
+    UserDefaultAttrProp,
+)
+from tango.server import (
+    Device,
+    attribute,
+    command,
+    device_property,
+    server_run,
+)
 
 MODULE_LOGGER = logging.getLogger(__name__)
 
@@ -188,6 +210,7 @@ def create_command2request_handler(req_name, req_doc):
     command : tango.server.command obj
         Tango device server command
     """
+    req_doc = ensure_native_str(req_doc)
     if "Parameters" in req_doc:
 
         def cmd_handler(self, request_args):
@@ -391,7 +414,7 @@ class KatcpTango2DeviceProxy(object):
         def _wait_synced():
             try:
                 reply, informs = yield self.katcp_inspecting_client.simple_request(
-                    req, *request_args
+                    ensure_native_str(req), *request_args
                 )
             except Exception as exc:
                 f.set_exception(exc)

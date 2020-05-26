@@ -6,7 +6,10 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-from __future__ import absolute_import, print_function, division
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
 
 import os
 import sys
