@@ -395,7 +395,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the change event
         attr_event_type_events = {}
-        for attr, events in list(recorded_samples.items()):
+        for attr, events in recorded_samples.items():
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
@@ -455,7 +455,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
         # Check that the initial updates were received for each attribute for
         # at least the change event
         attr_event_type_events = {}
-        for attr, events in list(recorded_samples.items()):
+        for attr, events in recorded_samples.items():
             attr_event_type_events[attr] = defaultdict(list)
             for event in events:
                 event_type = event[4]
