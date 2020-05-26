@@ -186,7 +186,7 @@ class test_Weather(unittest.TestCase):
 
         # 1) check that the value of *each* attribute has changed
         # 2) check that the difference in timestamp is more than update_period
-        for attr_name, initial_attr in list(initial_vals.items()):
+        for attr_name, initial_attr in initial_vals.items():
             updated_attr = updated_vals[attr_name]
             self.assertNotEqual(
                 updated_attr["value"],
