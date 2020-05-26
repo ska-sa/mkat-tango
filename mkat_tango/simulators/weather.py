@@ -69,7 +69,7 @@ class Weather(Device):
             meta_data = model_sim_quants[attribute_name].meta
             attr_dtype = PYTHON_TYPES_TO_TANGO_TYPE[meta_data.pop("dtype")]
             attr = Attr(attribute_name, attr_dtype, AttrWriteType.READ)
-            for prop in list(meta_data.keys()):
+            for prop in meta_data.keys():
                 attr_prop = getattr(attr_props, "set_" + prop)
                 if attr_prop:
                     attr_prop(str(meta_data[prop]))
