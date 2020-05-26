@@ -107,7 +107,7 @@ def reset_katcp_tango_server(katcp_server, tango_server):
     """For removing any sensors/attributes that were added during testing.
         """
     extra_sensors = {}
-    for sensor_name, sensor in katcp_server._sensors.items():
+    for sensor_name, sensor in list(katcp_server._sensors.items()):
         if sensor_name not in list(sensors.keys()):
             katcp_server.remove_sensor(sensor_name)
             extra_sensors[sensor_name] = sensor
