@@ -158,7 +158,7 @@ class test_Weather(unittest.TestCase):
         # Mock the simulation quantities' next_val() call to ensure that the same value is
         # never returned twice, otherwise it is impossible to tell if a value really
         # changed
-        for var, quant in list(model.sim_quantities.items()):
+        for var, quant in model.sim_quantities.items():
             if var in varying_attributes:
                 unique_next_val = never_repeat(quant.next_val)
                 patcher = mock.patch.object(quant, "next_val")
