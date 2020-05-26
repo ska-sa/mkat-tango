@@ -536,7 +536,7 @@ class TangoDevice2KatcpProxy(object):
         tango2katcp_sensors = []
         sensor_attribute_map = {}
 
-        for attribute_name, attribute_config in list(attributes.items()):
+        for attribute_name, attribute_config in attributes.items():
             if attribute_name == "AttributesNotAdded":
                 self._logger.debug(
                     "Skipping creation of sensor objects for attribute %s.",
@@ -585,7 +585,7 @@ class TangoDevice2KatcpProxy(object):
             sensor_attribute_map[sensor].name for sensor in sensors_to_add
         )
         lower_case_attributes = [attr_name.lower() for attr_name in new_attributes]
-        orig_attr_names_map = dict(list(zip(lower_case_attributes, new_attributes)))
+        orig_attr_names_map = dict(zip(lower_case_attributes, new_attributes))
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
         self.inspecting_client.setup_attribute_sampling(new_attributes)
 

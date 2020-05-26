@@ -181,7 +181,7 @@ def remove_tango_server_attribute_list(tango_dserver, sensors, error_list=None):
     None
 
     """
-    for sensor_name in list(sensors.keys()):
+    for sensor_name in sensors.keys():
         attr_name = katcpname2tangoname(sensor_name)
         if error_list is not None:
             try:
@@ -593,7 +593,7 @@ def get_tango_device_server():
     class TangoDeviceServerCommands(object):
         pass
 
-    for req_name, req_doc in list(requests_dict.items()):
+    for req_name, req_doc in requests_dict.items():
         cmd_name = katcpname2tangoname(req_name)
         tango_cmd = create_command2request_handler(req_name, req_doc)
         setattr(TangoDeviceServerCommands, cmd_name, tango_cmd)
