@@ -24,7 +24,7 @@ import tango
 from collections import namedtuple
 from functools import partial
 
-from tornado.gen import Return
+from tornado.gen import Return, maybe_future
 from katcp import Sensor, kattypes, Message
 from katcp import server as katcp_server
 from katcp.server import BASE_REQUESTS
@@ -232,7 +232,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # TODO docstring using stuff?
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
-        tango_retval = yield tango_request(cmd_name, input_param)
+        tango_retval = yield maybe_future(tango_request(cmd_name, input_param))
         raise Return(
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
@@ -242,7 +242,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # TODO docstring using stuff?
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
-        tango_retval = yield tango_request(cmd_name, input_param)
+        tango_retval = yield maybe_future(tango_request(cmd_name, input_param))
         raise Return(
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
@@ -251,7 +251,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     def request_handler_without_input(server, req):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
-        tango_retval = yield tango_request(cmd_name)
+        tango_retval = yield maybe_future(tango_request(cmd_name))
         raise Return(
             ('ok', tango_retval) if tango_retval is not None else ('ok', ))
 
@@ -373,6 +373,13 @@ def wait_for_device(tango_device_proxy, retry_time=2, logger=log):
 
 
 class TangoProxyDeviceServer(katcp_server.DeviceServer):
+    def __init__(self, *args, **kwargs):
+        # replace class-level dicts with instance-level dicts
+        self._request_handlers = dict(**self._request_handlers)
+        self._inform_handlers = dict(**self._inform_handlers)
+        self._reply_handlers = dict(**self._reply_handlers)
+        super(TangoProxyDeviceServer, self).__init__(*args, **kwargs)
+
     def setup_sensors(self):
         """Need a no-op setup_sensors() to satisfy superclass"""
 
