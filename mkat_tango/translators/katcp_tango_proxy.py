@@ -164,6 +164,17 @@ TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS = {
 }
 
 
+def tango_to_katcp_text(text):
+    """Convert Tango description text to KATCP compatible text.
+
+    Description strings from Tango devices have latin-1 encoding, but
+    KATCP expects utf-8.
+    """
+    decoded = text.decode(encoding='latin-1')
+    encoded = decoded.encode(encoding='utf-8')
+    return encoded
+
+
 def tango_attr_descr2katcp_sensors(attr_descr):
     """Convert a tango attribute description into an equivalent KATCP Sensor object(s)
 
@@ -233,15 +244,10 @@ def tango_attr_descr2katcp_sensors(attr_descr):
         else:
             sensor_name = katcp_name
 
-        sensors.append(
-            Sensor(
-                sensor_type,
-                sensor_name,
-                attr_descr.description,
-                attr_descr.unit,
-                sensor_params,
-            )
-        )
+        sensors.append(Sensor(sensor_type, sensor_name,
+                              tango_to_katcp_text(attr_descr.description),
+                              tango_to_katcp_text(attr_descr.unit),
+                              sensor_params))
 
     return sensors
 
@@ -338,7 +344,9 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     # Format the KATCP docstring template with the info of this particular
     # command
     handler.__doc__ = KATCP_REQUEST_DOC_TEMPLATE.format(
-        desc=tango_command_descr, in_type_desc=in_type_desc, out_type_desc=out_type_desc
+        desc=tango_command_descr,
+        in_type_desc=tango_to_katcp_text(in_type_desc),
+        out_type_desc=tango_to_katcp_text(out_type_desc)
     )
     return kattypes.return_reply(*return_reply_args)(handler)
 
