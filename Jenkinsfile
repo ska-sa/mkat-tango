@@ -88,6 +88,7 @@ pipeline {
             steps {
                 sh 'fpm -s python -t deb .'
                 sh 'python setup.py bdist_wheel'
+                sh 'python3 setup.py bdist_wheel'
                 sh 'mv *.deb dist/'
                 archiveArtifacts 'dist/*'
 
