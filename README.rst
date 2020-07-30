@@ -187,12 +187,12 @@ Building the Docker image
 
 Run commands like the following:
 
-``shell script docker build -t mkat-tango .``
+``docker build -t mkat-tango .``
 
 Access a bash shell inside the docker container
 -----------------------------------------------
 
-``shell script docker run -ti mkat-tango '/bin/bash'``
+``docker run -ti mkat-tango '/bin/bash'``
 
 Using a container with an IDE
 -----------------------------
@@ -204,16 +204,20 @@ Once the image has been built, it can be used with IDEs like
 PyCharm(with Dockerfile):
 -------------------------
 
-Add a new interpreter: - Open the *Add Interpreter...* dialog - Select
-*Docker* - Pick the image to use, e.g., ``mkat-tango:mkat-tango`` -
-Select python interpreter ``python2`` or ``python3``
+Add a new interpreter:
+   - Open the *Add Interpreter...* dialog
+   - Select *Docker*
+   - Pick the image to use, e.g., ``mkat-tango:mkat-tango``
+   - Select python interpreter ``python2`` or ``python3``
 
 PyCharm(with docker-compose):
 -----------------------------
 
-Add a new interpreter: - Open the *Add Interpreter...* dialog - Select
-*Docker Compose* - Pick the service to use, e.g., ``mkat-tango`` -
-Select python interpreter ``python2`` or ``python3``
+Add a new interpreter:
+    - Open the *Add Interpreter...* dialog
+    - Select *Docker Compose*
+    - Pick the service to use, e.g., ``mkat-tango``
+    - Select python interpreter ``python2`` or ``python3``
 
-Running tests: - If you want to run all the tests look at the
-JenkinsFile for an example of how it is executed.
+Running tests:
+  - If you want to run all the tests inside bash take a look at the JenkinsFile for an example of how it is executed.
