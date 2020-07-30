@@ -170,3 +170,50 @@ Periodic event type
   frequency. The polling frequency determines the highest frequency at which the
   attribute is read. This `event_period` determines the highest frequency at which
   the periodic, or any other, event is sent.
+
+Docker images for development and testing
+=========================================
+
+Introduction
+------------
+
+Docker containers are useful for developing mkat-tango locally due its package requirements. This
+provides the information on how to , and the Docker images provide a
+similar environment to that used by Jenkins for the Continuous
+Integration tests.
+
+Building the Docker image
+-------------------------
+
+Run commands like the following:
+
+``shell script docker build -t mkat-tango .``
+
+Access a bash shell inside the docker container
+-----------------------------------------------
+
+``shell script docker run -ti mkat-tango '/bin/bash'``
+
+Using a container with an IDE
+-----------------------------
+
+Once the image has been built, it can be used with IDEs like
+`PyCharm <https://www.jetbrains.com/help/pycharm/using-docker-as-a-remote-interpreter.html#config-docker>`__
+(Professional version only)
+
+PyCharm(with Dockerfile):
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new interpreter: - Open the *Add Interpreter...* dialog - Select
+*Docker* - Pick the image to use, e.g., ``mkat-tango:mkat-tango`` -
+Select python interpreter ``python2`` or ``python3``
+
+PyCharm(with docker-compose):
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add a new interpreter: - Open the *Add Interpreter...* dialog - Select
+*Docker Compose* - Pick the service to use, e.g., ``mkat-tango`` -
+Select python interpreter ``python2`` or ``python3``
+
+Running tests: - If you want to run all the tests look at the
+JenkinsFile for an example of how it is executed.
