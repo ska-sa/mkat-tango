@@ -202,14 +202,14 @@ Once the image has been built, it can be used with IDEs like
 (Professional version only)
 
 PyCharm(with Dockerfile):
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 Add a new interpreter: - Open the *Add Interpreter...* dialog - Select
 *Docker* - Pick the image to use, e.g., ``mkat-tango:mkat-tango`` -
 Select python interpreter ``python2`` or ``python3``
 
 PyCharm(with docker-compose):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
 Add a new interpreter: - Open the *Add Interpreter...* dialog - Select
 *Docker Compose* - Pick the service to use, e.g., ``mkat-tango`` -
