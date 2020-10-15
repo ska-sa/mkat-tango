@@ -51,7 +51,7 @@ from tango import (
     DevVoid,
 )
 from tango.server import command
-from tango.test_context import DeviceTestContext
+from tango.test_context import DeviceTestContext, get_host_ip
 from tango_simlib import tango_sim_generator
 from tango_simlib.utilities import helper_module
 from tango_simlib.utilities.testutils import cleanup_tempfile
@@ -102,23 +102,15 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.tango_db = cleanup_tempfile(cls, prefix="tango", suffix=".db")
-        # It turns out that we need to explicitly specify the port number to have the
-        # events working properly.
-        # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
+        host = socket.gethostbyaddr(get_host_ip())[0]
         cls.tango_context = DeviceTestContext(
-            TangoTestDevice, db=cls.tango_db, port=get_open_port()
+            TangoTestDevice, db=cls.tango_db, port=get_open_port(), host=host,
         )
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
-        # Pytango now returns the ip address instead of the hostname in the test_context.
-        # Use the ip address to retrieve the hostname and reconstruct the device address
-        # before instantiating the device proxy.
-        ip = self.tango_device_address.split("/")[2].split(":")[0]
-        hostname = socket.gethostbyaddr(ip)[0]
-        self.tango_device_address = self.tango_device_address.replace(ip, hostname)
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
             ("", 0), self.tango_device_address
         )
