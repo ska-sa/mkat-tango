@@ -6,13 +6,12 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
-import unittest
 import logging
-import weakref
-import time
 import operator
-import sys
-import mock
+import socket
+import time
+import unittest
+import weakref
 
 from functools import wraps
 from collections import defaultdict
@@ -23,6 +22,7 @@ from tango import DevState
 
 from tango.test_context import DeviceTestContext
 from katcp.testutils import start_thread_with_cleanup
+from tango_simlib.utilities import helper_module
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
 from mkat_tango.testutils import set_attributes_polling, ClassCleanupUnittestMixin
@@ -99,6 +99,12 @@ class TangoTestDevice(TS.Device):
             SpectrumDevDouble=([0.0, 1.0, 2.0, 3.0, 4.0], None, AttrQuality.ATTR_VALID)
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
+        self.numeric_attributes = tuple(
+            ["ScalarDevDouble", "ScalarDevLong", "ScalarDevUChar", "SpectrumDevDouble"]
+        )
+        self.discrete_attributes = tuple(
+            sorted(set(self.static_attributes) - set(self.numeric_attributes))
+        )
 
     @TS.attribute(dtype='DevBoolean',
                   doc='An example scalar boolean attribute', polling_period=1000,
@@ -211,7 +217,11 @@ class TangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
         """
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         cls.tango_context = DeviceTestContext(
-            TangoTestDevice, db=cls.tango_db)
+            TangoTestDevice,
+            db=cls.tango_db,
+            port=helper_module.get_port(),
+            host=socket.getfqdn(),
+        )
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_dp = cls.tango_context.device
         cls.test_device = TangoTestDevice.instances[cls.tango_dp.name()]
@@ -266,40 +276,64 @@ class test_TangoInspectingClient(TangoSetUpClass):
         self._test_commands(self.DUT.device_commands)
 
     def test_setup_attribute_sampling(self):
-        poll_period = 10000        # in milliseconds
+        poll_period_ms = 100  # in milliseconds
+        num_periods = 10
         test_attributes = self.test_device.static_attributes
         set_attributes_polling(self, self.tango_dp, self.test_device,
-                               {attr: poll_period
+                               {attr: poll_period_ms
                                 for attr in test_attributes})
         recorded_samples = {attr: [] for attr in test_attributes}
         self.DUT.inspect()
-        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
-            def side_effect(attr, *x):
-                if attr in test_attributes:
-                    recorded_samples[attr].append(x)
-                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
-            sec.side_effect = side_effect
-            self.addCleanup(self.DUT.clear_attribute_sampling)
-            LOGGER.debug('Setting attribute sampling')
-            self.DUT.setup_attribute_sampling()
-            self.DUT.clear_attribute_sampling()
 
-        # Check that the initial updates were received for each attribute for
-        # at least the periodic event
-        attr_event_type_events = {}
+        def record_sample(attr, *x):
+            if attr in test_attributes:
+                recorded_samples[attr].append(x)
+                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+
+        self.DUT.sample_event_callback = record_sample
+        self.addCleanup(self.DUT.clear_attribute_sampling)
+        LOGGER.debug('Setting attribute sampling')
+        self.DUT.setup_attribute_sampling(server_polling_fallback=True)
+        time.sleep(poll_period_ms / 1000.0 * num_periods)
+        self.DUT.clear_attribute_sampling()
+
+        # Count the number of updates received for each attribute
+        # expect periodic events for numeric types, change events for discrete types
+        errors_per_attr = {}
+        updates_per_attr = {}
         for attr, events in recorded_samples.items():
-            attr_event_type_events[attr] = defaultdict(list)
+            errors_per_attr[attr] = 0
+            updates_per_attr[attr] = 0
             for event in events:
+                event_status = event[3]
                 event_type = event[4]
-                attr_event_type_events[attr][event_type].append(event)
+                if event_status == AttrQuality.ATTR_INVALID:
+                    errors_per_attr[attr] += 1
+                if attr in self.test_device.numeric_attributes:
+                    if event_type == 'periodic':
+                        updates_per_attr[attr] += 1
+                else:
+                    if event_type == 'change':
+                        updates_per_attr[attr] += 1
 
-        periodic_updates_per_attr = {
-            attr: len(attr_event_type_events[attr]['periodic'])
-            for attr in test_attributes}
         self.assertEqual(
-            periodic_updates_per_attr,
-            {attr: 1 for attr in test_attributes},
-            "Exactly one periodic update not received for each test attribute.")
+            errors_per_attr,
+            {attr: 0 for attr in test_attributes},
+            "Unexpected event errors for a least one test attribute.",
+        )
+        self.assertEqual(len(test_attributes), len(updates_per_attr))
+        for attr in self.test_device.numeric_attributes:
+            self.assertGreater(
+                updates_per_attr[attr],
+                num_periods,
+                "Too few updates for numeric attr {} (periodic events)".format(attr),
+            )
+        for attr in self.test_device.discrete_attributes:
+            self.assertEqual(
+                updates_per_attr[attr],
+                1,
+                "Expected 1 update for discrete attr {} (change event)".format(attr),
+            )
 
     def test_interface_change_subscription(self):
         self.assertNotEquals(self.DUT._interface_change_event_id, None,
@@ -321,15 +355,16 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
 
         recorded_samples = {attr: [] for attr in standard_tango_attributes}
         self.DUT.inspect()
-        with mock.patch.object(self.DUT, 'sample_event_callback') as sec:
-            def side_effect(attr, *x):
-                if attr in standard_tango_attributes:
-                    recorded_samples[attr].append(x)
-                    LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
-            sec.side_effect = side_effect
-            self.addCleanup(self.DUT.clear_attribute_sampling)
-            LOGGER.debug('Setting attribute sampling')
-            self.DUT.setup_attribute_sampling()
+
+        def record_sample(attr, *x):
+            if attr in standard_tango_attributes:
+                recorded_samples[attr].append(x)
+                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+
+        self.DUT.sample_event_callback = record_sample
+        self.addCleanup(self.DUT.clear_attribute_sampling)
+        LOGGER.debug('Setting attribute sampling')
+        self.DUT.setup_attribute_sampling(server_polling_fallback=True)
 
         # Confirm that polling is set to expected period of 1000 ms
         for attr in standard_tango_attributes:
