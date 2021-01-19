@@ -18,12 +18,12 @@ import os
 import pkg_resources
 import subprocess
 
+import tango.server
 import tornado.testing
 import tornado.gen
 
 from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat, DevFailed, DeviceProxy
-from tango.server import command
-from tango.test_context import DeviceTestContext
+from tango.test_context import DeviceTestContext, MultiDeviceTestContext
 
 from katcp import Message, Sensor
 from katcp.testutils import mock_req
@@ -56,14 +56,6 @@ KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
     """).lstrip()
 
 
-def get_open_port():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("", 0))
-    s.listen(1)
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
 SPECTRUM_ATTR = {'SpectrumDevDouble': ['SpectrumDevDouble.0', 'SpectrumDevDouble.1',
                                        'SpectrumDevDouble.2', 'SpectrumDevDouble.3',
                                        'SpectrumDevDouble.4']
@@ -79,7 +71,8 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         # events working properly.
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
-                                              port=get_open_port(), host=socket.getfqdn())
+                                              port=helper_module.get_port(),
+                                              host=socket.getfqdn())
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
 
@@ -207,6 +200,10 @@ class test_TangoDevice2KatcpProxy(
                 LOGGER.debug('Found unexpected attributes')
         time.sleep(sleep_time)
 
+        ## TODO:  Discrete sensor has change event subscriptions, but attributes
+        ## are not changing, so KATCP sensors don't change, and we get no updates.
+        ## How to fix???
+
         for sensor in sensors:
             # TODO (KM 24-05-2018) This attributes have no set event properties. Need to
             # set these properties in the device's attribute definitions. However this
@@ -252,8 +249,8 @@ class test_TangoDevice2KatcpProxy(
         self.assertNotIn('cmd_printString', self.katcp_server.get_request_list())
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
 
-        cmd = command(f=cmd_printString, dtype_in=DevVoid, doc_in="",
-                dtype_out=str,  doc_out="", green_mode=None)
+        cmd = tango.server.command(f=cmd_printString, dtype_in=DevVoid, doc_in="",
+                                   dtype_out=str,  doc_out="", green_mode=None)
         setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
         self.tango_test_device.add_command(cmd, device_level=True)
         time.sleep(0.5) # Find alternative, rather than sleeping
@@ -419,9 +416,9 @@ class SensorObserver(object):
 
 class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
     """This tests that the sensor statuses change to failure when the we loose
-       connection to the TANGO device.    
+       connection to the TANGO device.
     """
-    
+
     longMessage = True
 
     @classmethod
@@ -514,6 +511,103 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
         for sensor in sensors:
             self.assertEqual(sensor.status(), Sensor.FAILURE,
                              "Sensor %s status in failure." % sensor.name)
+
+
+class SimpleDevice1(tango.server.Device):
+    @tango.server.attribute(
+        dtype=int, doc="temperature \xb0C", unit="\xb0C"
+       )
+    def attr1(self):
+        return 123
+
+    @tango.server.command(
+        dtype_in=str, dtype_out=str,
+        doc_in="temperature in \xb0C", doc_out="temperature out \xb0C")
+    def cmd1(self, argin):
+        return "{}:reply1".format(argin)
+
+
+class SimpleDevice2(tango.server.Device):
+    @tango.server.attribute(dtype=int)
+    def attr2(self):
+        return 456
+
+    @tango.server.command(dtype_in=str, dtype_out=str)
+    def cmd2a(self, argin):
+        return "{}:reply2a".format(argin)
+
+    @tango.server.command(dtype_in=str, dtype_out=str)
+    def cmd2b(self, argin):
+        return "{}:reply2b".format(argin)
+
+
+class test_TangoDevice2KatcpProxyMultipleDevices(ClassCleanupUnittestMixin,
+                                                 unittest.TestCase):
+    @classmethod
+    def setUpClassWithCleanup(cls):
+        cls.devices_info = (
+            {"class": SimpleDevice1, "devices": [{"name": "test/simple/1"}]},
+            {"class": SimpleDevice2, "devices": [{"name": "test/simple/2"}]},
+        )
+        cls.tango_context = MultiDeviceTestContext(cls.devices_info)
+        start_thread_with_cleanup(cls, cls.tango_context)
+
+    def setUp(self):
+        super(test_TangoDevice2KatcpProxyMultipleDevices, self).setUp()
+        self.translators = {}
+        self.clients = {}
+        for device_info in self.devices_info:
+            device_class = device_info["class"]
+            device_name = device_info["devices"][0]["name"]
+
+            # start translator
+            translator = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
+                ("", 0),
+                self.tango_context.get_device_access(device_name),
+            )
+            start_thread_with_cleanup(self, translator, start_timeout=1)
+            self.translators[device_class] = translator
+
+            # start KATCP client to the translator
+            host, port = translator.katcp_server.bind_address
+            client = BlockingTestClient(self, host, port)
+            start_thread_with_cleanup(self, client, start_timeout=1)
+            client.wait_protocol(timeout=1)
+            self.clients[device_class] = client
+
+    def test_requests_for_multiple_devices(self):
+        device_requests = {
+            SimpleDevice1: {"cmd1": b"test:reply1"},
+            SimpleDevice2: {"cmd2a": b"test:reply2a", "cmd2b": b"test:reply2b"},
+        }
+        for device_class, requests in device_requests.items():
+            client = self.clients[device_class]
+            for request, expected_value in requests.items():
+                reply, _ = client.blocking_request(Message.request(request, "test"))
+                self.assertEqual(reply.arguments[1], expected_value)
+
+    def test_sensor_readings_for_multiple_devices(self):
+        device_sensors = {
+            SimpleDevice1: {"attr1": 123},
+            SimpleDevice2: {"attr2": 456},
+        }
+        for device_class, sensors in device_sensors.items():
+            client = self.clients[device_class]
+            for sensor, expected_value in sensors.items():
+                actual_value = client.get_sensor_value(sensor, int)
+                self.assertEqual(actual_value, expected_value)
+
+    def test_latin1_encoded_as_utf8_in_sensors(self):
+        server = self.translators[SimpleDevice1].katcp_server
+        sensor = server.get_sensor("attr1")
+        self.assertEqual(sensor.description, "temperature \xc2\xb0C")
+        self.assertEqual(sensor.units, "\xc2\xb0C")
+
+    def test_latin1_encoded_as_utf8_in_requests(self):
+        server = self.translators[SimpleDevice1].katcp_server
+        request = server._request_handlers["cmd1"]
+        self.assertIn("temperature in \xc2\xb0C", request.__doc__)
+        self.assertIn("temperature out \xc2\xb0C", request.__doc__)
 
 
 def cleanup_tempdir(*mkdtemp_args, **mkdtemp_kwargs):
