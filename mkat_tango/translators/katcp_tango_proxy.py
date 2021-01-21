@@ -418,10 +418,11 @@ class TangoProxyDeviceServer(katcp_server.DeviceServer):
 
 
 class TangoDevice2KatcpProxy(object):
-    def __init__(self, katcp_server, tango_inspecting_client, logger=log):
+    def __init__(self, katcp_server, tango_inspecting_client, logger=log, polling=False):
         self.katcp_server = katcp_server
         self.inspecting_client = tango_inspecting_client
         self._logger = logger
+        self.polling = polling
 
     def set_ioloop(self, ioloop=None):
         """Set the tornado IOLoop to use.
@@ -558,7 +559,8 @@ class TangoDevice2KatcpProxy(object):
         # END HACK
 
         self.inspecting_client.setup_attribute_sampling(
-            new_attributes, server_polling_fallback=polling_fallback)
+            new_attributes, server_polling_fallback=self.polling
+        )
 
     def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
@@ -656,7 +658,9 @@ class TangoDevice2KatcpProxy(object):
                     sensor.set_value(value, status=status, timestamp=timestamp)
 
     @classmethod
-    def from_addresses(cls, katcp_server_address, tango_device_address, logger=log):
+    def from_addresses(
+        cls, katcp_server_address, tango_device_address, logger=log, polling=False
+    ):
         """Instantiate TangoDevice2KatcpProxy from network addresses
 
         Parameters
@@ -673,7 +677,7 @@ class TangoDevice2KatcpProxy(object):
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
-        return cls(katcp_server, tango_inspecting_client, logger=logger)
+        return cls(katcp_server, tango_inspecting_client, logger=logger, polling=polling)
 
     @staticmethod
     def get_tango_device_proxy(device_name, retry_time=2):
@@ -704,9 +708,12 @@ def tango2katcp_main(args=None, start_ioloop=True):
     parser.add_argument('tango_device_address', type=str, help=
                         'Address of the tango device to connect to '
                         '(in tango format)')
+    parser.add_argument('--polling', type=bool, help=
+                        'Enable server polling')
 
     opts = parser.parse_args(args=args)
 
+    polling = opts.polling
     loglevel = opts.loglevel.upper()
     if loglevel != 'NO':
         python_loglevel = getattr(logging, loglevel)
@@ -717,7 +724,8 @@ def tango2katcp_main(args=None, start_ioloop=True):
 
     ioloop = tornado.ioloop.IOLoop.current()
     proxy = TangoDevice2KatcpProxy.from_addresses(
-        opts.katcp_server_address, opts.tango_device_address)
+        opts.katcp_server_address, opts.tango_device_address, polling=polling
+    )
     ioloop.add_callback(proxy.start)
     if start_ioloop:
         try:
