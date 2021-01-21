@@ -99,9 +99,9 @@ class TangoTestDevice(TS.Device):
             SpectrumDevDouble=([0.0, 1.0, 2.0, 3.0, 4.0], None, AttrQuality.ATTR_VALID)
             )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
-        self.numeric_attributes = tuple(
-            ["ScalarDevDouble", "ScalarDevLong", "ScalarDevUChar", "SpectrumDevDouble"]
-        )
+        self.numeric_attributes = (
+            "ScalarDevDouble", "ScalarDevLong", "ScalarDevUChar", "SpectrumDevDouble")
+
         self.discrete_attributes = tuple(
             sorted(set(self.static_attributes) - set(self.numeric_attributes))
         )
