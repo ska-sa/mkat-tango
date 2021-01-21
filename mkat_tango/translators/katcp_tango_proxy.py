@@ -597,20 +597,6 @@ class TangoDevice2KatcpProxy(object):
         self._logger.info(
             "Setting up attribute sampling for %s attributes.", len(new_attributes))
 
-        # TODO (AJ 2020-05-25) Remove HACK for SKA MPI Dish element master
-        # Polling on the server side can affect the device's performance,
-        # so we prefer not to do.  However, for dish master we enable it
-        # as the performance hit is not a problem, and there are some critical
-        # attributes we need to be sampled periodically (they don't push change
-        # events).  Ideally this should be a config option set by the user of
-        # this class, but we are hacking it in for now.
-        device_name = self.inspecting_client.tango_dp.name()
-        if re.match(r"mid_dsh_\d\d\d\d/elt/master", device_name):
-            polling_fallback = True
-        else:
-            polling_fallback = False
-        # END HACK
-
         self.inspecting_client.setup_attribute_sampling(
             new_attributes, server_polling_fallback=self.polling
         )
@@ -763,8 +749,7 @@ def tango2katcp_main(args=None, start_ioloop=True):
     parser.add_argument('tango_device_address', type=str, help=
                         'Address of the tango device to connect to '
                         '(in tango format)')
-    parser.add_argument('--polling', type=bool, help=
-                        'Enable server polling')
+    parser.add_argument('--polling', type=bool, help='Enable server polling')
 
     opts = parser.parse_args(args=args)
 

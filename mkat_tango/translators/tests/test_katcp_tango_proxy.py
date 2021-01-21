@@ -232,9 +232,9 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 LOGGER.debug("Found unexpected attributes")
         time.sleep(sleep_time)
 
-        ## TODO:  Discrete sensor has change event subscriptions, but attributes
-        ## are not changing, so KATCP sensors don't change, and we get no updates.
-        ## How to fix???
+        # TODO:  Discrete sensor has change event subscriptions, but attributes
+        # are not changing, so KATCP sensors don't change, and we get no updates.
+        # How to fix???
 
         for sensor in sensors:
             # TODO (KM 24-05-2018) This attributes have no set event properties. Need to
@@ -309,7 +309,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
         self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
 
         cmd = tango.server.command(f=cmd_printString, dtype_in=DevVoid, doc_in="",
-                                   dtype_out=str,  doc_out="", green_mode=None)
+                                   dtype_out=str, doc_out="", green_mode=None)
         setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
         self.tango_test_device.add_command(cmd, device_level=True)
         time.sleep(0.5)  # Find alternative, rather than sleeping
@@ -597,8 +597,7 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
 
 class SimpleDevice1(tango.server.Device):
     @tango.server.attribute(
-        dtype=int, doc="temperature \xb0C", unit="\xb0C"
-       )
+        dtype=int, doc="temperature \xb0C", unit="\xb0C")
     def attr1(self):
         return 123
 
