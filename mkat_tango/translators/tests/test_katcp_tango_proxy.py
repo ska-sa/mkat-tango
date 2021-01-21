@@ -23,7 +23,7 @@ import tornado.testing
 import tornado.gen
 
 from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat, DevFailed, DeviceProxy
-from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
+from tango.test_context import DeviceTestContext, MultiDeviceTestContext
 
 from katcp import Message, Sensor
 from katcp.testutils import mock_req
@@ -187,9 +187,9 @@ class test_TangoDevice2KatcpProxy(
                 # Instantiating observers and attaching them onto the katcp
                 # sensors to allow logging of periodic event updates into a list
 
-                # The default sampling strategy is 'change' and therefore subscription to these
-                # attributes is successful and it doesn't fallback to subscribing to periodic events.
-                # So no updates are expected from them.
+                # The default sampling strategy is 'change' and therefore subscription to
+                # these attributes is successful and it doesn't fallback to subscribing
+                # to periodic events. So no updates are expected from them.
                 if attr_name in ('ScalarDevEnum', 'ScalarBool', 'ScalarDevString'):
                     continue
                 if attr_name == 'SpectrumDevDouble':
