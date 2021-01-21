@@ -694,7 +694,10 @@ def tango2katcp_main(args=None, start_ioloop=True):
     parser.add_argument('tango_device_address', type=str, help=
                         'Address of the tango device to connect to '
                         '(in tango format)')
-    parser.add_argument('--polling', type=bool, help='Enable server polling')
+    parser.add_argument(
+        '--polling',
+        type=bool,
+        help='Allow fallback to server polling for attribute sampling')
 
     opts = parser.parse_args(args=args)
 
