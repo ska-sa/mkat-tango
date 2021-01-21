@@ -30,7 +30,7 @@ import tornado.testing
 import tornado.gen
 
 from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat, DevFailed, DeviceProxy
-from tango.test_context import DeviceTestContext, MultiDeviceTestContext
+from tango.test_context import DeviceTestContext, MultiDeviceTestContext, get_host_ip
 
 from katcp import Message, Sensor
 from katcp.compat import ensure_native_str
@@ -92,19 +92,19 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         # It turns out that we need to explicitly specify the port number to have the
         # events working properly.
+        host = socket.gethostbyaddr(get_host_ip())[0]
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
                                               port=helper_module.get_port(),
-                                              host=socket.getfqdn())
+                                              host=host)
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
-            ("", 0), self.tango_device_address
-        )
-        if hasattr(self, "io_loop"):
+            ("", 0), self.tango_device_address, polling=True)
+        if hasattr(self, 'io_loop'):
             self.DUT.set_ioloop(self.io_loop)
             self.io_loop.add_callback(self.DUT.start)
             self.addCleanup(self.DUT.stop, timeout=None)
@@ -364,7 +364,9 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             self.assertIn("test_attr", self.DUT.inspecting_client.orig_attr_names_map)
 
             # Check that attribute sampling was recalled for the new attribute
-            sec.assert_called_with(["ScalarDevEncoded", "test_attr"])
+            sec.assert_called_with(
+                ['test_attr', 'ScalarDevEncoded'], server_polling_fallback=True
+            )
 
             # Remove the attribute.
             self.tango_test_device.remove_attribute("test_attr")
@@ -554,9 +556,8 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
             self.device_name,
         )
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
-            ("", 0), self.tango_device_address
-        )
-        if hasattr(self, "io_loop"):
+            ("", 0), self.tango_device_address, polling=True)
+        if hasattr(self, 'io_loop'):
             self.DUT.set_ioloop(self.io_loop)
             self.io_loop.add_callback(self.DUT.start)
             self.addCleanup(self.DUT.stop, timeout=None)
@@ -645,6 +646,7 @@ class test_TangoDevice2KatcpProxyMultipleDevices(ClassCleanupUnittestMixin,
             translator = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
                 ("", 0),
                 self.tango_context.get_device_access(device_name),
+                polling=True
             )
             start_thread_with_cleanup(self, translator, start_timeout=1)
             self.translators[device_class] = translator
