@@ -237,7 +237,7 @@ class TangoInspectingClient(object):
                     attribute_name,
                     event_type,
                     self.attribute_event_handler,
-                    stateless=True
+                    stateless=False
                 )
                 self._event_ids.add(event_id)
             subscribed = True
@@ -270,18 +270,16 @@ class TangoInspectingClient(object):
             #       polling on server.
             #       See gitlab.com/ska-telescope/web-maxiv-tangogql/-/blob/
             #           e1e4098f/tangogql/aioattribute/attribute.py#L120
-
-            subscribed = False
-            events = self.device_attributes[attr_name].events
-            if self._is_event_properties_set(events.ch_event):
-                subscribed = self._subscribe_to_event(
-                    tango.EventType.CHANGE_EVENT,
-                    attr_name,
-                    warn_no_polling=not server_polling_fallback,
-                )
+            
+            subscribed = self._subscribe_to_event(
+                tango.EventType.CHANGE_EVENT,
+                attr_name,
+                warn_no_polling=not server_polling_fallback,
+            )
 
             if not subscribed and server_polling_fallback:
                 self._setup_attribute_polling(attr_name)
+                events = self.device_attributes[attr_name].events
                 if self._is_event_properties_set(events.ch_event):
                     subscribed = self._subscribe_to_event(
                         tango.EventType.CHANGE_EVENT, attr_name

@@ -69,7 +69,7 @@ class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
         cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
         # It turns out that we need to explicitly specify the port number to have the
         # events working properly.
-        host = socket.gethostbyaddr(get_host_ip())[0]
+        host = socket.getfqdn()
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
         cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
                                               port=helper_module.get_port(),
@@ -186,6 +186,12 @@ class test_TangoDevice2KatcpProxy(
             if attr_name not in EXCLUDED_ATTRS:
                 # Instantiating observers and attaching them onto the katcp
                 # sensors to allow logging of periodic event updates into a list
+
+                # The default sampling strategy is 'change' and therefore subscription to these
+                # attributes is successful and it doesn't fallback to subscribing to periodic events.
+                # So no updates are expected from them.
+                if attr_name in ('ScalarDevEnum', 'ScalarBool', 'ScalarDevString'):
+                    continue
                 if attr_name == 'SpectrumDevDouble':
                     for attr_name_ in SPECTRUM_ATTR['SpectrumDevDouble']:
                         observers[attr_name_] = observer = SensorObserver()
@@ -212,7 +218,10 @@ class test_TangoDevice2KatcpProxy(
             # attributes: ScalarDevLong, ScalarDevUChar, ScalarDevDouble.
             self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
-            self.assertAlmostEqual(len(obs.updates), num_periods, delta=2)
+            self.assertAlmostEqual(len(obs.updates),
+                                   num_periods,
+                                   msg="Not enough updates for sensor: {}".format(sensor),
+                                   delta=2)
 
     def test_requests_list(self):
         tango_td = self.tango_test_device
