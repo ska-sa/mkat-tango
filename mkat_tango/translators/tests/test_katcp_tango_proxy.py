@@ -251,8 +251,6 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                                    delta=2)
 
     def test_attribute_sensor_value_update(self):
-        assert ("ScalarDevEnum" in self.tango_device_proxy.get_attribute_list(),
-                "Enum attribute not found")
         # instantiate a sensor observer to monitor sensor value updates
         observer = SensorObserver()
         sensor = utilities.tangoname2katcpname("ScalarDevEnum")
@@ -262,17 +260,18 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
         # operation wait a while for updates to happen
         idx = 0
         num_updates = 5
-        for i in range(num_updates):
+        for _ in range(num_updates):
             idx += 1
             self.tango_device_proxy.ScalarDevEnum = idx
             time.sleep(1)
-            if idx == 2: idx = 0 
+            if idx == 2:
+                idx = 0
 
         self.katcp_server.get_sensor(sensor).detach(observer)
         self.assertAlmostEqual(len(observer.updates),
-                                num_updates,
-                                msg="Not enough updates for sensor: {}".format(sensor),
-                                delta=2)
+                               num_updates,
+                               msg="Not enough updates for sensor: {}".format(sensor),
+                               delta=2)
 
     def test_requests_list(self):
         tango_td = self.tango_test_device
