@@ -554,7 +554,8 @@ class TangoDevice2KatcpProxy(object):
     def _setup_attribute_sampling_via_thread(self, new_attributes):
         if self._attribute_sampling_setup_allowed.is_set():
             self._attribute_sampling_setup_allowed.clear()
-            t = threading.Thread(target=self._setup_attribute_sampling_target, args=(new_attributes,))
+            t = threading.Thread(target=self._setup_attribute_sampling_target,
+                                 args=(new_attributes,))
             t.daemon = True
             t.start()
         else:
@@ -571,7 +572,6 @@ class TangoDevice2KatcpProxy(object):
             self._logger.exception(exc)
         finally:
             self._attribute_sampling_setup_allowed.set()
-            
 
     def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
