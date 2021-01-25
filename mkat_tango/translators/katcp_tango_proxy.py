@@ -423,7 +423,7 @@ class TangoDevice2KatcpProxy(object):
         self.katcp_server = katcp_server
         self.inspecting_client = tango_inspecting_client
         self._logger = logger
-        self.polling = polling
+        self._polling = polling
         self._attribute_sampling_setup_allowed = threading.Event()
         self._attribute_sampling_setup_allowed.set()
 
@@ -566,15 +566,17 @@ class TangoDevice2KatcpProxy(object):
         try:
             with tango.EnsureOmniThread():
                 self.inspecting_client.setup_attribute_sampling(
-                    new_attributes, server_polling_fallback=self.polling
+                    new_attributes, server_polling_fallback=self._polling
                 )
         except Exception as exc:
-            self._logger.exception(exc)
+            self._logger.exception("Error setting up attribute sampling on Tango device"
+                                   " - %s attributes, polling %r" % (len(new_attributes),
+                                                                     self._polling))
         finally:
             self._attribute_sampling_setup_allowed.set()
 
     def update_katcp_server_request_list(self, commands):
-        """ Populate the request handlers in  the KATCP device server
+        """ Populate the request handlers in the KATCP device server
             instance with the corresponding TANGO device server commands
         """
         requests = self.katcp_server.get_request_list()
