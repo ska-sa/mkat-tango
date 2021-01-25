@@ -17,7 +17,7 @@ from functools import wraps
 from collections import defaultdict
 
 from tango import server as TS
-from tango import AttrQuality
+from tango import AttrQuality, AttrWriteType
 from tango import DevState
 
 from tango.test_context import DeviceTestContext
@@ -139,7 +139,7 @@ class TangoTestDevice(TS.Device):
 
     @TS.attribute(dtype='DevEnum', doc='An example scalar Enum attribute',
                   enum_labels=['ONLINE', 'OFFLINE', 'RESERVE'],
-                  polling_period=1000, event_period=25)
+                  polling_period=1000, event_period=25, access=AttrWriteType.READ_WRITE)
     @_test_attr
     def ScalarDevEnum(self): pass
 
@@ -147,6 +147,10 @@ class TangoTestDevice(TS.Device):
                   polling_period=1000, event_period=25, max_dim_x=5)
     @_test_attr
     def SpectrumDevDouble(self): pass
+
+    def write_ScalarDevEnum(self, ScalarDevEnum):
+        self.attr_return_vals["ScalarDevEnum"] = (
+            (ScalarDevEnum, None, AttrQuality.ATTR_VALID))
 
     static_commands = ('ReverseString', 'MultiplyInts', 'Void',
                        'MultiplyDoubleBy3')

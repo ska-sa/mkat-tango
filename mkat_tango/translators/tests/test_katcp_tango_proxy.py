@@ -207,10 +207,6 @@ class test_TangoDevice2KatcpProxy(
                 LOGGER.debug('Found unexpected attributes')
         time.sleep(sleep_time)
 
-        # TODO:  Discrete sensor has change event subscriptions, but attributes
-        # are not changing, so KATCP sensors don't change, and we get no updates.
-        # How to fix???
-
         for sensor in sensors:
             # TODO (KM 24-05-2018) This attributes have no set event properties. Need to
             # set these properties in the device's attribute definitions. However this
@@ -222,6 +218,30 @@ class test_TangoDevice2KatcpProxy(
                                    num_periods,
                                    msg="Not enough updates for sensor: {}".format(sensor),
                                    delta=2)
+
+    def test_attribute_sensor_value_update(self):
+        assert ("ScalarDevEnum" in self.tango_device_proxy.get_attribute_list(),
+                "Enum attribute not found")
+        # instantiate a sensor observer to monitor sensor value updates
+        observer = SensorObserver()
+        sensor = utilities.tangoname2katcpname("ScalarDevEnum")
+        self.katcp_server.get_sensor(sensor).attach(observer)
+
+        # flip between two values 5x and for each
+        # operation wait a while for updates to happen
+        idx = 0
+        num_updates = 5
+        for i in range(num_updates):
+            idx += 1
+            self.tango_device_proxy.ScalarDevEnum = idx
+            time.sleep(1)
+            if idx == 2: idx = 0 
+
+        self.katcp_server.get_sensor(sensor).detach(observer)
+        self.assertAlmostEqual(len(observer.updates),
+                                num_updates,
+                                msg="Not enough updates for sensor: {}".format(sensor),
+                                delta=2)
 
     def test_requests_list(self):
         tango_td = self.tango_test_device
