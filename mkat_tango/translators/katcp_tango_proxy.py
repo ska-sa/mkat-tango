@@ -626,7 +626,7 @@ class TangoDevice2KatcpProxy(object):
                 self.inspecting_client.setup_attribute_sampling(
                     new_attributes, server_polling_fallback=self._polling
                 )
-        except Exception as exc:
+        except Exception:
             self._logger.exception("Error setting up attribute sampling on Tango device"
                                    " - %s attributes, polling %r" % (len(new_attributes),
                                                                      self._polling))
