@@ -21,6 +21,7 @@ import logging
 import textwrap
 import time
 import re
+import threading
 
 import numpy as np
 import tornado
@@ -477,6 +478,8 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client = tango_inspecting_client
         self._logger = logger
         self.polling = polling
+        self._attribute_sampling_setup_allowed = threading.Event()
+        self._attribute_sampling_setup_allowed.set()
 
     def set_ioloop(self, ioloop=None):
         """Set the tornado IOLoop to use.
@@ -502,16 +505,24 @@ class TangoDevice2KatcpProxy(object):
         For clean shutdown and thread cleanup, stop() needs to be called
 
         """
-        tango_device_proxy = self.inspecting_client.tango_dp
-        if not is_tango_device_running(tango_device_proxy, logger=self._logger):
-            wait_for_device(tango_device_proxy, logger=self._logger)
-        self._logger.info("Connection to the device server established")
-        self.inspecting_client.inspect()
-        self.inspecting_client.sample_event_callback = self.update_sensor_values
-        self.inspecting_client.interface_change_callback = self.update_request_sensor_list
-        self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
-        self.update_katcp_server_request_list(self.inspecting_client.device_commands)
-        return self.katcp_server.start(timeout=timeout)
+        with tango.EnsureOmniThread():
+            tango_device_proxy = self.inspecting_client.tango_dp
+            if not is_tango_device_running(tango_device_proxy, logger=self._logger):
+                wait_for_device(tango_device_proxy, logger=self._logger)
+            self._logger.info(
+                "Connection to %s established", tango_device_proxy.name())
+            self.inspecting_client.inspect()
+            self.inspecting_client.sample_event_callback = self.update_sensor_values
+            self.inspecting_client.interface_change_callback = (
+                self.update_request_sensor_list)
+            self.update_katcp_server_sensor_list(self.inspecting_client.device_attributes)
+            self._logger.info("Waiting for attribute sampling thread to finish")
+            self._attribute_sampling_setup_allowed.wait()
+            self._logger.info("Attribute sampling thread completed")
+            self.update_katcp_server_request_list(self.inspecting_client.device_commands)
+            self.katcp_server.start(timeout=timeout)
+            self._logger.info(
+                "Completed startup of device handler for %s", tango_device_proxy.name())
 
     def stop(self, timeout=1.0):
         """Stop the translator
@@ -596,10 +607,29 @@ class TangoDevice2KatcpProxy(object):
         self.inspecting_client.orig_attr_names_map.update(orig_attr_names_map)
         self._logger.info(
             "Setting up attribute sampling for %s attributes.", len(new_attributes))
+        self._setup_attribute_sampling_via_thread(new_attributes)
 
-        self.inspecting_client.setup_attribute_sampling(
-            new_attributes, server_polling_fallback=self.polling
-        )
+    def _setup_attribute_sampling_via_thread(self, new_attributes):
+        if self._attribute_sampling_setup_allowed.is_set():
+            self._attribute_sampling_setup_allowed.clear()
+            t = threading.Thread(target=self._setup_attribute_sampling_target, args=(new_attributes,))
+            t.daemon = True
+            t.start()
+        else:
+            self._logger.error("Cannot handle new interface change - "
+                               "setting up sampling from previous change")
+
+    def _setup_attribute_sampling_target(self, new_attributes):
+        try:
+            with tango.EnsureOmniThread():
+                self.inspecting_client.setup_attribute_sampling(
+                    new_attributes, server_polling_fallback=self.polling
+                )
+        except Exception as exc:
+            self._logger.exception(exc)
+        finally:
+            self._attribute_sampling_setup_allowed.set()
+            
 
     def update_katcp_server_request_list(self, commands):
         """ Populate the request handlers in  the KATCP device server
