@@ -19,6 +19,9 @@ from functools import reduce, wraps
 from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
 from tango import server as TS
+from tango import AttrQuality, AttrWriteType
+from tango import DevState
+
 from tango.test_context import DeviceTestContext
 from katcp.testutils import start_thread_with_cleanup
 from tango_simlib.utilities import helper_module
@@ -180,13 +183,9 @@ class TangoTestDevice(TS.Device):
     def ScalarDevEnum(self):
         pass
 
-    @TS.attribute(
-        dtype=("DevDouble",),
-        doc="An example spectrum Double attribute",
-        polling_period=1000,
-        event_period=25,
-        max_dim_x=5,
-    )
+    @TS.attribute(dtype='DevEnum', doc='An example scalar Enum attribute',
+                  enum_labels=['ONLINE', 'OFFLINE', 'RESERVE'],
+                  polling_period=1000, event_period=25, access=AttrWriteType.READ_WRITE)
     @_test_attr
     def SpectrumDevDouble(self):
         pass
@@ -203,7 +202,12 @@ class TangoTestDevice(TS.Device):
     def ScalarDevDoubleEvents(self):
         pass
 
-    static_commands = ("ReverseString", "MultiplyInts", "Void", "MultiplyDoubleBy3")
+    def write_ScalarDevEnum(self, ScalarDevEnum):
+        self.attr_return_vals["ScalarDevEnum"] = (
+            (ScalarDevEnum, None, AttrQuality.ATTR_VALID))
+
+    static_commands = ('ReverseString', 'MultiplyInts', 'Void',
+                       'MultiplyDoubleBy3')
     # Commands that come from the Tango library
     standard_commands = ("Init", "State", "Status")
 
