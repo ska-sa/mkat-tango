@@ -243,10 +243,10 @@ class TangoInspectingClient(object):
         """
         pass
 
-    def _subscribe_to_event(self, event_type, attribute_name=None):
+    def _subscribe_to_event(self, event_type, attribute_name=None, warn_no_polling=True):
 
         dp = self.tango_dp
-
+        subscribed = False
         try:
             if event_type == tango.EventType.INTERFACE_CHANGE_EVENT:
                 self._interface_change_event_id = dp.subscribe_event(
@@ -257,56 +257,67 @@ class TangoInspectingClient(object):
                     attribute_name,
                     event_type,
                     self.attribute_event_handler,
-                    stateless=True,
+                    stateless=False,
                 )
                 self._event_ids.add(event_id)
+            subscribed = True
         except tango.DevFailed as exc:
             exc_reasons = {arg.reason for arg in exc.args}
             if "API_AttributePollingNotStarted" in exc_reasons:
-                self._logger.warning(
-                    "TODO NM: Need to implement something for "
-                    "attributes that are not polled, processing "
-                    "attribute {}".format(attribute_name)
-                )
+                if warn_no_polling:
+                    self._logger.warning(
+                        "TODO NM: Need to implement something for "
+                        "attributes that are not polled, processing "
+                        "attribute {}".format(attribute_name)
+                    )
             elif "API_EventPropertiesNotSet" in exc_reasons:
                 self._logger.info(
                     "Attribute {} has no event properties set".format(attribute_name)
                 )
             else:
                 raise
+        return subscribed
 
-    def setup_attribute_sampling(
-        self,
-        attributes=None,
-        periodic=True,
-        change=True,
-        archive=True,
-        data_ready=False,
-        user=True,
-    ):
+    def setup_attribute_sampling(self, attributes=None, server_polling_fallback=False):
         """Subscribe to all or some types of Tango attribute events"""
-        dp = self.tango_dp
+        if server_polling_fallback:
+            self._logger.warning(
+                "Sampling may enable polling on device %s", self.tango_dp.name()
+            )
         attributes = attributes if attributes is not None else self.device_attributes
-        for attr_name in attributes:
-            self._setup_attribute_polling(attr_name)
+        for attr_name in sorted(attributes):
+            # order of preference (for efficiency)
+            # * change (leave polling unchanged)
+            # * change (enable server polling)
+            # * periodic (enable server polling)
+            # TODO: add manual polling on client side instead of enabling
+            #       polling on server.
+            #       See gitlab.com/ska-telescope/web-maxiv-tangogql/-/blob/
+            #           e1e4098f/tangogql/aioattribute/attribute.py#L120
 
-            events = self.device_attributes[attr_name].events
-            if periodic:
-                self._subscribe_to_event(tango.EventType.PERIODIC_EVENT, attr_name)
+            subscribed = self._subscribe_to_event(
+                tango.EventType.CHANGE_EVENT,
+                attr_name,
+                warn_no_polling=not server_polling_fallback,
+            )
 
-            if change:
+            if not subscribed and server_polling_fallback:
+                self._setup_attribute_polling(attr_name)
+                events = self.device_attributes[attr_name].events
                 if self._is_event_properties_set(events.ch_event):
-                    self._subscribe_to_event(tango.EventType.CHANGE_EVENT, attr_name)
+                    subscribed = self._subscribe_to_event(
+                        tango.EventType.CHANGE_EVENT, attr_name
+                    )
+                if not subscribed:
+                    subscribed = self._subscribe_to_event(
+                        tango.EventType.PERIODIC_EVENT, attr_name
+                    )
 
-            if archive:
-                if self._is_event_properties_set(events.arch_event):
-                    self._subscribe_to_event(tango.EventType.ARCHIVE_EVENT, attr_name)
-
-            if data_ready:
-                self._subscribe_to_event(tango.EventType.DATA_READY_EVENT, attr_name)
-
-            if user:
-                self._subscribe_to_event(tango.EventType.USER_EVENT, attr_name)
+            if not subscribed:
+                self._logger.warning("Failed to subscribe to attribute '%s'", attr_name)
+            # TODO: read initial value manually, if couldn't subscribe
+            #       call sample_event_callback with AttrQuality.ATTR_INVALID
+            #       since we are not getting updates.
 
     def _setup_attribute_polling(self, attribute_name, poll_period=1000):
         retry_time = 0.5  # in seconds
@@ -316,9 +327,6 @@ class TangoInspectingClient(object):
             retry = True
             while retry and _retries < retries:
                 try:
-                    self._logger.info(
-                        "Setting up polling on attribute '%s'." % attribute_name
-                    )
                     self.tango_dp.poll_attribute(attribute_name, poll_period)
                 except tango.DevFailed as exc:
                     exc_reasons = {arg.reason for arg in exc.args}
