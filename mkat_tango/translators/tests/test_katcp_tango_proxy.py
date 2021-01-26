@@ -236,7 +236,12 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 # The default sampling strategy is 'change' and therefore subscription to
                 # these attributes is successful and it doesn't fallback to subscribing
                 # to periodic events. So no updates are expected from them.
-                if attr_name in ("ScalarDevEnum", "ScalarBool", "ScalarDevString"):
+                if attr_name in (
+                    "ScalarDevEnum",
+                    "ScalarBool",
+                    "ScalarDevString",
+                    "ScalarDevDoubleEvents",
+                ):
                     continue
                 if attr_name == "SpectrumDevDouble":
                     for attr_name_ in SPECTRUM_ATTR["SpectrumDevDouble"]:
