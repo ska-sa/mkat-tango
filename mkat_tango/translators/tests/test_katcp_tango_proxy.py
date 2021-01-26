@@ -413,7 +413,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
 
             # Check that attribute sampling was recalled for the new attribute
             sec.assert_called_with(
-                ["test_attr", "ScalarDevEncoded"], server_polling_fallback=True
+                ["ScalarDevEncoded", "test_attr"], server_polling_fallback=True
             )
 
             # Remove the attribute.
