@@ -17,6 +17,7 @@ from future import standard_library
 
 standard_library.install_aliases()
 
+import future
 import logging
 import textwrap
 import time
@@ -169,11 +170,14 @@ def tango_to_katcp_text(text):
     """Convert Tango description text to KATCP compatible text.
 
     Description strings from Tango devices have latin-1 encoding, but
-    KATCP expects utf-8.
+    KATCP expects utf-8.  This is only in Python 2, not Python 3.
     """
-    decoded = text.decode(encoding='latin-1')
-    encoded = decoded.encode(encoding='utf-8')
-    return encoded
+    if future.utils.PY2:
+        decoded = text.decode(encoding='latin-1')
+        encoded = decoded.encode(encoding='utf-8')
+        return encoded
+    else:
+        return text
 
 
 def tango_attr_descr2katcp_sensors(attr_descr):

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ###############################################################################
 # SKA South Africa (http://ska.ac.za/)                                        #
 # Author: cam@ska.ac.za                                                       #
@@ -11,6 +12,7 @@ from future import standard_library
 
 standard_library.install_aliases()
 
+import future
 import logging
 import mock
 import os
@@ -585,7 +587,7 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
         )
         cls.sub_proc = subprocess.Popen(
             [
-                "python",
+                "python{}".format("" if future.utils.PY2 else "3"),
                 "{}/{}".format(cls.temp_dir, server_name),
                 server_instance,
                 "-file={}".format(database_filename),
@@ -738,14 +740,24 @@ class test_TangoDevice2KatcpProxyMultipleDevices(
     def test_latin1_encoded_as_utf8_in_sensors(self):
         server = self.translators[SimpleDevice1].katcp_server
         sensor = server.get_sensor("attr1")
-        self.assertEqual(sensor.description, "temperature \xc2\xb0C")
-        self.assertEqual(sensor.units, "\xc2\xb0C")
+        expected_description = u"temperature °C"
+        expected_units = u"°C"
+        if future.utils.PY2:
+            expected_description = expected_description.encode(encoding="utf-8")
+            expected_units = expected_units.encode(encoding="utf-8")
+        self.assertEqual(sensor.description, expected_description)
+        self.assertEqual(sensor.units, expected_units)
 
     def test_latin1_encoded_as_utf8_in_requests(self):
         server = self.translators[SimpleDevice1].katcp_server
         request = server._request_handlers["cmd1"]
-        self.assertIn("temperature in \xc2\xb0C", request.__doc__)
-        self.assertIn("temperature out \xc2\xb0C", request.__doc__)
+        expected_doc_in = u"temperature in °C"
+        expected_doc_out = u"temperature out °C"
+        if future.utils.PY2:
+            expected_doc_in = expected_doc_in.encode(encoding="utf-8")
+            expected_doc_out = expected_doc_out.encode(encoding="utf-8")
+        self.assertIn(expected_doc_in, request.__doc__)
+        self.assertIn(expected_doc_out, request.__doc__)
 
 
 def cleanup_tempdir(*mkdtemp_args, **mkdtemp_kwargs):
