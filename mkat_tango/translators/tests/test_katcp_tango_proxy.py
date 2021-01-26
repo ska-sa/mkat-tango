@@ -282,8 +282,8 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
         # flip between two values 5x and for each
         # operation wait a while for updates to happen
         idx = 0
-        num_updates = 5
-        for _ in range(num_updates):
+        num_periods = 5
+        for _ in range(num_periods):
             idx += 1
             self.tango_device_proxy.ScalarDevEnum = idx
             time.sleep(1)
@@ -291,9 +291,10 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 idx = 0
 
         self.katcp_server.get_sensor(sensor).detach(observer)
+        number_of_updates = len(observer.updates)
         self.assertAlmostEqual(
-            len(observer.updates),
-            num_updates,
+            number_of_updates,
+            num_periods,
             msg="Not enough updates for sensor: {}".format(sensor),
             delta=2,
         )
