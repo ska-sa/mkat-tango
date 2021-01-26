@@ -6,6 +6,11 @@
 # THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
 # WRITTEN PERMISSION OF SKA SA.                                               #
 ###############################################################################
+from __future__ import absolute_import, division, print_function
+from future import standard_library
+
+standard_library.install_aliases()
+
 import logging
 import operator
 import socket
@@ -19,7 +24,7 @@ from functools import reduce, wraps
 from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
 from tango import server as TS
-from tango import AttrQuality, AttrWriteType
+from tango import AttrWriteType
 from tango import DevState
 
 from tango.test_context import DeviceTestContext
@@ -106,7 +111,11 @@ class TangoTestDevice(TS.Device):
         )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
         self.numeric_attributes = (
-            "ScalarDevDouble", "ScalarDevLong", "ScalarDevUChar", "SpectrumDevDouble")
+            "ScalarDevDouble",
+            "ScalarDevLong",
+            "ScalarDevUChar",
+            "SpectrumDevDouble",
+        )
 
         self.discrete_attributes = tuple(
             sorted(set(self.static_attributes) - set(self.numeric_attributes))
@@ -183,9 +192,14 @@ class TangoTestDevice(TS.Device):
     def ScalarDevEnum(self):
         pass
 
-    @TS.attribute(dtype='DevEnum', doc='An example scalar Enum attribute',
-                  enum_labels=['ONLINE', 'OFFLINE', 'RESERVE'],
-                  polling_period=1000, event_period=25, access=AttrWriteType.READ_WRITE)
+    @TS.attribute(
+        dtype="DevEnum",
+        doc="An example scalar Enum attribute",
+        enum_labels=["ONLINE", "OFFLINE", "RESERVE"],
+        polling_period=1000,
+        event_period=25,
+        access=AttrWriteType.READ_WRITE,
+    )
     @_test_attr
     def SpectrumDevDouble(self):
         pass
@@ -204,10 +218,12 @@ class TangoTestDevice(TS.Device):
 
     def write_ScalarDevEnum(self, ScalarDevEnum):
         self.attr_return_vals["ScalarDevEnum"] = (
-            (ScalarDevEnum, None, AttrQuality.ATTR_VALID))
+            ScalarDevEnum,
+            None,
+            AttrQuality.ATTR_VALID,
+        )
 
-    static_commands = ('ReverseString', 'MultiplyInts', 'Void',
-                       'MultiplyDoubleBy3')
+    static_commands = ("ReverseString", "MultiplyInts", "Void", "MultiplyDoubleBy3")
     # Commands that come from the Tango library
     standard_commands = ("Init", "State", "Status")
 
@@ -278,7 +294,7 @@ class TangoSetUpClass(ClassCleanupUnittestMixin, unittest.TestCase):
         `cls.addCleanup()` is added to the class-level cleanup function stack.
 
         """
-        cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
+        cls.tango_db = cleanup_tempfile(cls, prefix="tango", suffix=".db")
         cls.tango_context = DeviceTestContext(
             TangoTestDevice,
             db=cls.tango_db,
@@ -343,20 +359,23 @@ class test_TangoInspectingClient(TangoSetUpClass):
         poll_period_ms = 100  # in milliseconds
         num_periods = 10
         test_attributes = self.test_device.static_attributes
-        set_attributes_polling(self, self.tango_dp, self.test_device,
-                               {attr: poll_period_ms
-                                for attr in test_attributes})
+        set_attributes_polling(
+            self,
+            self.tango_dp,
+            self.test_device,
+            {attr: poll_period_ms for attr in test_attributes},
+        )
         recorded_samples = {attr: [] for attr in test_attributes}
         self.DUT.inspect()
 
         def record_sample(attr, *x):
             if attr in test_attributes:
                 recorded_samples[attr].append(x)
-                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+                LOGGER.debug("Received {!r} for attr {!r}".format(x, attr))
 
         self.DUT.sample_event_callback = record_sample
         self.addCleanup(self.DUT.clear_attribute_sampling)
-        LOGGER.debug('Setting attribute sampling')
+        LOGGER.debug("Setting attribute sampling")
         self.DUT.setup_attribute_sampling(server_polling_fallback=True)
         time.sleep(poll_period_ms / 1000.0 * num_periods)
         self.DUT.clear_attribute_sampling()
@@ -374,10 +393,10 @@ class test_TangoInspectingClient(TangoSetUpClass):
                 if event_status == AttrQuality.ATTR_INVALID:
                     errors_per_attr[attr] += 1
                 if attr in self.test_device.numeric_attributes:
-                    if event_type == 'periodic':
+                    if event_type == "periodic":
                         updates_per_attr[attr] += 1
                 else:
-                    if event_type == 'change':
+                    if event_type == "change":
                         updates_per_attr[attr] += 1
 
         self.assertEqual(
@@ -431,11 +450,11 @@ class test_TangoInspectingClientStandard(TangoSetUpClass):
         def record_sample(attr, *x):
             if attr in standard_tango_attributes:
                 recorded_samples[attr].append(x)
-                LOGGER.debug('Received {!r} for attr {!r}'.format(x, attr))
+                LOGGER.debug("Received {!r} for attr {!r}".format(x, attr))
 
         self.DUT.sample_event_callback = record_sample
         self.addCleanup(self.DUT.clear_attribute_sampling)
-        LOGGER.debug('Setting attribute sampling')
+        LOGGER.debug("Setting attribute sampling")
         self.DUT.setup_attribute_sampling(server_polling_fallback=True)
 
         # Confirm that polling is set to expected period of 1000 ms

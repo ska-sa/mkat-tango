@@ -245,10 +245,15 @@ def tango_attr_descr2katcp_sensors(attr_descr):
         else:
             sensor_name = katcp_name
 
-        sensors.append(Sensor(sensor_type, sensor_name,
-                              tango_to_katcp_text(attr_descr.description),
-                              tango_to_katcp_text(attr_descr.unit),
-                              sensor_params))
+        sensors.append(
+            Sensor(
+                sensor_type,
+                sensor_name,
+                tango_to_katcp_text(attr_descr.description),
+                tango_to_katcp_text(attr_descr.unit),
+                sensor_params,
+            )
+        )
 
     return sensors
 
@@ -300,8 +305,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield maybe_future(tango_request(cmd_name, input_param))
-        raise Return(
-            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+        raise Return(("ok", tango_retval) if tango_retval is not None else ("ok",))
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
@@ -310,8 +314,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield maybe_future(tango_request(cmd_name, input_param))
-        raise Return(
-            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+        raise Return(("ok", tango_retval) if tango_retval is not None else ("ok",))
 
     @kattypes.request(*request_args)
     @tornado.gen.coroutine
@@ -319,8 +322,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
         # A reference for debugging ease so that it is in the closure
         tango_device_proxy
         tango_retval = yield maybe_future(tango_request(cmd_name))
-        raise Return(
-            ('ok', tango_retval) if tango_retval is not None else ('ok', ))
+        raise Return(("ok", tango_retval) if tango_retval is not None else ("ok",))
 
     if in_kattype:
         if "Array" in str(tango_command_descr.in_type):
@@ -347,7 +349,7 @@ def tango_cmd_descr2katcp_request(tango_command_descr, tango_device_proxy):
     handler.__doc__ = KATCP_REQUEST_DOC_TEMPLATE.format(
         desc=tango_command_descr,
         in_type_desc=tango_to_katcp_text(in_type_desc),
-        out_type_desc=tango_to_katcp_text(out_type_desc)
+        out_type_desc=tango_to_katcp_text(out_type_desc),
     )
     return kattypes.return_reply(*return_reply_args)(handler)
 
@@ -509,8 +511,7 @@ class TangoDevice2KatcpProxy(object):
             tango_device_proxy = self.inspecting_client.tango_dp
             if not is_tango_device_running(tango_device_proxy, logger=self._logger):
                 wait_for_device(tango_device_proxy, logger=self._logger)
-            self._logger.info(
-                "Connection to %s established", tango_device_proxy.name())
+            self._logger.info("Connection to %s established", tango_device_proxy.name())
             self.inspecting_client.inspect()
             self.inspecting_client.sample_event_callback = self.update_sensor_values
             self.inspecting_client.interface_change_callback = (
@@ -612,13 +613,16 @@ class TangoDevice2KatcpProxy(object):
     def _setup_attribute_sampling_via_thread(self, new_attributes):
         if self._attribute_sampling_setup_allowed.is_set():
             self._attribute_sampling_setup_allowed.clear()
-            t = threading.Thread(target=self._setup_attribute_sampling_target,
-                                 args=(new_attributes,))
+            t = threading.Thread(
+                target=self._setup_attribute_sampling_target, args=(new_attributes,)
+            )
             t.daemon = True
             t.start()
         else:
-            self._logger.error("Cannot handle new interface change - "
-                               "setting up sampling from previous change")
+            self._logger.error(
+                "Cannot handle new interface change - "
+                "setting up sampling from previous change"
+            )
 
     def _setup_attribute_sampling_target(self, new_attributes):
         try:
@@ -627,9 +631,10 @@ class TangoDevice2KatcpProxy(object):
                     new_attributes, server_polling_fallback=self._polling
                 )
         except Exception:
-            self._logger.exception("Error setting up attribute sampling on Tango device"
-                                   " - %s attributes, polling %r" % (len(new_attributes),
-                                                                     self._polling))
+            self._logger.exception(
+                "Error setting up attribute sampling on Tango device"
+                " - %s attributes, polling %r" % (len(new_attributes), self._polling)
+            )
         finally:
             self._attribute_sampling_setup_allowed.set()
 
@@ -771,20 +776,30 @@ def tango2katcp_main(args=None, start_ioloop=True):
     from argparse import ArgumentParser
     from mkat_tango.translators.utilities import address
 
-    parser = ArgumentParser(
-        description="Launch Tango device -> KATCP translator")
-    parser.add_argument('-l', '--loglevel', default='INFO',
-                        help='Level for logging as per Python loglevel names, '
-                        '"NO" for no log config. Default: %(default)s')
-    parser.add_argument("--katcp-server-address", type=address,
-                        help="HOST:PORT for the device to listen on", required=True)
-    parser.add_argument('tango_device_address', type=str, help=
-                        'Address of the tango device to connect to '
-                        '(in tango format)')
+    parser = ArgumentParser(description="Launch Tango device -> KATCP translator")
     parser.add_argument(
-        '--polling',
+        "-l",
+        "--loglevel",
+        default="INFO",
+        help="Level for logging as per Python loglevel names, "
+        '"NO" for no log config. Default: %(default)s',
+    )
+    parser.add_argument(
+        "--katcp-server-address",
+        type=address,
+        help="HOST:PORT for the device to listen on",
+        required=True,
+    )
+    parser.add_argument(
+        "tango_device_address",
+        type=str,
+        help="Address of the tango device to connect to " "(in tango format)",
+    )
+    parser.add_argument(
+        "--polling",
         type=bool,
-        help='Allow fallback to server polling for attribute sampling')
+        help="Allow fallback to server polling for attribute sampling",
+    )
 
     opts = parser.parse_args(args=args)
 

@@ -181,10 +181,12 @@ class TangoInspectingClient(object):
             timestamp = time.time()
             event_type = event_data.event
             value = event_data.attr_value
-            self._logger.error("Event system DevError(s) occured!!! %s",
-                               str(event_data.errors))
-            self.sample_event_callback(attr_name, received_timestamp,
-                                       timestamp, value, quality, event_type)
+            self._logger.error(
+                "Event system DevError(s) occured!!! %s", str(event_data.errors)
+            )
+            self.sample_event_callback(
+                attr_name, received_timestamp, timestamp, value, quality, event_type
+            )
 
             return
 
@@ -255,20 +257,23 @@ class TangoInspectingClient(object):
                     attribute_name,
                     event_type,
                     self.attribute_event_handler,
-                    stateless=False
+                    stateless=False,
                 )
                 self._event_ids.add(event_id)
             subscribed = True
-        except tango.DevFailed, exc:
+        except tango.DevFailed as exc:
             exc_reasons = {arg.reason for arg in exc.args}
-            if 'API_AttributePollingNotStarted' in exc_reasons:
+            if "API_AttributePollingNotStarted" in exc_reasons:
                 if warn_no_polling:
-                    self._logger.warning('TODO NM: Need to implement something for '
-                                         'attributes that are not polled, processing '
-                                         'attribute {}'.format(attribute_name))
-            elif 'API_EventPropertiesNotSet' in exc_reasons:
-                self._logger.info('Attribute {} has no event properties set'
-                                    .format(attribute_name))
+                    self._logger.warning(
+                        "TODO NM: Need to implement something for "
+                        "attributes that are not polled, processing "
+                        "attribute {}".format(attribute_name)
+                    )
+            elif "API_EventPropertiesNotSet" in exc_reasons:
+                self._logger.info(
+                    "Attribute {} has no event properties set".format(attribute_name)
+                )
             else:
                 raise
         return subscribed
@@ -277,7 +282,8 @@ class TangoInspectingClient(object):
         """Subscribe to all or some types of Tango attribute events"""
         if server_polling_fallback:
             self._logger.warning(
-                'Sampling may enable polling on device %s', self.tango_dp.name())
+                "Sampling may enable polling on device %s", self.tango_dp.name()
+            )
         attributes = attributes if attributes is not None else self.device_attributes
         for attr_name in sorted(attributes):
             # order of preference (for efficiency)
@@ -288,7 +294,7 @@ class TangoInspectingClient(object):
             #       polling on server.
             #       See gitlab.com/ska-telescope/web-maxiv-tangogql/-/blob/
             #           e1e4098f/tangogql/aioattribute/attribute.py#L120
-            
+
             subscribed = self._subscribe_to_event(
                 tango.EventType.CHANGE_EVENT,
                 attr_name,

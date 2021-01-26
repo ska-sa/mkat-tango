@@ -12,6 +12,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 import logging
+import mock
 import os
 import shutil
 import socket
@@ -29,7 +30,14 @@ import tango.server
 import tornado.testing
 import tornado.gen
 
-from tango import DevVoid, Attr, AttrWriteType, DevLong, AttrDataFormat, DevFailed, DeviceProxy
+from tango import (
+    Attr,
+    AttrDataFormat,
+    DevFailed,
+    DeviceProxy,
+    DevLong,
+    DevVoid,
+)
 from tango.test_context import DeviceTestContext, MultiDeviceTestContext
 
 from katcp import Message, Sensor
@@ -79,32 +87,39 @@ KATCP_REQUEST_DOC_TEMPLATE = textwrap.dedent(
 ).lstrip()
 
 
-SPECTRUM_ATTR = {'SpectrumDevDouble': ['SpectrumDevDouble.0', 'SpectrumDevDouble.1',
-                                       'SpectrumDevDouble.2', 'SpectrumDevDouble.3',
-                                       'SpectrumDevDouble.4']
-                                       }
+SPECTRUM_ATTR = {
+    "SpectrumDevDouble": [
+        "SpectrumDevDouble.0",
+        "SpectrumDevDouble.1",
+        "SpectrumDevDouble.2",
+        "SpectrumDevDouble.3",
+        "SpectrumDevDouble.4",
+    ]
+}
+
 
 class TangoDevice2KatcpProxy_BaseMixin(ClassCleanupUnittestMixin):
     DUT = None
 
     @classmethod
     def setUpClassWithCleanup(cls):
-        cls.tango_db = cleanup_tempfile(cls, prefix='tango', suffix='.db')
+        cls.tango_db = cleanup_tempfile(cls, prefix="tango", suffix=".db")
         # It turns out that we need to explicitly specify the port number to have the
         # events working properly.
         host = socket.getfqdn()
         # https://github.com/tango-controls/pytango/blob/develop/tests/test_event.py#L83
-        cls.tango_context = DeviceTestContext(TangoTestDevice, db=cls.tango_db,
-                                              port=helper_module.get_port(),
-                                              host=host)
+        cls.tango_context = DeviceTestContext(
+            TangoTestDevice, db=cls.tango_db, port=helper_module.get_port(), host=host
+        )
         start_thread_with_cleanup(cls, cls.tango_context)
         cls.tango_device_address = cls.tango_context.get_device_access()
 
     def setUp(self):
         super(TangoDevice2KatcpProxy_BaseMixin, self).setUp()
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
-            ("", 0), self.tango_device_address, polling=True)
-        if hasattr(self, 'io_loop'):
+            ("", 0), self.tango_device_address, polling=True
+        )
+        if hasattr(self, "io_loop"):
             self.DUT.set_ioloop(self.io_loop)
             self.io_loop.add_callback(self.DUT.start)
             self.addCleanup(self.DUT.stop, timeout=None)
@@ -221,10 +236,10 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 # The default sampling strategy is 'change' and therefore subscription to
                 # these attributes is successful and it doesn't fallback to subscribing
                 # to periodic events. So no updates are expected from them.
-                if attr_name in ('ScalarDevEnum', 'ScalarBool', 'ScalarDevString'):
+                if attr_name in ("ScalarDevEnum", "ScalarBool", "ScalarDevString"):
                     continue
-                if attr_name == 'SpectrumDevDouble':
-                    for attr_name_ in SPECTRUM_ATTR['SpectrumDevDouble']:
+                if attr_name == "SpectrumDevDouble":
+                    for attr_name_ in SPECTRUM_ATTR["SpectrumDevDouble"]:
                         observers[attr_name_] = observer = SensorObserver()
                         attr_name_ = utilities.tangoname2katcpname(attr_name_)
                         self.katcp_server.get_sensor(attr_name_).attach(observer)
@@ -245,10 +260,13 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             # attributes: ScalarDevLong, ScalarDevUChar, ScalarDevDouble.
             self.katcp_server.get_sensor(sensor).detach(observer)
             obs = observers[sensor]
-            self.assertAlmostEqual(len(obs.updates),
-                                   num_periods,
-                                   msg="Not enough updates for sensor: {}".format(sensor),
-                                   delta=2)
+            number_of_updates = len(obs.updates)
+            self.assertAlmostEqual(
+                number_of_updates,
+                num_periods,
+                msg="Not enough updates for sensor: {}".format(sensor),
+                delta=2,
+            )
 
     def test_attribute_sensor_value_update(self):
         # instantiate a sensor observer to monitor sensor value updates
@@ -268,10 +286,12 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
                 idx = 0
 
         self.katcp_server.get_sensor(sensor).detach(observer)
-        self.assertAlmostEqual(len(observer.updates),
-                               num_updates,
-                               msg="Not enough updates for sensor: {}".format(sensor),
-                               delta=2)
+        self.assertAlmostEqual(
+            len(observer.updates),
+            num_updates,
+            msg="Not enough updates for sensor: {}".format(sensor),
+            delta=2,
+        )
 
     def test_requests_list(self):
         tango_td = self.tango_test_device
@@ -327,12 +347,18 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
             return "DONE!"
 
         # Check that the request/command did not exist before
-        self.assertNotIn('cmd_printString', self.katcp_server.get_request_list())
-        self.assertNotIn('cmd_printString', self.tango_device_proxy.get_command_list())
+        self.assertNotIn("cmd_printString", self.katcp_server.get_request_list())
+        self.assertNotIn("cmd_printString", self.tango_device_proxy.get_command_list())
 
-        cmd = tango.server.command(f=cmd_printString, dtype_in=DevVoid, doc_in="",
-                                   dtype_out=str, doc_out="", green_mode=None)
-        setattr(self.tango_test_device, 'cmd_printString', cmd_printString)
+        cmd = tango.server.command(
+            f=cmd_printString,
+            dtype_in=DevVoid,
+            doc_in="",
+            dtype_out=str,
+            doc_out="",
+            green_mode=None,
+        )
+        self.tango_test_device.cmd_printString = cmd_printString
         self.tango_test_device.add_command(cmd, device_level=True)
         time.sleep(0.5)  # Find alternative, rather than sleeping
 
@@ -387,7 +413,7 @@ class test_TangoDevice2KatcpProxy(TangoDevice2KatcpProxy_BaseMixin, unittest.Tes
 
             # Check that attribute sampling was recalled for the new attribute
             sec.assert_called_with(
-                ['test_attr', 'ScalarDevEncoded'], server_polling_fallback=True
+                ["test_attr", "ScalarDevEncoded"], server_polling_fallback=True
             )
 
             # Remove the attribute.
@@ -578,8 +604,9 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
             self.device_name,
         )
         self.DUT = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
-            ("", 0), self.tango_device_address, polling=True)
-        if hasattr(self, 'io_loop'):
+            ("", 0), self.tango_device_address, polling=True
+        )
+        if hasattr(self, "io_loop"):
             self.DUT.set_ioloop(self.io_loop)
             self.io_loop.add_callback(self.DUT.start)
             self.addCleanup(self.DUT.stop, timeout=None)
@@ -618,14 +645,16 @@ class test_TangoDeviceShutdown(ClassCleanupUnittestMixin, unittest.TestCase):
 
 
 class SimpleDevice1(tango.server.Device):
-    @tango.server.attribute(
-        dtype=int, doc="temperature \xb0C", unit="\xb0C")
+    @tango.server.attribute(dtype=int, doc="temperature \xb0C", unit="\xb0C")
     def attr1(self):
         return 123
 
     @tango.server.command(
-        dtype_in=str, dtype_out=str,
-        doc_in="temperature in \xb0C", doc_out="temperature out \xb0C")
+        dtype_in=str,
+        dtype_out=str,
+        doc_in="temperature in \xb0C",
+        doc_out="temperature out \xb0C",
+    )
     def cmd1(self, argin):
         return "{}:reply1".format(argin)
 
@@ -644,8 +673,9 @@ class SimpleDevice2(tango.server.Device):
         return "{}:reply2b".format(argin)
 
 
-class test_TangoDevice2KatcpProxyMultipleDevices(ClassCleanupUnittestMixin,
-                                                 unittest.TestCase):
+class test_TangoDevice2KatcpProxyMultipleDevices(
+    ClassCleanupUnittestMixin, unittest.TestCase
+):
     @classmethod
     def setUpClassWithCleanup(cls):
         cls.devices_info = (
@@ -665,9 +695,7 @@ class test_TangoDevice2KatcpProxyMultipleDevices(ClassCleanupUnittestMixin,
 
             # start translator
             translator = katcp_tango_proxy.TangoDevice2KatcpProxy.from_addresses(
-                ("", 0),
-                self.tango_context.get_device_access(device_name),
-                polling=True
+                ("", 0), self.tango_context.get_device_access(device_name), polling=True
             )
             start_thread_with_cleanup(self, translator, start_timeout=1)
             self.translators[device_class] = translator
