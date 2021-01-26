@@ -25,10 +25,8 @@ from katcp.testutils import start_thread_with_cleanup
 from tango import Attr, AttrQuality, DevLong, DevState, UserDefaultAttrProp
 from tango import server as TS
 from tango import AttrWriteType
-from tango import DevState
 
 from tango.test_context import DeviceTestContext
-from katcp.testutils import start_thread_with_cleanup
 from tango_simlib.utilities import helper_module
 from tango_simlib.utilities.testutils import cleanup_tempfile
 
