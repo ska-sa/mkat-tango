@@ -109,16 +109,15 @@ class TangoTestDevice(TS.Device):
             ScalarDevDoubleEvents=(3.1415, None, AttrQuality.ATTR_VALID),
         )
         self.static_attributes = tuple(sorted(self.attr_return_vals.keys()))
-        self.numeric_attributes = (
+        self.periodic_event_attributes = (
             "ScalarDevDouble",
             "ScalarDevLong",
             "ScalarDevUChar",
             "SpectrumDevDouble",
-            "ScalarDevDoubleEvents",
         )
 
-        self.discrete_attributes = tuple(
-            sorted(set(self.static_attributes) - set(self.numeric_attributes))
+        self.change_event_attributes = tuple(
+            sorted(set(self.static_attributes) - set(self.periodic_event_attributes))
         )
 
     @TS.attribute(
@@ -206,7 +205,7 @@ class TangoTestDevice(TS.Device):
 
     @TS.attribute(
         dtype="DevDouble",
-        doc="An example scalar Double attribute with event properties",
+        doc="An example scalar Double attribute with change event properties",
         polling_period=1000,
         event_period=25,
         abs_change="1",
@@ -392,7 +391,7 @@ class test_TangoInspectingClient(TangoSetUpClass):
                 event_type = event[4]
                 if event_status == AttrQuality.ATTR_INVALID:
                     errors_per_attr[attr] += 1
-                if attr in self.test_device.numeric_attributes:
+                if attr in self.test_device.periodic_event_attributes:
                     if event_type == "periodic":
                         updates_per_attr[attr] += 1
                 else:
@@ -405,13 +404,13 @@ class test_TangoInspectingClient(TangoSetUpClass):
             "Unexpected event errors for a least one test attribute.",
         )
         self.assertEqual(len(test_attributes), len(updates_per_attr))
-        for attr in self.test_device.numeric_attributes:
+        for attr in self.test_device.periodic_event_attributes:
             self.assertGreater(
                 updates_per_attr[attr],
                 num_periods,
                 "Too few updates for numeric attr {} (periodic events)".format(attr),
             )
-        for attr in self.test_device.discrete_attributes:
+        for attr in self.test_device.change_event_attributes:
             self.assertEqual(
                 updates_per_attr[attr],
                 1,
