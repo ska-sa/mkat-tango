@@ -185,18 +185,18 @@ class TangoTestDevice(TS.Device):
         enum_labels=["ONLINE", "OFFLINE", "RESERVE"],
         polling_period=1000,
         event_period=25,
+        access=AttrWriteType.READ_WRITE,
     )
     @_test_attr
     def ScalarDevEnum(self):
         pass
 
     @TS.attribute(
-        dtype="DevEnum",
-        doc="An example scalar Enum attribute",
-        enum_labels=["ONLINE", "OFFLINE", "RESERVE"],
+        dtype=("DevDouble",),
+        doc="An example spectrum Double attribute",
         polling_period=1000,
         event_period=25,
-        access=AttrWriteType.READ_WRITE,
+        max_dim_x=5,
     )
     @_test_attr
     def SpectrumDevDouble(self):
