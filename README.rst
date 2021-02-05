@@ -1,3 +1,5 @@
+.. _license: https://github.com/ska-sa/mkat-tango/blob/master/LICENSE
+
 =============================================
 MeerKAT Tango integration and experimentation
 =============================================
@@ -221,3 +223,8 @@ Add a new interpreter:
 
 Running tests:
   - If you want to run all the tests inside bash take a look at the JenkinsFile for an example of how it is executed.
+
+License
+=======
+
+This project is licensed under the BSD 3-Clause License - see license_ for details.
