@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
-###############################################################################
-# SKA South Africa (http://ska.ac.za/)                                        #
-# Author: cam@ska.ac.za                                                       #
-# Copyright @ 2016 SKA SA. All rights reserved.                               #
-#                                                                             #
-# THIS SOFTWARE MAY NOT BE COPIED OR DISTRIBUTED IN ANY FORM WITHOUT THE      #
-# WRITTEN PERMISSION OF SKA SA.                                               #
-###############################################################################
+# test_katcp_tango_proxy.py
+# -*- coding: utf8 -*-
+# vim:fileencoding=utf8 ai ts=4 sts=4 et sw=4
+# Copyright 2016 National Research Foundation (South African Radio Astronomy Observatory)
+# BSD license - see LICENSE for details
+
 from __future__ import absolute_import, division, print_function
 from future import standard_library
 

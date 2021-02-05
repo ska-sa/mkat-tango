@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Copyright 2016 National Research Foundation (South African Radio Astronomy Observatory)
+# BSD license - see LICENSE for details
 
 from setuptools import setup, find_packages
 
@@ -9,8 +11,10 @@ setup(
     author_email="cam@ska.ac.za",
     packages=find_packages(),
     url="https://github.com/ska-sa/mkat-tango",
+    license="BSD",
     classifiers=[
         "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
