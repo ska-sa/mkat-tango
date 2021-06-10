@@ -14,7 +14,7 @@ jobs:
         run: |
           sudo apt-get install -y wget && \
           wget -O lint_diff.sh https://raw.githubusercontent.com/sardana-org/sardana/develop/ci/flake8_diff.sh && \
-          sed -i 's+=sardana-org/sardana+=ska-sa/tango-simlib+g' lint_diff.sh && \
+          sed -i 's+=sardana-org/sardana+=ska-sa/mkat-tango+g' lint_diff.sh && \
           sed -i 's+develop+master+g' lint_diff.sh && \
           sed -i 's+--show-source "$@"+--show-source "$@" --config=setup.cfg+g' lint_diff.sh && \
           chmod +x lint_diff.sh
