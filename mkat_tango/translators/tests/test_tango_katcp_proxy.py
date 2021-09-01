@@ -21,7 +21,7 @@ import tango
 from katcp import DeviceServer, Message, Sensor
 from katcp.compat import ensure_native_str
 from katcp.kattypes import Float, Timestamp, request, return_reply
-from katcp.resource_client import IOLoopThreadWrapper
+from katcp.ioloop_manager import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.tango_katcp_proxy import (
