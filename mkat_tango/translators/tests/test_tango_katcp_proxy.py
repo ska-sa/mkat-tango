@@ -21,7 +21,7 @@ import tango
 from katcp import DeviceServer, Message, Sensor
 from katcp.compat import ensure_native_str
 from katcp.kattypes import Float, Timestamp, request, return_reply
-from katcp.resource_client import IOLoopThreadWrapper
+from katcp.ioloop_manager import IOLoopThreadWrapper
 from katcp.testutils import start_thread_with_cleanup
 from mkat_tango.translators.katcp_tango_proxy import is_tango_device_running
 from mkat_tango.translators.tango_katcp_proxy import (
@@ -73,11 +73,17 @@ sensors = {
     ),
     "add-result": Sensor.float("add-result", "Last ?add result.", "", [-10000, 10000]),
     "time-result": Sensor.timestamp(
-        "time-result", "Last ?time result.", "", [0.00, 1000000000.00]
+        "time-result",
+        default="0.0",
+        description="Last ?time result.",
+        initial_status=Sensor.NOMINAL,
     ),
     "gps-nmea": Sensor.string("gps-nmea", "GPS NMEA string details received", ""),
     "ntp-timestamp": Sensor.timestamp(
-        "ntp-timestamp", "NTP server timestamp", "", [0.00, 1000000000.00]
+        "ntp-timestamp",
+        default="0.0",
+        description="NTP server timestamp",
+        initial_status=Sensor.NOMINAL,
     ),
     "ntp-lru": Sensor.address("ntp-lru", "NTP server IP address", ""),
 }
@@ -101,8 +107,7 @@ server_port = 0
 
 
 def reset_katcp_tango_server(katcp_server, tango_server):
-    """For removing any sensors/attributes that were added during testing.
-        """
+    """For removing any sensors/attributes that were added during testing."""
     extra_sensors = {}
     for sensor_name, sensor in list(katcp_server._sensors.items()):
         if sensor_name not in list(sensors.keys()):
@@ -320,7 +325,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
 
     def test_expected_sensor_attributes(self):
         """Testing if the expected attribute list matches with the actual attribute list
-           after adding the new attributes.
+        after adding the new attributes.
         """
         attr_list = list(self.tango_dp.get_attribute_list())
         for def_attr in default_attributes:
@@ -339,7 +344,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
         )
 
     def test_attribute_sensor_properties_match_direct_trans(self):
-        """ Testing if the sensor object properties were translated correctly directly
+        """Testing if the sensor object properties were translated correctly directly
         using the add method.
         """
         remove_tango_server_attribute_list(self.instance, sensors)
@@ -405,7 +410,7 @@ class test_KatcpTango2DeviceProxy(_test_KatcpTango2DeviceProxy):
                 )
 
     def test_attribute_sensor_properties_match_via_proxy_trans(self):
-        """ Testing if the sensor object properties were translated correctly using the
+        """Testing if the sensor object properties were translated correctly using the
         proxy translator.
         """
         for sensor in list(self.katcp_server._sensors.values()):
@@ -755,7 +760,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         sensor_value = self.katcp_server.get_sensor(req)
         self.assertEqual(
             sensor_value.value(),
-            getattr(self.device, katcpname2tangoname(req)),
+            self.device.read_attribute(katcpname2tangoname(req)).value,
             "Sensor value does not match attribute value after executing a command.",
         )
 
@@ -771,7 +776,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         expected_result = 99999.0
 
         with mock.patch(
-            "mkat_tango.translators.tests.test_tango_katcp_proxy.time.time"
+            "mkat_tango.translators.tests.test_tango_katcp_proxy.time"
         ) as mock_time:
-            mock_time.return_value = expected_result
+            mock_time.time.return_value = expected_result
             self._test_command(req, expected_result)
