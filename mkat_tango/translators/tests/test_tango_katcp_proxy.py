@@ -760,7 +760,7 @@ class test_KatcpTango2DeviceProxyCommands(_test_KatcpTango2DeviceProxyCommands):
         sensor_value = self.katcp_server.get_sensor(req)
         self.assertEqual(
             sensor_value.value(),
-            getattr(self.device, katcpname2tangoname(req)),
+            self.device.read_attribute(katcpname2tangoname(req)).value,
             "Sensor value does not match attribute value after executing a command.",
         )
 
