@@ -180,7 +180,8 @@ class TangoInspectingClient(object):
             event_type = event_data.event
             value = event_data.attr_value
             self._logger.error(
-                "Event system DevError(s) occured!!! %s", str(event_data.errors)
+                "Event system DevError(s) occured!!! %s, fqdn %s", str(event_data.errors),
+                fqdn_attr_name
             )
             self.sample_event_callback(
                 attr_name, received_timestamp, timestamp, value, quality, event_type
@@ -273,6 +274,7 @@ class TangoInspectingClient(object):
                     "Attribute {} has no event properties set".format(attribute_name)
                 )
             else:
+                self._logger.error("DeviceProxy: %s, error: %s", dp.name(), exc_reasons)
                 raise
         return subscribed
 
