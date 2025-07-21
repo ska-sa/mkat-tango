@@ -47,12 +47,33 @@ tango_launcher ::
 
 
 MKAT TANGO AP simulator
---------------------------
+-----------------------
 
 The actual MKAT antenna positioner (AP) devices have KATCP interfaces. To aid
 testing and development of the MKAT CAM (i.e TM) system, a fairly detailed 
 simulator that mimics the MKAT AP behaviour and exposes a TANGO 
 interface was developed.
+
+Simple KATCP Device
+-------------------
+
+## Running the Simple KATCP Device
+
+To start the simple KATCP device server:
+
+```sh
+python3 src/SimpleDevice.py [PORT]
+```
+
+- Default port is `7147` if not specified.
+
+Example:
+
+```sh
+python3 src/SimpleDevice.py 7147
+```
+
+The device will listen on `0.0.0.0:7147` by default.
 
 
 Translators
@@ -173,6 +194,43 @@ Periodic event type
   frequency. The polling frequency determines the highest frequency at which the
   attribute is read. This `event_period` determines the highest frequency at which
   the periodic, or any other, event is sent.
+
+Explore Translated KATCP Device (Example)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Build the docker image defined in dockerfile and start up the services
+
+.. code-block:: console
+  
+  $ cd mkat-tango
+  $ docker build -t mkat-tango .
+  $ docker compose up -d
+  $ docker exec -it cli /bin/bash
+
+Run the katcp server and translator
+
+.. code-block:: console
+  
+  $ # run katcp server
+  $ python SimpleDevice.py 5000
+  $ # register tango device in db and start it
+  $ mkat-tango-launcher --name katcp/basic/1 --class TangoDeviceServer  --server-command mkat-tango-katcpdevice2tango-DS --server-instance basic  --port 0 --put-device-property katcp/basic/1:katcp_address:localhost:5000
+  $ itango3
+
+
+Connect to running tango device
+
+.. code-block:: rst
+  
+  In [1]: dp = DeviceProxy("katcp/basic/1")
+  In [2]: dp.get_command_list()
+  Out[2]: ...
+  In [3]: dp.get_attribute_list()
+  Out[3]: ...
+  # katcp sensors and requests are exposed correctly as tango attributes and commands
+  In[4]: dp.temperature
+  # no reading is printed out, something went wrong
+  In[5]: dp.echo("my message")
+  Out[5]: results in error, something went wrong
 
 Docker images for development and testing
 =========================================

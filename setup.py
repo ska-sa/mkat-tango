@@ -30,7 +30,7 @@ setup(
     use_katversion=True,
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     install_requires=[
-        "PyTango==9.3.3",
+        "PyTango>=9.3.3",
         "numpy",
         "tornado>=4.3, <5",
         "katcp",
@@ -48,7 +48,7 @@ setup(
              "mkat_tango.translators.katcp_tango_proxy:tango2katcp_main"),
             ("mkat-tango-katcpdevice2tango-DS = "
              "mkat_tango.translators.tango_katcp_proxy:main"),
-            "mkat-tango-tango_launcher = mkat_tango.translators.tango_launcher:main",
+            "mkat-tango-launcher = mkat_tango.translators.tango_launcher:main",
         ]
     },
 )

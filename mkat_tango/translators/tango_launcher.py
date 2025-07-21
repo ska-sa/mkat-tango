@@ -121,6 +121,7 @@ def start_device(opts):
             opts.server_instance,
             "-ORBendPoint",
             "giop:tcp::{}".format(opts.port),
+            "-v4",
         ]
         print(
             "Starting TANGO device server:\n{}".format(

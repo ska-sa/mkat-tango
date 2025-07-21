@@ -1,6 +1,61 @@
-version: '3'
+volumes:
+  tangodb: {}
+
 services:
-  mkat-tango:
-    build: .
+  tangodb:
+    platform: linux/amd64
+    image: artefact.skao.int/ska-tango-images-tango-db:11.0.2
+    restart: unless-stopped
+    network_mode: translator-test
+    container_name: tangodb
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=tango
+      - MYSQL_USER=tango
+      - MYSQL_PASSWORD=tango
     volumes:
-    - .:/usr/src/code
+      - tangodb:/var/lib/mysql
+
+  databaseds:
+    platform: linux/amd64
+    image: artefact.skao.int/ska-tango-images-tango-databaseds:5.22.1
+    restart: unless-stopped
+    depends_on:
+      - tangodb
+    network_mode: translator-test
+    container_name: databaseds
+    ports:
+     - "10000:10000"
+    environment:
+      - MYSQL_HOST=tangodb:3306
+      - MYSQL_DATABASE=tango
+      - MYSQL_USER=tango
+      - MYSQL_PASSWORD=tango
+      - TANGO_HOST=databaseds:10000
+    entrypoint:
+      - /usr/local/bin/wait-for-it.sh
+      - tangodb:3306
+      - --timeout=30
+      - --strict
+      - --
+      - /usr/local/bin/DataBaseds
+      - "2"
+      - -ORBendPoint
+      - giop:tcp:0.0.0.0:10000
+
+  cli:
+    platform: linux/amd64
+    # build this image locally
+    image: mkat-tango
+    restart: unless-stopped
+    depends_on:
+      - databaseds
+    network_mode: translator-test
+    container_name: cli
+    environment:
+      - TANGO_HOST=databaseds:10000
+    volumes:
+      - .:/home/app
+    working_dir: /home/app
+    command: >
+      tail -F /dev/null
