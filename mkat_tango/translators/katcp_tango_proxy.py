@@ -604,11 +604,11 @@ class TangoDevice2KatcpProxy(object):
                     tango2katcp_sensors.append(sensor_name)
 
                 sensor_attribute_map[sensor_name] = attribute_config
-                self._logger.info("tango2katcp_sensors round 1: %s", tango2katcp_sensors)
+                self._logger.info("tango2katcp_sensors round: %s", tango2katcp_sensors)
                 continue
 
             tango2katcp_sensors.append(sensor_name)
-            self._logger.info("tango2katcp_sensors round 2: %s", tango2katcp_sensors)
+            # self._logger.info("tango2katcp_sensors round 2: %s", tango2katcp_sensors)
             sensor_attribute_map[sensor_name] = attribute_config
 
         sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
