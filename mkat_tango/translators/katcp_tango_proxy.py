@@ -596,7 +596,8 @@ class TangoDevice2KatcpProxy(object):
                     if sensor.startswith(sensor_name + "."):
                         sensors_.append(sensor)
 
-                self._logger.info("xxxxx sensors_: %s", sensors_)
+                self._logger.info("sensor_name: %s", sensor_name)
+                self._logger.info("xxxxx sensors and sensors_: %s %s", sensors, sensors_)
 
                 if len(sensors_) - attribute_config.max_dim_x == 0:
                     tango2katcp_sensors.extend(sensors_)
@@ -613,6 +614,8 @@ class TangoDevice2KatcpProxy(object):
 
         sensors_to_remove = list(set(sensors) - set(tango2katcp_sensors))
         sensors_to_add = list(set(tango2katcp_sensors) - set(sensors))
+        self._logger.info("sensors_to_add: %s", sensors_to_add)
+        
         for sensor_name in sensors_to_remove:
             self.katcp_server.remove_sensor(sensor_name)
 
