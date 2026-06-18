@@ -219,52 +219,55 @@ def tango_attr_descr2katcp_sensors(attr_descr):
 
     sensors = []
 
-    for index in range(attr_descr.max_dim_x):
-        if attr_descr.data_type in TANGO_INT_TYPES:
-            if attr_min_val == "Not specified":
-                min_value = katcp_type_info.params[0]
-            else:
-                min_value = int(attr_min_val)
-            if attr_max_val == "Not specified":
-                max_value = katcp_type_info.params[1]
-            else:
-                max_value = int(attr_max_val)
-            sensor_params = [min_value, max_value]
-        elif attr_descr.data_type in TANGO_FLOAT_TYPES:
-            if attr_min_val == "Not specified":
-                min_value = katcp_type_info.params[0]
-            else:
-                min_value = float(attr_min_val)
-            if attr_max_val == "Not specified":
-                max_value = katcp_type_info.params[1]
-            else:
-                max_value = float(attr_max_val)
-            sensor_params = [min_value, max_value]
-        elif attr_descr.data_type == DevEnum:
-            sensor_params = attr_descr.enum_labels
-        elif attr_descr.data_type == CmdArgType.DevState:
-            sensor_params = katcp_type_info.params
-        try:
-            katcp_name = tangoname2katcpname(attr_descr.name)
-            if attr_descr.data_format == AttrDataFormat.SPECTRUM:
-                sensor_name = "{}.{}".format(katcp_name, index)
-            else:
-                sensor_name = katcp_name
-            description = attr_descr.description
-            unit = attr_descr.unit
-        except UnicodeDecodeError as e:
-            log.error("Exception: %s Sensor: %s", e, sensor_name)
-            description = "invalid description"
-            unit = "invalid unit"
-        sensors.append(
-            Sensor(
-                sensor_type,
-                sensor_name,
-                tango_to_katcp_text(description),
-                tango_to_katcp_text(unit),
-                sensor_params,
-            )
+    # for index in range(attr_descr.max_dim_x):
+    if attr_descr.data_type in TANGO_INT_TYPES:
+        if attr_min_val == "Not specified":
+            min_value = katcp_type_info.params[0]
+        else:
+            min_value = int(attr_min_val)
+        if attr_max_val == "Not specified":
+            max_value = katcp_type_info.params[1]
+        else:
+            max_value = int(attr_max_val)
+        sensor_params = [min_value, max_value]
+    elif attr_descr.data_type in TANGO_FLOAT_TYPES:
+        if attr_min_val == "Not specified":
+            min_value = katcp_type_info.params[0]
+        else:
+            min_value = float(attr_min_val)
+        if attr_max_val == "Not specified":
+            max_value = katcp_type_info.params[1]
+        else:
+            max_value = float(attr_max_val)
+        sensor_params = [min_value, max_value]
+    elif attr_descr.data_type == DevEnum:
+        sensor_params = attr_descr.enum_labels
+    elif attr_descr.data_type == CmdArgType.DevState:
+        sensor_params = katcp_type_info.params
+    try:
+        katcp_name = tangoname2katcpname(attr_descr.name)
+        if attr_descr.data_format == AttrDataFormat.SPECTRUM:
+            katcp_type_info = TANGO2KATCP_TYPE_INFO[DevString]
+            sensor_type = katcp_type_info.sensor_type
+            # sensor_params = katcp_type_info.params
+        #     sensor_name = "{}.{}".format(katcp_name, index)
+        # else:
+        sensor_name = katcp_name
+        description = attr_descr.description
+        unit = attr_descr.unit
+    except UnicodeDecodeError as e:
+        log.error("Exception: %s Sensor: %s", e, attr_descr.name)
+        description = "invalid description"
+        unit = "invalid unit"
+    sensors.append(
+        Sensor(
+            sensor_type,
+            sensor_name,
+            tango_to_katcp_text(description),
+            tango_to_katcp_text(unit),
+            sensor_params,
         )
+    )
 
     return sensors
 
@@ -719,52 +722,25 @@ class TangoDevice2KatcpProxy(object):
             self._logger.debug("Sensor %s.* was never added on the KATCP server.", name)
             return
         katcp_name = tangoname2katcpname(name)
-        # when we create KATCP sensors for spectrum attributes we add a dot before the
-        # index. There could be a case where a device server has attributes that start
-        # with the same text , e.g. azimuth and azimuthErrors. Use regex to be
-        # stricter i.e. katcp_name, dot, and then some digits
-        regex = r"{}\.\d+".format(katcp_name)
         attr_dformat = self.inspecting_client.device_attributes[name].data_format
-        if attr_dformat == AttrDataFormat.SPECTRUM:
-            if quality == AttrQuality.ATTR_INVALID:
-                sensor_names = self.katcp_server.get_sensor_list()
-                for sensor_name in sensor_names:
-                    match = re.match(regex, sensor_name)
-                    if match:
-                        sensor = self.katcp_server.get_sensor(sensor_name)
-                        status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-                        sensor.set_value(
-                            sensor.value(), status=status, timestamp=timestamp
-                        )
-                return
 
-            for index, value_ in enumerate(value):
-                try:
-                    sensor = self.katcp_server.get_sensor(
-                        "{}.{}".format(katcp_name, index)
-                    )
-                except ValueError as verr:
-                    # AR 2016-05-19 TODO Need a robust way of dealing
-                    # with not implemented sensors
-                    self._logger.info("Sensor not implemented yet!" + str(verr))
-                else:
-                    status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-                    sensor.set_value(value_, status=status, timestamp=timestamp)
+        if attr_dformat == AttrDataFormat.SPECTRUM:
+            value = str(value)
+
+        try:
+            sensor = self.katcp_server.get_sensor(katcp_name)
+        except ValueError as verr:
+            # AR 2016-05-19 TODO Need a robust way of dealing
+            # with not implemented sensors
+            self._logger.info("Sensor not implemented yet!" + str(verr))
         else:
-            try:
-                sensor = self.katcp_server.get_sensor(katcp_name)
-            except ValueError as verr:
-                # AR 2016-05-19 TODO Need a robust way of dealing
-                # with not implemented sensors
-                self._logger.info("Sensor not implemented yet!" + str(verr))
+            status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
+            if quality == AttrQuality.ATTR_INVALID:
+                sensor.set_value(sensor.value(), status=status, timestamp=timestamp)
             else:
-                status = TANGO_ATTRIBUTE_QUALITY_TO_KATCP_SENSOR_STATUS[quality]
-                if quality == AttrQuality.ATTR_INVALID:
-                    sensor.set_value(sensor.value(), status=status, timestamp=timestamp)
-                else:
-                    if sensor.type == "discrete":
-                        value = sensor.params[value]
-                    sensor.set_value(value, status=status, timestamp=timestamp)
+                if sensor.type == "discrete":
+                    value = sensor.params[value]
+                sensor.set_value(value, status=status, timestamp=timestamp)
 
     @classmethod
     def from_addresses(
