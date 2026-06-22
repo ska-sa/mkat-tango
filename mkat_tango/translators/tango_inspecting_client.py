@@ -33,6 +33,34 @@ class TangoInspectingClient(object):
 
     """
 
+    EXCLUDED_ATTRS = (
+        "polyTrack",
+        "swVersions", # available in buildState aggregation
+        "fwVersions", # available in buildState aggregation
+        "serialNumbers", # available in buildState aggregation
+        "loggingTargets",
+        "maxCapabilities",
+        "frequencyResponse", # translates to 8202 sensors
+        "programTrackTable", # translates to 3000 sensors
+        "availableCapabilities",
+        # skao specific debug attributes that are not relevant to dvs
+        "lrcQueue",
+        "_lrcEvent",
+        "lrcFinished",
+        "lrcExecuting",
+        "lastCommandedMode",
+        "lastCommandUpdate",
+        "lastCommandInvoked",
+        "lrcProtocolVersions",
+        "longRunningCommandResult",
+        "longRunningCommandStatus",
+        "longRunningCommandsInQueue",
+        "longRunningCommandProgress",
+        "lastCommandedPointingParams",
+        "longRunningCommandIDsInQueue",
+        "longRunningCommandInProgress",
+    )
+
     def __init__(self, tango_device_proxy, logger=log):
         self.tango_dp = tango_device_proxy
         self.device_attributes = {}
@@ -83,38 +111,11 @@ class TangoInspectingClient(object):
             name
 
         """
-        excluded_attrs = (
-            "polyTrack",
-            "swVersions", # available in buildState
-            "fwVersions", # available in buildState
-            "serialNumbers", # available in buildState
-            "loggingTargets",
-            "maxCapabilities",
-            "frequencyResponse",
-            "programTrackTable",
-            "availableCapabilities",
-            # skao specific debug attributes that are not relevant to dvs
-            "lrcQueue",
-            "_lrcEvent",
-            "lrcFinished",
-            "lrcExecuting",
-            "lastCommandedMode",
-            "lastCommandUpdate",
-            "lastCommandInvoked",
-            "lrcProtocolVersions",
-            "longRunningCommandResult",
-            "longRunningCommandStatus",
-            "longRunningCommandsInQueue",
-            "longRunningCommandProgress",
-            "lastCommandedPointingParams",
-            "longRunningCommandIDsInQueue",
-            "longRunningCommandInProgress",
-        )
 
         return {
             attr_name.lower(): attr_name
             for attr_name in self.tango_dp.get_attribute_list()
-            if attr_name not in excluded_attrs
+            if attr_name not in self.EXCLUDED_ATTRS
         }
 
     def inspect_attributes(self):
@@ -128,38 +129,11 @@ class TangoInspectingClient(object):
             :class: `tango._tango.AttributeInfoEx`, a return value of
             :meth:`tango.DeviceProxy.get_attribute_config` of each attribute.
         """
-        excluded_attrs = (
-            "polyTrack",
-            "swVersions", # available in buildState
-            "fwVersions", # available in buildState
-            "serialNumbers", # available in buildState
-            "loggingTargets",
-            "maxCapabilities",
-            "frequencyResponse",
-            "programTrackTable",
-            "availableCapabilities",
-            # skao specific debug attributes that are not relevant to dvs
-            "lrcQueue",
-            "_lrcEvent",
-            "lrcFinished",
-            "lrcExecuting",
-            "lastCommandedMode",
-            "lastCommandUpdate",
-            "lastCommandInvoked",
-            "lrcProtocolVersions",
-            "longRunningCommandResult",
-            "longRunningCommandStatus",
-            "longRunningCommandsInQueue",
-            "longRunningCommandProgress",
-            "lastCommandedPointingParams",
-            "longRunningCommandIDsInQueue",
-            "longRunningCommandInProgress",
-        )
 
         return {
             attr_name: self.tango_dp.get_attribute_config(attr_name)
             for attr_name in self.tango_dp.get_attribute_list()
-            if attr_name not in excluded_attrs
+            if attr_name not in self.EXCLUDED_ATTRS
         }
 
     def inspect_commands(self):
