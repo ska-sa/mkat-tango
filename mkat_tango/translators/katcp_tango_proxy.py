@@ -761,7 +761,7 @@ class TangoDevice2KatcpProxy(object):
 
     @classmethod
     def from_addresses(
-        cls, katcp_server_address, tango_device_address, logger=log, polling=False
+        cls, katcp_server_address, tango_device_address, attrs_to_ignore=(), logger=log, polling=False
     ):
         """Instantiate TangoDevice2KatcpProxy from network addresses
 
@@ -774,7 +774,7 @@ class TangoDevice2KatcpProxy(object):
 
         """
         tango_device_proxy = cls.get_tango_device_proxy(tango_device_address)
-        tango_inspecting_client = TangoInspectingClient(tango_device_proxy, logger=logger)
+        tango_inspecting_client = TangoInspectingClient(tango_device_proxy, excluded_attributes=attrs_to_ignore, logger=logger)
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)

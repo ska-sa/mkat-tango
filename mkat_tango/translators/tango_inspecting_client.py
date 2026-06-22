@@ -33,7 +33,7 @@ class TangoInspectingClient(object):
 
     """
 
-    def __init__(self, tango_device_proxy, logger=log):
+    def __init__(self, tango_device_proxy, excluded_attributes=(),logger=log):
         self.tango_dp = tango_device_proxy
         self.device_attributes = {}
         self.device_commands = {}
@@ -41,6 +41,7 @@ class TangoInspectingClient(object):
         self._logger = logger
         self.orig_attr_names_map = {}
         self._interface_change_event_id = None
+        self._excluded_attributes = excluded_attributes
 
     def __del__(self):
         try:
@@ -83,9 +84,11 @@ class TangoInspectingClient(object):
             name
 
         """
+
         return {
             attr_name.lower(): attr_name
             for attr_name in self.tango_dp.get_attribute_list()
+            if attr_name not in self._excluded_attributes
         }
 
     def inspect_attributes(self):
@@ -99,9 +102,11 @@ class TangoInspectingClient(object):
             :class: `tango._tango.AttributeInfoEx`, a return value of
             :meth:`tango.DeviceProxy.get_attribute_config` of each attribute.
         """
+
         return {
             attr_name: self.tango_dp.get_attribute_config(attr_name)
             for attr_name in self.tango_dp.get_attribute_list()
+            if attr_name not in self._excluded_attributes
         }
 
     def inspect_commands(self):
