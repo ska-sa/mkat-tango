@@ -170,12 +170,16 @@ def tango_to_katcp_text(text):
     Description strings from Tango devices have latin-1 encoding, but
     KATCP expects utf-8.  This is only in Python 2, not Python 3.
     """
-    if future.utils.PY2:
-        decoded = text.decode(encoding='latin-1')
-        encoded = decoded.encode(encoding='utf-8')
-        return encoded
-    else:
-        return text
+    try:
+        if future.utils.PY2:
+            decoded = text.decode(encoding='latin-1')
+            encoded = decoded.encode(encoding='utf-8')
+            return encoded
+        else:
+            return text
+    except Exception as e:
+        log.warn("Exception Message: %s", e)
+        return "decoding failed"
 
 
 def tango_attr_descr2katcp_sensors(attr_descr):
@@ -240,19 +244,24 @@ def tango_attr_descr2katcp_sensors(attr_descr):
             sensor_params = attr_descr.enum_labels
         elif attr_descr.data_type == CmdArgType.DevState:
             sensor_params = katcp_type_info.params
-
-        katcp_name = tangoname2katcpname(attr_descr.name)
-        if attr_descr.data_format == AttrDataFormat.SPECTRUM:
-            sensor_name = "{}.{}".format(katcp_name, index)
-        else:
-            sensor_name = katcp_name
-
+        try:
+            katcp_name = tangoname2katcpname(attr_descr.name)
+            if attr_descr.data_format == AttrDataFormat.SPECTRUM:
+                sensor_name = "{}.{}".format(katcp_name, index)
+            else:
+                sensor_name = katcp_name
+            description = attr_descr.description
+            unit = attr_descr.unit
+        except UnicodeDecodeError as e:
+            log.error("Exception: %s Sensor: %s", e, sensor_name)
+            description = "invalid description"
+            unit = "invalid unit"
         sensors.append(
             Sensor(
                 sensor_type,
                 sensor_name,
-                tango_to_katcp_text(attr_descr.description),
-                tango_to_katcp_text(attr_descr.unit),
+                tango_to_katcp_text(description),
+                tango_to_katcp_text(unit),
                 sensor_params,
             )
         )
@@ -752,7 +761,7 @@ class TangoDevice2KatcpProxy(object):
 
     @classmethod
     def from_addresses(
-        cls, katcp_server_address, tango_device_address, logger=log, polling=False
+        cls, katcp_server_address, tango_device_address, attrs_to_ignore=(), logger=log, polling=False
     ):
         """Instantiate TangoDevice2KatcpProxy from network addresses
 
@@ -765,7 +774,7 @@ class TangoDevice2KatcpProxy(object):
 
         """
         tango_device_proxy = cls.get_tango_device_proxy(tango_device_address)
-        tango_inspecting_client = TangoInspectingClient(tango_device_proxy, logger=logger)
+        tango_inspecting_client = TangoInspectingClient(tango_device_proxy, excluded_attributes=attrs_to_ignore, logger=logger)
         katcp_host, katcp_port = katcp_server_address
         katcp_server = TangoProxyDeviceServer(katcp_host, katcp_port)
         katcp_server.set_concurrency_options(thread_safe=False, handler_thread=False)
