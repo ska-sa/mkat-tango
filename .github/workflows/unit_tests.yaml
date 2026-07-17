@@ -8,6 +8,20 @@ jobs:
       image: artefact.skao.int/ska-tango-images-pytango-builder:9.3.10
     steps:
       - uses: actions/checkout@v1
+      - name: Configure Debian archive repositories
+        run: |
+          set -eux
+          sed -i \
+            -e 's|deb.debian.org/debian|archive.debian.org/debian|g' \
+            -e 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' \
+            -e 's|security.debian.org|archive.debian.org/debian-security|g' \
+            -e 's|ftp.debian.org/debian|archive.debian.org/debian|g' \
+            /etc/apt/sources.list
+
+          # Archived Debian repositories have expired Release metadata.
+          printf 'Acquire::Check-Valid-Until "false";\n' \
+            > /etc/apt/apt.conf.d/99debian-archive
+          apt-get update
       - name: Install flake8
         run: sudo pip3 install flake8
       - name: Get and tailor the sardana linting script
