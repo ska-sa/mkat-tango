@@ -33,7 +33,7 @@ class TangoInspectingClient(object):
 
     """
 
-    def __init__(self, tango_device_proxy, excluded_attributes=(),logger=log):
+    def __init__(self, tango_device_proxy, excluded_attributes=(), logger=log):
         self.tango_dp = tango_device_proxy
         self.device_attributes = {}
         self.device_commands = {}
