@@ -133,7 +133,8 @@ class TangoInspectingClient(object):
     def _update_device_attributes(self, attributes):
         self.device_attributes.clear()
         for attribute in attributes:
-            self.device_attributes[attribute.name] = attribute
+            if attribute.name not in self._excluded_attributes:
+                self.device_attributes[attribute.name] = attribute
 
     def interface_change_event_handler(self, event_data):
         """Handles tango device interface change events.
